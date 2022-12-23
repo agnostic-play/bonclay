@@ -1,0 +1,19 @@
+app:
+  version: 1.0
+  name: ditto
+  host: 0.0.0.0
+  port: 80
+  ctxTimeout: 30s
+database:
+  host: localhost
+  port: 3306
+  user: root
+  pass: root
+  databaseName: dittoTheImitation
+  debugLog: true
+  timezone: ASIA/JAKARTA
+  charset: utf8mb4
+  ssl: disable
+  poolMaxIdleConn: 5
+  poolMaxOpenConn: 50
+  poolMaxConnLifetime: 1m
