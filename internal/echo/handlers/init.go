@@ -3,26 +3,43 @@ package handler
 import (
 	"github.com/labstack/echo/v4"
 	"gitlab.linkaja.com/be/ditto/internal/services"
-	"net/http"
 )
 
+type HandlersInit interface {
+	Routes()
+}
+
 type handlers struct {
-	container services.ServiceContainer
+	serviceContainer services.ServiceContainer
+	server           *echo.Echo
+	baseURL          string
 }
 
-func SetupHandlers(server *echo.Echo, container services.ServiceContainer) {
-	handler := handlers{
-		container: container,
+type responseRender struct {
+	BaseURL string
+	Error   *string
+	Data    interface{}
+}
+
+func NewSetupHandlers(server *echo.Echo, baseURL string, container services.ServiceContainer) HandlersInit {
+	return &handlers{
+		server:           server,
+		serviceContainer: container,
+		baseURL:          baseURL,
 	}
-	server.GET("/index", func(c echo.Context) error {
-		return c.Render(http.StatusOK, "index.html", map[string]interface{}{
-			"name": "Bro!!",
-		})
-	}).Name = "foobar"
-	server.GET("/readiness", handler.readinessHandlers)
 }
 
-func (h handlers) readinessHandlers(ctx echo.Context) (err error) {
+func (h handlers) Routes() {
 
-	return ctx.JSON(200, h.container.Readiness())
+	h.server.GET("/", func(ctx echo.Context) error {
+		return h.render(ctx, "squadIndex", nil)
+	})
+
+	h.server.GET("/ping", func(c echo.Context) error {
+		return c.JSON(200, "hello :)")
+	}).Name = "ping"
+
+	h.routesSquad()
+	h.routesCollection()
+
 }

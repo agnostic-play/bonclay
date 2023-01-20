@@ -13,7 +13,7 @@ import (
 	"net/http"
 )
 
-func RunHttpServer(host, port string, container services.ServiceContainer) chan bool {
+func RunHttpServer(host, port, baseURL string, container services.ServiceContainer) chan bool {
 	e := echo.New()
 	e.HideBanner = true
 	e.DisableHTTP2 = true
@@ -23,12 +23,13 @@ func RunHttpServer(host, port string, container services.ServiceContainer) chan 
 	e.Static("/static", "./resources/public/assets")
 
 	SetupMiddlewares(e)
-	handler.SetupHandlers(e, container)
+	handler.NewSetupHandlers(e, baseURL, container).Routes()
 
 	go func() {
 		e.HideBanner = true
 		address := fmt.Sprintf("%v:%v", host, port)
 		if err := e.Start(address); err != nil {
+
 			// ErrServerClosed is expected behaviour when exiting app
 			if !errors.Is(err, http.ErrServerClosed) {
 				log.Fatalf("%v server, %v", "server", err)

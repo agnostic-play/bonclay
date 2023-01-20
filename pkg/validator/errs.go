@@ -3,7 +3,7 @@ package validator
 import "fmt"
 
 type BadRequestErrors struct {
-	Errors map[string]string
+	Errors map[string]string `json:"errors"`
 }
 
 func (e BadRequestErrors) Error() string {

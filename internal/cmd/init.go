@@ -13,9 +13,7 @@ func Init(conf *config.Config) (chan bool, chan bool) {
 
 	var (
 		exitSignal = make(chan bool)
-		//validator           = validator.New()
-		//cacheDb             = redis.Init(cfg.Cache)
-		db, sqlDB = gorm.Init(gorm.ConfigDB{
+		db, sqlDB  = gorm.Init(gorm.ConfigDB{
 			DebugLog:            conf.Database.DebugLog,
 			Host:                conf.Database.Host,
 			User:                conf.Database.User,
@@ -30,7 +28,7 @@ func Init(conf *config.Config) (chan bool, chan bool) {
 	repoContainer := repository.NewRepoContainerGorm(db, sqlDB, conf)
 	serviceContainer := services.NewServiceContainer(repoContainer, conf)
 
-	serverExitSignal := echo.RunHttpServer(conf.App.Host, conf.App.Port, serviceContainer)
+	serverExitSignal := echo.RunHttpServer(conf.App.Host, conf.App.Port, conf.App.BaseURL, serviceContainer)
 
 	go func() {
 		<-exitSignal // Receive exit signal

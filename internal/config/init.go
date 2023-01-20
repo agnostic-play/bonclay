@@ -13,6 +13,7 @@ type Config struct {
 		Host       string
 		Port       string
 		CtxTimeout time.Duration
+		BaseURL    string
 	}
 	Database Database
 }

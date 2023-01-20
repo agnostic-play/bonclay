@@ -6,7 +6,8 @@ import (
 )
 
 type ServiceContainer interface {
-	Readiness() ReadinessResp
+	SquadServiceInterface
+	CollectionServiceInterface
 }
 
 func NewServiceContainer(repoContainer repository.RepoContainer,

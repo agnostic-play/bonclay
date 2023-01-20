@@ -4,12 +4,13 @@ app:
   host: 0.0.0.0
   port: 80
   ctxTimeout: 30s
+  baseURL: http://localhost:80
 database:
   host: localhost
   port: 3306
   user: root
   pass: root
-  databaseName: dittoTheImitation
+  databaseName: ditto
   debugLog: true
   timezone: ASIA/JAKARTA
   charset: utf8mb4

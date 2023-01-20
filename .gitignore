@@ -1,4 +1,7 @@
-./vendor
+./vendor/*
 ./.idea
 .idea
 .idea/
+.vscode
+./vendor
+

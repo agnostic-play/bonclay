@@ -1,0 +1,308 @@
+{{ define "squad_show" }}
+
+{{template "layout" .}}
+
+{{ if eq .Data nil }}
+<script>
+    window.location.href = {{ .BaseURL }};
+</script>
+{{end}}
+<div class="container-fluid vh-100">
+    <div class="row vh-100">
+        <div class="col-3 vh-100 shadow bg-body-tertiary rounded-3 pt-4">
+            <div class="row">
+                <div class="col-6 pt-1">
+                    <a href="{{.BaseURL}}" class="customLink">
+                        <h4 style="text-transform: uppercase;"><b>{{ .Data.squad.Name }}</b></h4>
+                    </a>
+                </div>
+                <div class="col-6 pt-1">
+                    <btn class="btn float-end btn-secondary rounded-2 m-0 px-2" style="font-size: 8px;"
+                        data-bs-toggle="modal" data-bs-target="#createModal">New Collection</btn>
+                </div>
+            </div>
+
+            <div class="row px-2 mt-3">
+                <input class="form-control search col-12" type="search" autocomplete="off" id="search"
+                    placeholder="search collection ...">
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <div class=" overflow-auto pt-3 " style="max-height: 100%;" id="results">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{ if .Data.collection }}
+            <div class="col-9 px-5 mt-3 pt-5">
+                <div class="row">
+                    <div class="col-12">
+                        <h1 class="fw-bolder py-0 my-0" style=" text-transform: capitalize;">
+                            {{ .Data.collection.Name }}
+                        </h1>
+                        <p class="py-0 my-0 mb-3" style="font-size: small;opacity:0.8;">
+                            {{ .Data.collection.Desc }}
+                            [ Base URL: <a href="{{.BaseURL}}/mock/{{ .Data.collection.Slug }}" class="me-2" target="_blank">{{.BaseURL}}/mock/{{ .Data.collection.Slug }}</a>
+                            {{ if .Data.collection.Docs }}
+                                | <a class="ms-2" href="{{ .Data.collection.Docs }}">Documentation</a>
+                            {{ end }}
+                            ]
+                        </p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <table class="table px-0" style="vertical-align:middle;font-size: 0.9em;">
+
+                            <tr class="">
+                                <td colspan="4" class="pb-2  pb-0">
+                                    <h5 class="p-0 m-0" style=" text-transform: capitalize;">service</h5>
+                                </td>
+                            </tr>
+
+
+
+                            <tr style="background-color:rgb(236,243,251) ;padding-bottom: 1em !important">
+                                <td width="10px">
+                                    <button class="btn text-white fw-bold text-center"
+                                            style="background: #62AFFE ;border-radius: 5px;font-size: 0.8em;width:70px;">GET</button>
+                                </td>
+                                <td width="200px">
+                                    <a href="/endpoint/show/4250e753-6446-44f6-9689-047c314120b1" class="fw-bold">get service</a>
+                                </td>
+                                <td class="fw-bold">service/list <span class="fw-normal ms-3 " ></span></td>
+                                <!-- <td width="250px"></td> -->
+                                <td class="text-end">
+                                    <form action="/endpoint/4c393b00-d222-4c73-b28a-e1700a6244c4/delete" style="display: inline-block;" method="POST">
+                                        <input type="hidden" name="endpoint" value="4250e753-6446-44f6-9689-047c314120b1">
+                                        <button class="btn btn-danger me-1">Remove</button>
+                                    </form>
+                                    <a class="btn btn-primary" alt="Issued" target="_blank" href="/issued/check/service/list">
+                                        Issued
+                                    </a>
+                                </td>
+                            </tr>
+
+
+
+                            <tr class="">
+                                <td colspan="4" class="pb-2  pb-0">
+                                    <h5 class="p-0 m-0" style=" text-transform: capitalize;">endpoint</h5>
+                                </td>
+                            </tr>
+
+
+
+                            <tr style="background-color:rgb(251,232,231) ;padding-bottom: 1em !important">
+                                <td width="10px">
+                                    <button class="btn text-white fw-bold text-center"
+                                            style="background: #FA3E3D ;border-radius: 5px;font-size: 0.8em;width:70px;">DELETE</button>
+                                </td>
+                                <td width="200px">
+                                    <a href="/endpoint/show/48ef476e-bffa-4aa4-99e8-ad09291433f3" class="fw-bold">delete endpoint</a>
+                                </td>
+                                <td class="fw-bold">endpoint/ <span class="fw-normal ms-3 " ></span></td>
+                                <!-- <td width="250px"></td> -->
+                                <td class="text-end">
+                                    <form action="/endpoint/4c393b00-d222-4c73-b28a-e1700a6244c4/delete" style="display: inline-block;" method="POST">
+                                        <input type="hidden" name="endpoint" value="48ef476e-bffa-4aa4-99e8-ad09291433f3">
+                                        <button class="btn btn-danger me-1">Remove</button>
+                                    </form>
+                                    <a class="btn btn-primary" alt="Issued" target="_blank" href="/issued/check/endpoint/">
+                                        Issued
+                                    </a>
+                                </td>
+                            </tr>
+
+                            <tr style="background-color:rgb(233,246,239) ;padding-bottom: 1em !important">
+                                <td width="10px">
+                                    <button class="btn text-white fw-bold text-center"
+                                            style="background: #49CC90 ;border-radius: 5px;font-size: 0.8em;width:70px;">POST</button>
+                                </td>
+                                <td width="200px">
+                                    <a href="/endpoint/show/9c72a608-92aa-46d7-bdf5-8434ff02d6de" class="fw-bold">create endpoint</a>
+                                </td>
+                                <td class="fw-bold">endpoint/create <span class="fw-normal ms-3 " ></span></td>
+                                <!-- <td width="250px"></td> -->
+                                <td class="text-end">
+                                    <form action="/endpoint/4c393b00-d222-4c73-b28a-e1700a6244c4/delete" style="display: inline-block;" method="POST">
+                                        <input type="hidden" name="endpoint" value="9c72a608-92aa-46d7-bdf5-8434ff02d6de">
+                                        <button class="btn btn-danger me-1">Remove</button>
+                                    </form>
+                                    <a class="btn btn-primary" alt="Issued" target="_blank" href="/issued/check/endpoint/create">
+                                        Issued
+                                    </a>
+                                </td>
+                            </tr>
+
+                            <tr style="background-color:rgb(236,243,251) ;padding-bottom: 1em !important">
+                                <td width="10px">
+                                    <button class="btn text-white fw-bold text-center"
+                                            style="background: #62AFFE ;border-radius: 5px;font-size: 0.8em;width:70px;">GET</button>
+                                </td>
+                                <td width="200px">
+                                    <a href="/endpoint/show/e8226b9f-50af-4e1f-977a-46dfa3ccb329" class="fw-bold">get endpoint data</a>
+                                </td>
+                                <td class="fw-bold">endpoint/list <span class="fw-normal ms-3 " ></span></td>
+                                <!-- <td width="250px"></td> -->
+                                <td class="text-end">
+                                    <form action="/endpoint/4c393b00-d222-4c73-b28a-e1700a6244c4/delete" style="display: inline-block;" method="POST">
+                                        <input type="hidden" name="endpoint" value="e8226b9f-50af-4e1f-977a-46dfa3ccb329">
+                                        <button class="btn btn-danger me-1">Remove</button>
+                                    </form>
+                                    <a class="btn btn-primary" alt="Issued" target="_blank" href="/issued/check/endpoint/list">
+                                        Issued
+                                    </a>
+                                </td>
+                            </tr>
+
+
+
+
+
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {{ else }}
+            <div class="col-9 text-center  vh-100" >
+                <div class="row  align-items-center text-center vh-100"  >
+                    <img src="{{ .BaseURL }}/static/img/logo.svg"  class="align-middle" style="height: 150px"><br><br>
+                </div>
+            </div>
+        {{ end }}
+    </div>
+</div>
+
+<div class="modal modal-md fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="createModal
+                   Label">Create New Collections</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form">
+                    <div class="mb-3 row">
+                        <label for="inptName" class="col-sm-3 col-form-label">Collection</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" id="inptName" name="name" placeholder="vendor v3">
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="inptDocs" class="col-sm-3 col-form-label">Documents URL</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" id="inptDocs" name="docs"
+                                placeholder="https://tcashsquad.atlassian.net/wiki/">
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="inptDesc" class="col-sm-3 col-form-label">Descriptions</label>
+                        <div class="col-sm-9">
+                            <textarea class="form-control" id="inptDesc" name="desc">
+
+                            </textarea>
+                        </div>
+                    </div>
+                    <input type="submit" class="btn btn-primary float-end" value="create">
+                </form>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    var data = [];
+    data = {{.Data.squad.Collections}}
+    let search_term = "";
+    const results = document.getElementById("results");
+
+    const showList = () => {
+            results.innerHTML = "";
+            data
+                .filter((item) => {
+                    return (
+                        item.name.toLowerCase().includes(search_term)
+                    );
+                })
+                .forEach((e) => {
+                        const cardSquad = `<a href="{{ .BaseURL }}/squad/{{ .Data.squad.Slug }}/collection/${e.slug}" class="card-squads-wrapper "><div class="card card-squads mb-4" style=""><div class="card-body"><h5 class="card-title">${e.name}</h5><p class="card-text"></p></div></div></a>`
+                        results.innerHTML += cardSquad;
+                });
+    };
+
+    showList();
+
+    search.addEventListener("input", (event) => {
+        search_term = event.target.value.toLowerCase();
+        showList();
+    });
+</script>
+
+<script>
+    const form = document.getElementById("form");
+    
+    form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        let data = {
+            name: document.getElementById("inptName").value,
+            desc: document.getElementById("inptDesc").value,
+            docs: document.getElementById("inptDocs").value,
+            squad_id: {{ .Data.squad.ID }},
+        };
+
+        postData(data);
+    });
+
+    function handlingError(status,data){
+
+        const toastWarning = document.getElementById("warningToast");
+        toastWarning.innerHTML = "";
+        if (data.hasOwnProperty("message")) {
+            toastWarning.innerHTML +=  `<b>${data.message}</b>`+"<br/>";
+        }
+        if (status == 400 ){
+            if (data.hasOwnProperty("data")) {
+                getData = data.data
+                if (getData.hasOwnProperty("errors")) {
+                    for (const key in getData.errors) {
+                        toastWarning.innerHTML += `${getData.errors[key]}`
+                    }
+                }
+            }
+        }
+
+        showToast();
+    }
+
+    function postData(data) {
+        fetch(`{{.BaseURL}}/api/collection/create`, {
+                method: "POST",
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8",
+                },
+            })
+            .then((response) => {
+                return response.json();
+            })
+            .then((json) => {
+                if (json.status != 200){
+                    handlingError(json.status,json);
+                    return
+                }   
+                return location.reload();
+            })
+            .catch((error) => {
+               console.log(error)
+            })
+    }
+</script>
+{{template "footer" }}
+
+
+{{ end }}
