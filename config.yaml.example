@@ -1,13 +1,15 @@
 app:
   name: ditto
+  host: 0.0.0.0
   port: 80
   version: 1
-  ctxTimeout
+  ctxTimeout: 30s
 database:
-  host: dbrw-mysql.linkaja.dev
-  user: apps
+  host: db_host
+  user: db_user
   port: 6033
-  databaseName: ditto
+  pass: db_pass
+  databaseName: db_name
   debugLog: true
   pool:
     maxConnLifetime: 1m
