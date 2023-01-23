@@ -1,33 +1,15 @@
 app:
-  version: 1.0
-  name: Tesla
-  host: 0.0.0.0
+  name: ditto
   port: 80
-  ctxTimeout: 30s
+  version: 1
+  ctxTimeout
 database:
-  writer:
-    host: localhost
-    port: 5432
-    user: default
-    pass: secret
-    databaseName: kerjapedia
-    debugLog: false
-    timezone: ASIA/JAKARTA
-    ssl: disable
-    pool:
-      maxIdleConn: 5
-      maxOpenConn: 50
-      maxConnLifetime: 1m
-  reader:
-    host: localhost
-    port: 5432
-    user: default
-    pass: secret
-    databaseName: kerjapedia
-    debugLog: true
-    timezone: ASIA/JAKARTA
-    ssl: disable
-    pool:
-      maxIdleConn: 5
-      maxOpenConn: 50
-      maxConnLifetime: 1m
+  host: dbrw-mysql.linkaja.dev
+  user: apps
+  port: 6033
+  databaseName: ditto
+  debugLog: true
+  pool:
+    maxConnLifetime: 1m
+    maxIdleConn: 5
+    maxOpenConn: 50
