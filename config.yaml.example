@@ -1,8 +1,8 @@
 app:
   version: 1.0
   name: Tesla
-  host: 0.0.0.0                                 # Server IP
-  port: 80                                    # Server port
+  host: 0.0.0.0
+  port: 80
   ctxTimeout: 30s
 database:
   writer:
