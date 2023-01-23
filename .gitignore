@@ -5,3 +5,4 @@
 .vscode
 ./vendor
 
+/config.yaml

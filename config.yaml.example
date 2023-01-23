@@ -7,8 +7,9 @@ app:
 database:
   host: db_host
   user: db_user
-  port: 6033
   pass: db_pass
+  port: 6033
+  charset: utf8mb4
   databaseName: db_name
   debugLog: true
   pool:

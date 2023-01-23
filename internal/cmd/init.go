@@ -17,6 +17,7 @@ func Init(conf *config.Config) (chan bool, chan bool) {
 			DebugLog:            conf.Database.DebugLog,
 			Host:                conf.Database.Host,
 			User:                conf.Database.User,
+			Port:                conf.Database.Port,
 			Pass:                conf.Database.Pass,
 			DatabaseName:        conf.Database.DatabaseName,
 			Charset:             conf.Database.Charset,
