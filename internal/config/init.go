@@ -26,7 +26,6 @@ type Database struct {
 	User                string
 	Pass                string
 	DatabaseName        string
-	Charset             string
 	Timezone            string
 	PoolMaxIdleConn     int
 	PoolMaxOpenConn     int

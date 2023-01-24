@@ -20,7 +20,6 @@ func Init(conf *config.Config) (chan bool, chan bool) {
 			Port:                conf.Database.Port,
 			Pass:                conf.Database.Pass,
 			DatabaseName:        conf.Database.DatabaseName,
-			Charset:             conf.Database.Charset,
 			PoolMaxIdleConn:     conf.Database.PoolMaxIdleConn,
 			PoolMaxOpenConn:     conf.Database.PoolMaxOpenConn,
 			PoolMaxConnLifetime: conf.Database.PoolMaxConnLifetime,

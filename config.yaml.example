@@ -9,7 +9,6 @@ database:
   user: db_user
   pass: db_pass
   port: 6033
-  charset: utf8mb4
   databaseName: db_name
   debugLog: true
   pool:
