@@ -22,8 +22,8 @@ func Init(conf ConfigDB) (*gorm.DB, *sql.DB) {
 			Colorful:                  false,         // Disable color
 		},
 	)
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=True&loc=Local", conf.User, conf.Pass,
-		conf.Host, conf.Port, conf.DatabaseName, conf.Charset)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", conf.User, conf.Pass,
+		conf.Host, conf.Port, conf.DatabaseName)
 
 	driverConfig := mysql.New(mysql.Config{
 		DSN:                       dsn,   // data source name
