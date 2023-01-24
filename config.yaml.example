@@ -8,7 +8,7 @@ database:
   host: db_host
   user: db_user
   pass: db_pass
-  port: 6033
+  port: 3306
   databaseName: db_name
   debugLog: true
   pool:
