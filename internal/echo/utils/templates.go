@@ -16,7 +16,7 @@ type TemplateRenderer struct {
 func NewTemplates(path string) *TemplateRenderer {
 
 	return &TemplateRenderer{
-		templates: template.Must(template.ParseGlob("./resources/views/*.gohtml")),
+		templates: template.Must(template.ParseGlob("/resources/views/*.gohtml")),
 		//templates: template.Must(template.ParseFS(tmpl, "./resources/views/*.gohtml")),
 	}
 }
