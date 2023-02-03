@@ -39,7 +39,7 @@ func (h handlers) Routes() {
 		return c.JSON(200, "hello :)")
 	}).Name = "ping"
 
-	h.routesSquad()
-	h.routesCollection()
+	h.routesViews()
+	h.routesApi()
 
 }

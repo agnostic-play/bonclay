@@ -1,0 +1,276 @@
+package handler
+
+import (
+	"context"
+	"github.com/labstack/echo/v4"
+	"gitlab.linkaja.com/be/ditto/internal/services"
+	"net/http"
+)
+
+func (h handlers) routesApi() {
+	h.server.POST("/api/squad/create", h.actCreateSquad)
+	h.server.PUT("/api/squad/update/:id", h.actUpdateSquad)
+	h.server.DELETE("/api/squad/delete/:id", h.actDeleteSquad)
+	h.server.GET("/api/squad", h.getListSquad)
+
+	h.server.POST("/api/collection/create", h.actCreateCollection)
+	h.server.PUT("/api/collection/update/:id", h.actUpdateCollection)
+	h.server.DELETE("/api/collection/delete/:id", h.actDeleteCollection)
+	h.server.GET("/api/collection/:slug/endpoint", h.actGetEndpoint)
+	h.server.GET("/api/collection/endpoint_scenario/:collectionSlug", h.getCollectionEndpoint)
+
+	h.server.POST("/api/endpoint/create", h.actCreateEndpoint)
+	h.server.PUT("/api/endpoint/update/:id", h.actUpdateEndpoint)
+	h.server.DELETE("/api/endpoint/delete/:id", h.actDeleteEndpoint)
+
+	h.server.POST("/api/scenario/create", h.actCreateScenario)
+	h.server.PUT("/api/scenario/update/:id", h.actUpdateScenario)
+	h.server.DELETE("/api/scenario/delete/:id", h.actDeleteScenario)
+
+	h.server.POST("/api/set/active_scenario", h.actSetActiveScenario)
+
+}
+
+func (h handlers) getListSquad(ctx echo.Context) error {
+	name := ctx.QueryParam("name")
+
+	resp, err := h.serviceContainer.GetListSquad(context.Background(), name)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, resp)
+}
+
+func (h handlers) actCreateSquad(ctx echo.Context) error {
+	var req services.SquadEntityReq
+
+	if err := h.validateRequest(ctx, &req); err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	resp, err := h.serviceContainer.CreateOrUpdateSquad(context.Background(), "", req)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, resp)
+}
+
+func (h handlers) actUpdateSquad(ctx echo.Context) error {
+	var req services.SquadEntityReq
+
+	id, err := h.validateUUID(ctx)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	if err := h.validateRequest(ctx, &req); err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	resp, err := h.serviceContainer.CreateOrUpdateSquad(context.Background(), id, req)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, resp)
+}
+
+func (h handlers) actDeleteSquad(ctx echo.Context) error {
+
+	id, err := h.validateUUID(ctx)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	resp, err := h.serviceContainer.DeleteSquad(context.Background(), id)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+	return h.json(ctx, 200, resp)
+
+}
+
+func (h handlers) actGetEndpoint(ctx echo.Context) error {
+
+	resp, err := h.serviceContainer.GetEndpointScenario(context.Background(), ctx.Param("slug"))
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, resp)
+}
+
+func (h handlers) actCreateCollection(ctx echo.Context) error {
+	var req services.CollectionEntityReq
+
+	if err := h.validateRequest(ctx, &req); err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	resp, err := h.serviceContainer.CreateOrUpdateCollection(context.Background(), "", req)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, resp)
+}
+
+func (h handlers) actUpdateCollection(ctx echo.Context) error {
+	var req services.CollectionEntityReq
+
+	id, err := h.validateUUID(ctx)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	if err := h.validateRequest(ctx, &req); err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	resp, err := h.serviceContainer.CreateOrUpdateCollection(context.Background(), id, req)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, resp)
+}
+
+func (h handlers) actDeleteCollection(ctx echo.Context) error {
+
+	id, err := h.validateUUID(ctx)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	resp, err := h.serviceContainer.DeleteCollection(context.Background(), id)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+	return h.json(ctx, 200, resp)
+}
+
+func (h handlers) getCollectionEndpoint(ctx echo.Context) error {
+	c := context.Background()
+
+	endpointScenario, err := h.serviceContainer.GetEndpointScenario(c, ctx.Param("collectionSlug"))
+	if err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	return h.json(ctx, 200, endpointScenario)
+}
+
+func (h handlers) actCreateEndpoint(ctx echo.Context) error {
+	var req services.EndpointEntityReq
+
+	if err := h.validateRequest(ctx, &req); err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	resp, err := h.serviceContainer.CreateOrUpdateEndpoint(context.Background(), "", req)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, resp)
+}
+
+func (h handlers) actUpdateEndpoint(ctx echo.Context) error {
+	var req services.EndpointEntityReq
+
+	id, err := h.validateUUID(ctx)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	if err := h.validateRequest(ctx, &req); err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	resp, err := h.serviceContainer.CreateOrUpdateEndpoint(context.Background(), id, req)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, resp)
+}
+
+func (h handlers) actDeleteEndpoint(ctx echo.Context) error {
+
+	id, err := h.validateUUID(ctx)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	err = h.serviceContainer.DeleteEndpoint(context.Background(), id)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+	return h.json(ctx, 200, nil)
+}
+
+func (h handlers) actCreateScenario(ctx echo.Context) error {
+	var req services.ScenarioEntityReq
+
+	if err := h.validateRequest(ctx, &req); err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	resp, err := h.serviceContainer.CreateOrUpdateScenario(context.Background(), "", req)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, resp)
+}
+
+func (h handlers) actUpdateScenario(ctx echo.Context) error {
+	var req services.ScenarioEntityReq
+
+	id, err := h.validateUUID(ctx)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	if err := h.validateRequest(ctx, &req); err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	resp, err := h.serviceContainer.CreateOrUpdateScenario(context.Background(), id, req)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, resp)
+}
+
+func (h handlers) actDeleteScenario(ctx echo.Context) error {
+
+	id, err := h.validateUUID(ctx)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	err = h.serviceContainer.DeleteScenario(context.Background(), id)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+	return h.json(ctx, 200, nil)
+}
+
+func (h handlers) actSetActiveScenario(ctx echo.Context) error {
+	var req services.SetActiveScenarioEntityReq
+
+	if err := h.validateRequest(ctx, &req); err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	err := h.serviceContainer.SetActiveResponse(context.Background(), req)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, req)
+}

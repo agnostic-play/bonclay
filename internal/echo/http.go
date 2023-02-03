@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
+	"gitlab.linkaja.com/be/ditto/internal/config"
 	handler "gitlab.linkaja.com/be/ditto/internal/echo/handlers"
 	httpUtils "gitlab.linkaja.com/be/ditto/internal/echo/utils"
 	"gitlab.linkaja.com/be/ditto/internal/services"
@@ -13,21 +14,21 @@ import (
 	"net/http"
 )
 
-func RunHttpServer(host, port, baseURL string, container services.ServiceContainer) chan bool {
+func RunHttpServer(config *config.Config, container services.ServiceContainer) chan bool {
 	e := echo.New()
 	e.HideBanner = true
 	e.DisableHTTP2 = true
 	e.Validator = validator.NewValidator()
-	e.Renderer = httpUtils.NewTemplates("./resources/views/*.html")
+	e.Renderer = httpUtils.NewTemplates(config.App.TemplatePath)
 
-	e.Static("/static", "./resources/public/assets")
+	e.Static("/static", config.App.StaticPath)
 
 	SetupMiddlewares(e)
-	handler.NewSetupHandlers(e, baseURL, container).Routes()
+	handler.NewSetupHandlers(e, config.App.BaseURL, container).Routes()
 
 	go func() {
 		e.HideBanner = true
-		address := fmt.Sprintf("%v:%v", host, port)
+		address := fmt.Sprintf("%v:%v", config.App.Host, config.App.Port)
 		if err := e.Start(address); err != nil {
 
 			// ErrServerClosed is expected behaviour when exiting app

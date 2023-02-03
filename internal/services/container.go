@@ -8,6 +8,9 @@ import (
 type ServiceContainer interface {
 	SquadServiceInterface
 	CollectionServiceInterface
+	EndpointServiceInterface
+	ScenarioServiceInterface
+	EndpointScenarioServiceInterface
 }
 
 func NewServiceContainer(repoContainer repository.RepoContainer,

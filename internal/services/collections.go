@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"gitlab.linkaja.com/be/ditto/internal/repository"
+	"strings"
 )
 
 type CollectionEntityReq struct {
@@ -14,25 +15,27 @@ type CollectionEntityReq struct {
 
 func (req CollectionEntityReq) translate() repository.CollectionEntity {
 	var ent repository.CollectionEntity
-	if req.Name != "" {
-		ent.Name = req.Name
+
+	if val := strings.TrimSpace(req.Name); val != "" {
+		ent.Name = val
 	}
-	if req.Docs != "" {
-		ent.Docs = req.Name
+	
+	if val := strings.TrimSpace(req.Docs); val != "" {
+		ent.Docs = val
 	}
-	if req.Desc != "" {
-		ent.Desc = req.Desc
+
+	if val := strings.TrimSpace(req.Desc); val != "" {
+		ent.Desc = val
 	}
-	if req.SquadID != "" {
-		ent.SquadID = req.SquadID
-	}
+
+	ent.SquadID = req.SquadID
 	return ent
 }
 
 type CollectionServiceInterface interface {
 	GetCollection(ctx context.Context, slug string) (repository.CollectionEntity, error)
-	CreateOrUpdateCollection(ctx context.Context, squadID string, req CollectionEntityReq) (repository.CollectionEntity, error)
-	DeleteCollection(ctx context.Context, squadID string) (repository.CollectionEntity, error)
+	CreateOrUpdateCollection(ctx context.Context, id string, req CollectionEntityReq) (repository.CollectionEntity, error)
+	DeleteCollection(ctx context.Context, id string) (repository.CollectionEntity, error)
 }
 
 func (cont serviceContainer) GetCollection(ctx context.Context, slug string) (repository.CollectionEntity, error) {
@@ -44,21 +47,21 @@ func (cont serviceContainer) GetCollection(ctx context.Context, slug string) (re
 	return resp, nil
 }
 
-func (cont serviceContainer) CreateOrUpdateCollection(ctx context.Context, squadID string, req CollectionEntityReq) (repository.CollectionEntity, error) {
-	resp, err := cont.repoContainer.CreateOrUpdateCollection(ctx, squadID, req.translate())
+func (cont serviceContainer) CreateOrUpdateCollection(ctx context.Context, id string, req CollectionEntityReq) (repository.CollectionEntity, error) {
+	resp, err := cont.repoContainer.CreateOrUpdateCollection(ctx, id, req.translate())
 	if err != nil {
 		return repository.CollectionEntity{}, err
 	}
 	return resp, nil
 }
 
-func (cont serviceContainer) DeleteCollection(ctx context.Context, squadID string) (repository.CollectionEntity, error) {
-	_, err := cont.repoContainer.GetCollection(ctx, squadID)
+func (cont serviceContainer) DeleteCollection(ctx context.Context, id string) (repository.CollectionEntity, error) {
+	_, err := cont.repoContainer.GetCollection(ctx, id)
 	if err != nil {
 		return repository.CollectionEntity{}, err
 	}
 
-	entity, err := cont.repoContainer.DeleteCollection(ctx, squadID)
+	entity, err := cont.repoContainer.DeleteCollection(ctx, id)
 	if err != nil {
 		return repository.CollectionEntity{}, err
 	}

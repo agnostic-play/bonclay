@@ -1,0 +1,23 @@
+version: "3.8"
+services:
+  ditto:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ditto
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "80:80"
+    networks:
+      - internal-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  internal-network:
+    driver: bridge
+
+
+volumes:
+  data:

@@ -7,6 +7,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const collections = "collections"
+
 type CollectionEntity struct {
 	BaseEntityWithID
 	Name    string `json:"name"`
@@ -16,7 +18,7 @@ type CollectionEntity struct {
 	Desc    string `json:"desc"`
 }
 
-type CollectionServiceInterface interface {
+type CollectionRepoInterface interface {
 	GetCollection(ctx context.Context, id string) (CollectionEntity, error)
 	GetCollectionBySlug(ctx context.Context, slug string) (CollectionEntity, error)
 	GetListCollection(ctx context.Context, squadID string) ([]CollectionEntity, error)
@@ -25,13 +27,13 @@ type CollectionServiceInterface interface {
 }
 
 func (cont repoContainerGorm) CreateOrUpdateCollection(ctx context.Context, collectionID string, entity CollectionEntity) (CollectionEntity, error) {
-	exec := cont.write(ctx).Table("collections")
+	exec := cont.write(ctx).Table(collections)
 
 	if collectionID == "" {
-		entity.Slug = cont.generateSlug("collections", entity.Name)
+		entity.Slug = cont.generateSlug(collections, entity.Name)
 		exec = exec.Create(&entity)
 	} else {
-		exec = exec.Omit("slug").Where("id=?", collectionID).Updates(&entity)
+		exec = exec.Omit("slug", "squad_id").Where("id=?", collectionID).Updates(&entity)
 	}
 
 	if exec.Error != nil {
@@ -49,11 +51,11 @@ func (cont repoContainerGorm) GetListCollection(ctx context.Context, squadID str
 
 	var entity []CollectionEntity
 
-	exec := cont.db.WithContext(ctx).Table("collections").Where("squad_id = ?", squadID).Find(&entity)
+	exec := cont.db.WithContext(ctx).Table(collections).Where("squad_id = ?", squadID).Find(&entity)
 
 	if exec.Error != nil {
 		if errors.Is(exec.Error, gorm.ErrRecordNotFound) {
-			return []CollectionEntity{}, fmt.Errorf("collections not found")
+			return []CollectionEntity{}, nil
 		}
 		return []CollectionEntity{}, fmt.Errorf("query error: %s", exec.Error)
 	}
@@ -65,7 +67,7 @@ func (cont repoContainerGorm) GetCollection(ctx context.Context, slug string) (C
 
 	var entity CollectionEntity
 
-	exec := cont.db.WithContext(ctx).Table("collections").Where("id=?", slug).First(&entity)
+	exec := cont.db.WithContext(ctx).Table(collections).Where("id=?", slug).First(&entity)
 	if exec.Error != nil {
 		if errors.Is(exec.Error, gorm.ErrRecordNotFound) {
 			return CollectionEntity{}, fmt.Errorf("collections not found")
@@ -80,7 +82,7 @@ func (cont repoContainerGorm) GetCollectionBySlug(ctx context.Context, slug stri
 
 	var entity CollectionEntity
 
-	exec := cont.db.WithContext(ctx).Table("collections").Where("slug=?", slug).First(&entity)
+	exec := cont.db.WithContext(ctx).Table(collections).Where("slug=?", slug).First(&entity)
 	if exec.Error != nil {
 		if errors.Is(exec.Error, gorm.ErrRecordNotFound) {
 			return CollectionEntity{}, fmt.Errorf("collections not found")
@@ -95,7 +97,7 @@ func (cont repoContainerGorm) DeleteCollection(ctx context.Context, squadID stri
 
 	var entity CollectionEntity
 
-	exec := cont.write(ctx).Table("collections").Where("id=?", squadID).Delete(entity)
+	exec := cont.write(ctx).Table(collections).Where("id=?", squadID).Delete(&entity)
 	if exec.Error != nil {
 		if errors.Is(exec.Error, gorm.ErrRecordNotFound) {
 			return CollectionEntity{}, fmt.Errorf("collections not found")

@@ -7,6 +7,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const squads = "squads"
+
 type SquadEntity struct {
 	BaseEntityWithID
 	Name        string             `json:"name"`
@@ -16,7 +18,7 @@ type SquadEntity struct {
 	Collections []CollectionEntity `json:"collections,omitempty" gorm:"-"`
 }
 
-type SquadServiceInterface interface {
+type SquadRepoInterface interface {
 	GetSquad(ctx context.Context, slug string) (SquadEntity, error)
 	GetSquadBySlug(ctx context.Context, slug string) (SquadEntity, error)
 	GetListSquad(ctx context.Context, filterName string) ([]SquadEntity, error)
@@ -26,9 +28,9 @@ type SquadServiceInterface interface {
 
 func (cont repoContainerGorm) CreateOrUpdateSquad(ctx context.Context, squadID string, entity SquadEntity) (SquadEntity, error) {
 
-	exec := cont.write(ctx).Table("squads")
+	exec := cont.write(ctx).Table(squads)
 	if squadID == "" {
-		entity.Slug = cont.generateSlug("squads", entity.Name)
+		entity.Slug = cont.generateSlug(squads, entity.Name)
 		exec = exec.Create(&entity)
 	} else {
 		exec = exec.Omit("slug").Where("id=?", squadID).Updates(&entity)
@@ -49,7 +51,7 @@ func (cont repoContainerGorm) GetListSquad(ctx context.Context, filterName strin
 
 	var entity []SquadEntity
 
-	exec := cont.db.WithContext(ctx).Table("squads")
+	exec := cont.db.WithContext(ctx).Table(squads)
 	if filterName != "" {
 		exec = exec.Where("name LIKE ?", "%"+filterName+"%")
 	}
@@ -57,7 +59,7 @@ func (cont repoContainerGorm) GetListSquad(ctx context.Context, filterName strin
 
 	if exec.Error != nil {
 		if errors.Is(exec.Error, gorm.ErrRecordNotFound) {
-			return []SquadEntity{}, fmt.Errorf("squad not found")
+			return []SquadEntity{}, nil
 		}
 		return []SquadEntity{}, fmt.Errorf("query error: %s", exec.Error)
 	}
@@ -69,7 +71,7 @@ func (cont repoContainerGorm) GetSquad(ctx context.Context, slug string) (SquadE
 
 	var entity SquadEntity
 
-	exec := cont.db.WithContext(ctx).Table("squads").Omit("passwords").Where("id=?", slug).First(&entity)
+	exec := cont.db.WithContext(ctx).Table(squads).Omit("passwords").Where("id=?", slug).First(&entity)
 	if exec.Error != nil {
 		if errors.Is(exec.Error, gorm.ErrRecordNotFound) {
 			return SquadEntity{}, fmt.Errorf("squad not found")
@@ -84,7 +86,7 @@ func (cont repoContainerGorm) GetSquadBySlug(ctx context.Context, slug string) (
 
 	var entity SquadEntity
 
-	exec := cont.db.WithContext(ctx).Table("squads").Omit("passwords").Where("slug=?", slug).First(&entity)
+	exec := cont.db.WithContext(ctx).Table(squads).Omit("passwords").Where("slug=?", slug).First(&entity)
 	if exec.Error != nil {
 		if errors.Is(exec.Error, gorm.ErrRecordNotFound) {
 			return SquadEntity{}, fmt.Errorf("squad not found")
@@ -99,7 +101,7 @@ func (cont repoContainerGorm) DeleteSquad(ctx context.Context, squadID string) (
 
 	var entity SquadEntity
 
-	exec := cont.write(ctx).Table("squads").Where("id=?", squadID).Delete(&entity)
+	exec := cont.write(ctx).Table(squads).Where("id=?", squadID).Delete(&entity)
 	if exec.Error != nil {
 		if errors.Is(exec.Error, gorm.ErrRecordNotFound) {
 			return SquadEntity{}, fmt.Errorf("squad not found")

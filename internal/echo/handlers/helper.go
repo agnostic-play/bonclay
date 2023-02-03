@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/labstack/echo/v4"
+	"gitlab.linkaja.com/be/ditto/internal/errs"
 	"net/http"
 	"strings"
 )
@@ -28,9 +29,17 @@ func (h handlers) json(ctx echo.Context, status int, data interface{}) error {
 
 func (h handlers) errorJson(ctx echo.Context, status int, err error) error {
 	msg := err.Error()
-	
+
 	if strings.Contains(err.Error(), "not found") {
+		msg = "data not found"
 		status = http.StatusNotFound
+
+	}
+
+	if getError, ok := err.(errs.CustomError); ok {
+		status = getError.HttpCode
+		msg = getError.Error()
+		err = nil
 	}
 
 	return ctx.JSON(status, map[string]interface{}{

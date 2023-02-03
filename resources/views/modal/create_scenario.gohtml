@@ -1,0 +1,246 @@
+{{ define "modal_create_scenario"}}
+
+    <div class="modal modal-xl fade" id="createScenario" tabindex="-1" aria-labelledby="createScenarioLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="createScenarioLabel"><b>Create New Collections</b></h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="container">
+                        <form id="createScenarioForm">
+                            <div class="card border-secondary mb-3" >
+                                <div class="card-header bg-secondary text-bg-secondary">Method & Request Path </div>
+                                <div class="card-body row">
+                                    <div class="mb-3 col-3 pl-2">
+                                        <label  class="col-12 col-form-label">Method</label>
+                                        <div class="col-12">
+                                            <select id="showEndpointInptMethod" class="form-control" disabled>
+                                                <option value="GET">GET</option>
+                                                <option value="POST">POST</option>
+                                                <option value="PUT">PUT</option>
+                                                <option value="PATCH">PATCH</option>
+                                                <option value="DELETE">DELETE</option>
+                                                <option value="OPTIONS">OPTIONS</option>
+                                                <option value="TRACER">TRACER</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3 col-9 pl-2">
+                                        <label  class="col-12 col-form-label">URL Path</label>
+                                        <div class="col-12">
+                                            <input type="text" class="form-control " id="showEndpointInptPath" value="/" disabled>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card border-secondary mb-3" >
+                                <div class="card-header bg-secondary text-bg-secondary">Additional Information Scenario</div>
+                                <div class="card-body ">
+                                    <div class="mb-3  pl-2">
+                                        <label  class="col-12 col-form-label"><b>Descriptions</b></label>
+                                        <div class="col-12">
+                                            <input type="text" class="form-control " id="createScenarioInptDesc" value="">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card border-secondary mb-3" >
+                                <div class="card-header bg-secondary text-bg-secondary">Response</div>
+                                <div class="card-body ">
+                                    <div class="mb-3 row pl-2">
+                                        <div class="col-6">
+                                            <label  class="col-12 col-form-label">
+                                                <b>Header</b>
+                                                <btn class="btn float-end badge bg-info text-white " onclick="beautifyJSON('createScenarioInptHeader')">Beautify</btn>
+                                            </label>
+                                            <div class="col-12">
+                                                <textarea id="createScenarioInptHeader"  rows="8" autocorrect="off" autocapitalize="off" spellcheck="true" class="form-control" data-gtm-form-interact-field-id="0"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="row">
+                                                <label  class="col-12 col-form-label"><b>Delay</b></label>
+                                                <div class="col-12">
+                                                    <div class="input-group">
+                                                        <input type="number" class="form-control " id="createScenarioInptDelay" value="0">
+                                                        <div class="input-group-text">detik</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <label  class="col-12 col-form-label"><b>Status Code</b></label>
+                                                <div class="col-12">
+                                                    <input type="number" class="form-control " id="createScenarioInptStatusHeader" value="200">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                    <div class="mb-3 row pl-2">
+
+                                        <div class="col-12">
+                                            <label  class="col-12 col-form-label">
+                                                <b>Body</b>
+                                                <btn class="btn float-end badge bg-info text-white " onclick="beautifyJSON('createScenarioInptBody')">Beautify</btn>
+                                            </label>
+                                            <div class="col-12">
+                                                <textarea id="createScenarioInptBody"  rows="8" autocorrect="off" autocapitalize="off" spellcheck="true" class="form-control" data-gtm-form-interact-field-id="0"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <input type="hidden" id="createScenarioInptEndpointID">
+                            <input type="submit" class="btn btn-primary float-end" value="create">
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+<script>
+
+    var showCreateScenarioModal = document.getElementsByClassName("showCreateScenarioModal");
+
+    for (var i = 0; i < showUpdateEndpointModal.length; i++) {
+        showCreateScenarioModal[i].addEventListener('click', function(){
+            const options= document.getElementById('showEndpointInptMethod').options;
+            for (var i= 0, n= options.length; i < n ; i++) {
+                if (options[i].value==this.getAttribute("data-method")) {
+                    document.getElementById("showEndpointInptMethod").selectedIndex = i;
+                    break;
+                }
+            }
+            document.getElementById("showEndpointInptPath").value = this.getAttribute("data-path");
+            document.getElementById("createScenarioInptEndpointID").value = this.getAttribute("data-endpointID");
+        }, false);
+    }
+</script>
+
+<script>
+    document.onreadystatechange = function () {
+      if (document.readyState === "interactive") {
+           defaultHeader = {
+              "Content-Type": "application/json"
+           }
+           document.getElementById("createScenarioInptHeader").value = JSON.stringify(defaultHeader, null, "\t");
+      }
+    };
+
+    const createScenarioForm = document.getElementById("createScenarioForm");
+
+    createScenarioForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        try{
+            let data = {
+                status_header: parseInt(document.getElementById("createScenarioInptStatusHeader").value),
+                delay: parseInt(document.getElementById("createScenarioInptDelay").value),
+                desc: document.getElementById("createScenarioInptDesc").value,
+                endpoint_id: document.getElementById("createScenarioInptEndpointID").value,
+            };
+
+            let header = document.getElementById("createScenarioInptHeader").value.trim();
+            let body = document.getElementById("createScenarioInptBody").value.trim();
+            if (header != ""){
+                data.header = JSON.stringify(JSON.parse(header))
+            }
+
+            if (body != ""){
+                try{
+                    data.body = JSON.stringify(JSON.parse(body))
+                }catch(err){
+                    data.body=body
+                }
+            }
+            actCreateScenario(data);
+        }catch(err){
+            handlingError(000,err);
+            console.log(err)
+        }
+
+
+    });
+
+    function actCreateScenario(data) {
+        const baseURL = {{html .BaseURL}}+"/api/scenario/create";
+        fetch(baseURL, {
+                method: "POST",
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8",
+                },
+            })
+            .then((response) => {
+                return response.json();
+            })
+            .then((json) => {
+                if (json.status != 200){
+                    handlingError(json.status,json);
+                    return
+                }
+                return location.href = {{.BaseURL}}+"/squad/"+{{.Data.squad.Slug}}+"/collection/"+{{ .Data.collection.Slug }};
+            })
+            .catch((error) => {
+               console.log(error)
+            })
+    }
+</script>
+
+
+<script>
+
+    var activeScenarioRadio = document.getElementsByClassName("activeScenarioRadio");
+    for (var i = 0; i < activeScenarioRadio.length; i++) {
+        activeScenarioRadio[i].addEventListener('click', function(){
+
+            const endpointMethod = this.getAttribute("data-endpointMethod");
+            const endpointPath = this.getAttribute("data-endpointPath");
+            const scenarioDesc = this.getAttribute("data-desc");
+            const endpointID = this.getAttribute("data-endpointID");
+            const scenarioID = this.getAttribute("data-scenarioID");
+
+            const text = `apakah anda yakin akan merubah scenario endpoint ${endpointMethod} ${endpointPath} menjadi scenario ${scenarioDesc}  ?`;
+            if (confirm(text) == true) {
+                   let data = {
+                        endpoint_id: endpointID,
+                        scenario_id: scenarioID,
+                    };
+                    actSetActiveScenario(data);
+            }
+        }, false);
+    }
+
+    function actSetActiveScenario(data) {
+        const baseURL = {{html .BaseURL}}+"/api/set/active_scenario";
+        fetch(baseURL, {
+                method: "POST",
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8",
+                },
+            })
+            .then((response) => {
+                return response.json();
+            })
+            .then((json) => {
+                if (json.status != 200){
+                    handlingError(json.status,json);
+                    return
+                }
+                return location.href = {{.BaseURL}}+"/squad/"+{{.Data.squad.Slug}}+"/collection/"+{{ .Data.collection.Slug }};
+            })
+            .catch((error) => {
+               console.log(error)
+            })
+    }
+
+</script>
+{{ end }}

@@ -9,8 +9,11 @@ import (
 )
 
 type RepoContainer interface {
-	SquadServiceInterface
-	CollectionServiceInterface
+	SquadRepoInterface
+	CollectionRepoInterface
+	EndpointRepoInterface
+	ScenarioRepoInterface
+	EndpointScenarioRepoInterface
 	Begin()
 	Rollback() error
 	Commit() error

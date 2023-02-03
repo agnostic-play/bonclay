@@ -8,12 +8,14 @@ import (
 
 type Config struct {
 	App struct {
-		Name       string
-		Version    string
-		Host       string
-		Port       string
-		CtxTimeout time.Duration
-		BaseURL    string
+		Name         string
+		Version      string
+		Host         string
+		Port         string
+		CtxTimeout   time.Duration
+		BaseURL      string
+		TemplatePath []string
+		StaticPath   string
 	}
 	Database Database
 }

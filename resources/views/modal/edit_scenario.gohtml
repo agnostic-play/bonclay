@@ -1,0 +1,233 @@
+{{ define "modal_update_scenario" }}
+    <div class="modal modal-xl fade" id="updateScenario" tabindex="-1" aria-labelledby="updateScenarioLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="updateScenarioLabel"><b>Rubah Data Scenario</b></h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="container">
+                        <form id="updateScenarioForm">
+                            <div class="card border-secondary mb-3" >
+                                <div class="card-header bg-secondary text-bg-secondary">Method & Request Path </div>
+                                <div class="card-body row">
+                                    <div class="mb-3 col-3 pl-2">
+                                        <label  class="col-12 col-form-label">Method</label>
+                                        <div class="col-12">
+                                            <select id="showUpdateEndpointInptMethod" class="form-control" disabled>
+                                                <option value="GET">GET</option>
+                                                <option value="POST">POST</option>
+                                                <option value="PUT">PUT</option>
+                                                <option value="PATCH">PATCH</option>
+                                                <option value="DELETE">DELETE</option>
+                                                <option value="OPTIONS">OPTIONS</option>
+                                                <option value="TRACER">TRACER</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3 col-9 pl-2">
+                                        <label  class="col-12 col-form-label">URL Path</label>
+                                        <div class="col-12">
+                                            <input type="text" class="form-control " id="showUpdateEndpointInptPath" value="/" disabled>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card border-secondary mb-3" >
+                                <div class="card-header bg-secondary text-bg-secondary">Additional Information Scenario</div>
+                                <div class="card-body ">
+                                    <div class="mb-3  pl-2">
+                                        <label  class="col-12 col-form-label"><b>Descriptions</b></label>
+                                        <div class="col-12">
+                                            <input type="text" class="form-control " id="updateScenarioInptDesc" value="">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card border-secondary mb-3" >
+                                <div class="card-header bg-secondary text-bg-secondary">Response</div>
+                                <div class="card-body ">
+                                    <div class="mb-3 row pl-2">
+                                        <div class="col-6">
+                                            <label  class="col-12 col-form-label">
+                                                <b>Header</b>
+                                                <btn class="btn float-end badge bg-info text-white " onclick="beautifyJSON('updateScenarioInptHeader')">Beautify</btn>
+                                            </label>
+                                            <div class="col-12">
+                                                <textarea id="updateScenarioInptHeader"  rows="8" autocorrect="off" autocapitalize="off" spellcheck="true" class="form-control" data-gtm-form-interact-field-id="0"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="row">
+                                                <label  class="col-12 col-form-label"><b>Delay</b></label>
+                                                <div class="col-12">
+                                                    <div class="input-group">
+                                                        <input type="number" class="form-control " id="updateScenarioInptDelay" value="0">
+                                                        <div class="input-group-text">detik</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <label  class="col-12 col-form-label"><b>Status Code</b></label>
+                                                <div class="col-12">
+                                                    <input type="number" class="form-control " id="updateScenarioInptStatusHeader" value="200">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                    <div class="mb-3 row pl-2">
+
+                                        <div class="col-12">
+                                            <label  class="col-12 col-form-label">
+                                                <b>Body</b>
+                                                <btn class="btn float-end badge bg-info text-white " onclick="beautifyJSON('updateScenarioInptBody')">Beautify</btn>
+                                            </label>
+                                            <div class="col-12">
+                                                <textarea id="updateScenarioInptBody"  rows="8" autocorrect="off" autocapitalize="off" spellcheck="true" class="form-control" data-gtm-form-interact-field-id="0"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <input type="hidden" id="updateScenarioInptEndpointID">
+                            <input type="hidden" id="showEndpointInptPath">
+                            <input type="hidden" id="showEndpointInptMethod">
+                            <input type="submit" class="btn btn-warning float-end" value="update">
+                        </form>
+
+                        <input type="hidden" id="updateScenarioInptScenarioID">
+                        <button type="button" class="btn btn-secondary mx-2 float-end"
+                                data-bs-dismiss="modal">Close</button>
+                        <button class="btn btn-danger float-start" value="delete" onclick="actDeleteScenario()">Delete</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+<script>
+
+    var showUpdateModal = document.getElementsByClassName("showUpdateModal");
+    console.log();
+    for (var i = 0; i < showUpdateModal.length; i++) {
+        showUpdateModal[i].addEventListener('click', function(){
+            const options= document.getElementById('showUpdateEndpointInptMethod').options;
+            for (var i= 0, n= options.length; i < n ; i++) {
+                if (options[i].value==this.getAttribute("data-endpoint-method")) {
+                    document.getElementById("showUpdateEndpointInptMethod").selectedIndex = i;
+                    break;
+                }
+            }
+            document.getElementById("showEndpointInptPath").value = this.getAttribute("data-endpoint-path");
+            document.getElementById("updateScenarioInptEndpointID").value = this.getAttribute("data-endpoint-id");
+            document.getElementById("updateScenarioInptStatusHeader").value = parseInt(this.getAttribute("data-statusHeader"));
+            document.getElementById("updateScenarioInptDelay").value = parseInt(this.getAttribute("data-delay"));
+            document.getElementById("updateScenarioInptDesc").value = this.getAttribute("data-desc");
+            document.getElementById("updateScenarioInptScenarioID").value = this.getAttribute("data-scenario-id");
+
+            document.getElementById("updateScenarioInptHeader").value = JSON.stringify(JSON.parse(this.getAttribute("data-header")), null, "\t");
+            let body = this.getAttribute("data-body");
+            try{
+                body = JSON.stringify(JSON.parse(body), null, "\t");
+            }catch(err){
+                body=body
+            }
+            document.getElementById("updateScenarioInptBody").value = body
+
+        }, false);
+    }
+</script>
+<script>
+    const updateScenarioForm = document.getElementById("updateScenarioForm");
+    updateScenarioForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        try{
+            let data = {
+                status_header: parseInt(document.getElementById("updateScenarioInptStatusHeader").value),
+                delay: parseInt(document.getElementById("updateScenarioInptDelay").value),
+                desc: document.getElementById("updateScenarioInptDesc").value,
+                endpoint_id: document.getElementById("updateScenarioInptEndpointID").value,
+            };
+
+            let header = document.getElementById("updateScenarioInptHeader").value.trim();
+            let body = document.getElementById("updateScenarioInptBody").value.trim();
+            if (header != ""){
+                data.header = JSON.stringify(JSON.parse(header))
+            }
+
+            if (body != ""){
+                try{
+                    data.body = JSON.stringify(JSON.parse(body))
+                }catch(err){
+                    data.body=body
+                }
+            }
+            actUpdateScenario(data);
+        }catch(err){
+            handlingError(000,err);
+            console.log(err)
+        }
+    });
+
+
+    function actUpdateScenario(data) {
+        const baseURL = {{html .BaseURL}}+"/api/scenario/update/"+document.getElementById("updateScenarioInptScenarioID").value;
+        fetch(baseURL, {
+                method: "PUT",
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8",
+                },
+            })
+            .then((response) => {
+                return response.json();
+            })
+            .then((json) => {
+                if (json.status != 200){
+                    handlingError(json.status,json);
+                    return
+                }
+                return location.href = {{.BaseURL}}+"/squad/"+{{.Data.squad.Slug}}+"/collection/"+{{ .Data.collection.Slug }};
+            })
+            .catch((error) => {
+               console.log(error)
+            })
+      }
+</script>
+
+<script>
+     function actDeleteScenario() {
+        const baseURL = {{html .BaseURL}}+"/api/scenario/delete/"+document.getElementById("updateScenarioInptScenarioID").value;
+        const text = "apakah anda yakin akan menghapus scenario dari scenario "+document.getElementById("updateScenarioInptDesc").value+" dari endpoint "+document.getElementById("showEndpointInptMethod").value+" "+document.getElementById("showEndpointInptPath").value+" ?";
+        if (confirm(text) == true) {
+            fetch(baseURL, {
+                method: "DELETE",
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8",
+                },
+            })
+            .then((response) => {
+                return response.json();
+            })
+            .then((json) => {
+                if (json.status != 200){
+                    handlingError(json.status,json);
+                    return
+                }
+                return location.reload()
+            })
+            .catch((error) => {
+                console.log(error)
+            })
+        }
+    }
+</script>
+
+
+{{ end }}

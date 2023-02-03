@@ -4,12 +4,16 @@ app:
   port: 80
   version: 1
   ctxTimeout: 30s
+  baseURL: http://localhost:80
+  templatePath: ["./resources/views/layout/*.gohtml","./resources/views/modal/*.gohtml","./resources/views/pages/*.gohtml"]
+  staticPath: "./resources/public/assets"
 database:
-  host: db_host
-  user: db_user
-  pass: db_pass
+  host: localhost
   port: 3306
-  databaseName: db_name
+  user: root
+  pass: root
+  databaseName: ditto
+  charset: utf8mb4
   debugLog: true
   pool:
     maxConnLifetime: 1m

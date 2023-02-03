@@ -1,0 +1,155 @@
+{{ define "modal_edit_endpoint"}}
+
+    <div class="modal modal-lg fade" id="updateEndpoint" tabindex="-1" aria-labelledby="updateEndpointLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="updateEndpoint
+                   Label">Rubah Data Endpoint</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="container">
+                        <form id="updateEndpointForm">
+                            <div class="card border-secondary mb-3" >
+                                <div class="card-header bg-secondary text-bg-secondary">Method & Request Path </div>
+                                <div class="card-body row">
+                                    <div class="mb-3 col-3 pl-2">
+                                        <label  class="col-12 col-form-label">Method</label>
+                                        <div class="col-12">
+                                            <select id="updateEndpointInptMethod" class="form-control">
+                                                <option value="GET">GET</option>
+                                                <option value="POST">POST</option>
+                                                <option value="PUT">PUT</option>
+                                                <option value="PATCH">PATCH</option>
+                                                <option value="DELETE">DELETE</option>
+                                                <option value="OPTIONS">OPTIONS</option>
+                                                <option value="TRACER">TRACER</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3 col-9 pl-2">
+                                        <label  class="col-12 col-form-label">URL Path</label>
+                                        <div class="col-12">
+                                            <input type="text" class="form-control " id="updateEndpointInptPath" value="/">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card border-secondary mb-3" >
+                                <div class="card-header bg-secondary text-bg-secondary">Additional Information Endpoint</div>
+                                <div class="card-body row">
+                                    <div class="mb-3 row pl-2">
+                                        <label  class="col-2 col-form-label">Category</label>
+                                        <div class="col-12">
+                                            <input type="text" class="form-control" id="updateEndpointInptCategory" placeholder="Category">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3 row pl-2">
+                                        <label  class="col-12 col-form-label">Descriptions</label>
+                                        <div class="col-12">
+                                            <input type="text" class="form-control" id="updateEndpointInptDesc" placeholder="Descriptions">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <input type="hidden" id="updateEndpointInptEndpointID">
+                            <input type="submit" class="btn btn-warning float-end" value="update">
+                        </form>
+                        <button type="button" class="btn btn-secondary mx-2 float-end"
+                                data-bs-dismiss="modal">Close</button>
+                        <button class="btn btn-danger float-start" value="delete" onclick="actDeleteEndpoint()">Delete</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <script>
+        var showUpdateEndpointModal = document.getElementsByClassName("showUpdateEndpointModal");
+
+        for (var i = 0; i < showUpdateEndpointModal.length; i++) {
+            showUpdateEndpointModal[i].addEventListener('click', function(){
+                const options= document.getElementById('updateEndpointInptMethod').options;
+                for (var i= 0, n= options.length; i < n ; i++) {
+                    if (options[i].value==this.getAttribute("data-method")) {
+                        document.getElementById("updateEndpointInptMethod").selectedIndex = i;
+                        break;
+                    }
+                }
+
+                document.getElementById("updateEndpointInptPath").value = this.getAttribute("data-path");
+                document.getElementById("updateEndpointInptCategory").value = this.getAttribute("data-category");
+                document.getElementById("updateEndpointInptDesc").value = this.getAttribute("data-description");
+                document.getElementById("updateEndpointInptEndpointID").value = this.getAttribute("data-id");
+            }, false);
+        }
+    </script>
+<script>
+    const updateEndpointForm = document.getElementById("updateEndpointForm");
+    updateEndpointForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        let data = {
+            method: document.getElementById("updateEndpointInptMethod").value,
+            path: document.getElementById("updateEndpointInptPath").value,
+            desc: document.getElementById("updateEndpointInptDesc").value,
+            collection_id: {{ .Data.collection.ID }},
+            category: document.getElementById("updateEndpointInptCategory").value,
+        };
+
+        actUpdateEndpoint(data);
+    });
+
+
+    function actUpdateEndpoint(data) {
+        const baseURL = {{html .BaseURL}}+"/api/endpoint/update/"+document.getElementById("updateEndpointInptEndpointID").value;
+        fetch(baseURL, {
+                method: "PUT",
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8",
+                },
+            })
+            .then((response) => {
+                return response.json();
+            })
+            .then((json) => {
+                if (json.status != 200){
+                    handlingError(json.status,json);
+                    return
+                }
+                return location.href = {{.BaseURL}}+"/squad/"+{{.Data.squad.Slug}}+"/collection/"+{{ .Data.collection.Slug }};
+            })
+            .catch((error) => {
+               console.log(error)
+            })
+      }
+
+      function actDeleteEndpoint() {
+            const baseURL = {{html .BaseURL}}+"/api/endpoint/delete/"+document.getElementById("updateEndpointInptEndpointID").value;
+            const text = "apakah anda yakin akan menghapus endpoint "+document.getElementById("updateEndpointInptDesc").value+" ?";
+            if (confirm(text) == true) {
+                fetch(baseURL, {
+                    method: "DELETE",
+                    headers: {
+                        "Content-type": "application/json; charset=UTF-8",
+                    },
+                })
+                .then((response) => {
+                    return response.json();
+                })
+                .then((json) => {
+                    if (json.status != 200){
+                        handlingError(json.status,json);
+                        return
+                    }
+                    return location.reload()
+                })
+                .catch((error) => {
+                    console.log(error)
+                })
+            }
+        }
+</script>
+{{ end }}

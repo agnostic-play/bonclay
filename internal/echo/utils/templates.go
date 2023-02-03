@@ -1,33 +1,37 @@
 package httpUtils
 
 import (
-	"embed"
 	"github.com/labstack/echo/v4"
 	"html/template"
 	"io"
+	"strings"
 )
-
-var tmpl embed.FS
 
 type TemplateRenderer struct {
 	templates *template.Template
 }
 
-func NewTemplates(path string) *TemplateRenderer {
+func NewTemplates(path []string) *TemplateRenderer {
+	tmpl := template.New("").Funcs(template.FuncMap{
+		"trims": strings.TrimSpace,
+	})
+	for index, val := range path {
+		if index == 0 {
+			tmpl = template.Must(template.ParseGlob(val))
+		}
+		tmpl = template.Must(tmpl.ParseGlob(val))
+	}
 
 	return &TemplateRenderer{
-		templates: template.Must(template.ParseGlob("/resources/views/*.gohtml")),
-		//templates: template.Must(template.ParseFS(tmpl, "./resources/views/*.gohtml")),
+		templates: tmpl,
 	}
 }
 
-// Render renders a template document
 func (t *TemplateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
-	//
-	//	// Add global methods if data is a map
+	//	Add global methods if data is a map
 	if viewContext, isMap := data.(map[string]interface{}); isMap {
 		viewContext["reverse"] = c.Echo().Reverse
 	}
-	//
+
 	return t.templates.ExecuteTemplate(w, name, data)
 }

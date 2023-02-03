@@ -32,6 +32,8 @@ func (cv *CustomValidator) Validate(i interface{}) (errs error) {
 		}
 		return name
 	})
+	
+	cv.registerCustomValidation()
 
 	if err := cv.Validator.Struct(i); err != nil {
 		tmpErrsType := map[string]string{}

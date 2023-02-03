@@ -1,0 +1,110 @@
+*{
+    font-family:  Sans-serif !important;
+}
+#endpointTable{
+    vertical-align:middle;font-size: 0.9em;border-spacing: 30px;
+}
+
+.text-monospace{
+    font-family:  Monospace !important;
+}
+
+h1,h2,h3,h4,h5,h6,.card-title{
+    text-transform: capitalize;
+}
+.hiddenRow {
+    padding: 0 !important;
+}
+
+input[type=submit]{
+    text-transform: capitalize;
+    font-weight: bold;
+}
+
+.card-squads {
+    /*transition: 500ms;*/
+    -webkit-transition: all .5s ease;
+    -moz-transition: all .5s ease;
+    transition: all .5s ease;
+    height: 75px;
+    padding: 5px 0;
+}
+
+.card-squads-wrapper {
+    text-decoration: none;
+    color: #1a1e21;
+}
+
+.card-squads:hover {
+    border: 0.15em solid #1a1e21 !important;
+    padding-left: 5px;
+}
+
+.search {
+    -webkit-transition: all .5s ease;
+    -moz-transition: all .5s ease;
+    transition: all .5s ease;
+    width: 100%;
+}
+.customLink {
+    text-decoration: none;
+    color: #1a1e21;
+}
+body {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+}
+
+html {
+    height: -webkit-fill-available;
+}
+
+main {
+    height: 100vh;
+    height: -webkit-fill-available;
+    max-height: 100vh;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+
+.btn-method-default{
+    background:rgb(52,58,63);
+}
+.bg-method-default{
+    background: #ACB5BD;
+}
+.btn-method-get{
+    background: #62AFFE;
+}
+.bg-method-get{
+    background: rgb(236,243,251);
+}
+
+.btn-method-post{
+    background: #49CC90;
+}
+.bg-method-post{
+    background: rgb(233,246,239);
+}
+.btn-method-put{
+    background: #FCA12F;
+}
+.bg-method-put{
+    background: rgb(250,242,232);
+}
+.btn-method-patch{
+    background: #50E3C1;
+}
+.bg-method-patch{
+    background: rgb(239,252,249);
+}
+.btn-method-delete{
+    background: #FA3E3D;
+}
+.bg-method-delete{
+    background: rgb(251,232,231);
+}
+.col-form-label{
+    font-weight: bold !important;
+}
