@@ -16,7 +16,7 @@ type ScenarioEntity struct {
 	Header       string `json:"header" gorm:"column:header"`
 	Body         string `json:"body" gorm:"column:body"`
 	StatusHeader int    `json:"status_header" gorm:"column:status_header"`
-	Delay        int    `json:"delay" gorm:"column:delay"`
+	Delay        *int   `json:"delay" gorm:"column:delay"`
 }
 
 func (ScenarioEntity) TableName() string {

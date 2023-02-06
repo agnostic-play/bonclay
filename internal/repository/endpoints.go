@@ -25,6 +25,7 @@ func (EndpointEntity) TableName() string {
 
 type EndpointRepoInterface interface {
 	GetEndpoint(ctx context.Context, id string) (EndpointEntity, error)
+	GetEndpointMock(ctx context.Context, collectionID, method, path string) (EndpointEntity, error)
 	CreateOrUpdateEndpoint(ctx context.Context, squadID string, entity EndpointEntity) (EndpointEntity, error)
 	DeleteEndpoint(ctx context.Context, squadID string) error
 }
@@ -49,11 +50,14 @@ func (cont repoContainerGorm) CreateOrUpdateEndpoint(ctx context.Context, endpoi
 	return entity, nil
 }
 
-func (cont repoContainerGorm) GetEndpoint(ctx context.Context, slug string) (EndpointEntity, error) {
+func (cont repoContainerGorm) GetEndpointMock(ctx context.Context, collectionID, method, path string) (EndpointEntity, error) {
 
 	var entity EndpointEntity
 
-	exec := cont.db.WithContext(ctx).Table(endpoints).Where("id=?", slug).First(&entity)
+	exec := cont.db.WithContext(ctx).Table(endpoints).
+		Where("collection_id=?", collectionID).
+		Where("method=? AND path=?", method, path).
+		First(&entity)
 	if exec.Error != nil {
 		if errors.Is(exec.Error, gorm.ErrRecordNotFound) {
 			return EndpointEntity{}, fmt.Errorf("collections not found")
@@ -64,11 +68,11 @@ func (cont repoContainerGorm) GetEndpoint(ctx context.Context, slug string) (End
 	return entity, nil
 }
 
-func (cont repoContainerGorm) GetEndpointBySlug(ctx context.Context, slug string) (EndpointEntity, error) {
+func (cont repoContainerGorm) GetEndpoint(ctx context.Context, slug string) (EndpointEntity, error) {
 
 	var entity EndpointEntity
 
-	exec := cont.db.WithContext(ctx).Table(endpoints).Where("slug=?", slug).First(&entity)
+	exec := cont.db.WithContext(ctx).Table(endpoints).Where("id=?", slug).First(&entity)
 	if exec.Error != nil {
 		if errors.Is(exec.Error, gorm.ErrRecordNotFound) {
 			return EndpointEntity{}, fmt.Errorf("collections not found")

@@ -12,13 +12,13 @@ type ScenarioEntityReq struct {
 	Header       string `json:"header" validate:"required,customJSON"`
 	Body         string `json:"body" validate:""`
 	StatusHeader int    `json:"status_header" validate:"required,numeric"`
-	Delay        *int   `json:"delay" validate:"required,numeric"`
+	Delay        *int   `json:"delay" validate:"required"`
 }
 
 func (req ScenarioEntityReq) translate() repository.ScenarioEntity {
 	var ent repository.ScenarioEntity
 
-	ent.Delay = *req.Delay
+	ent.Delay = req.Delay
 	ent.Header = req.Header
 	ent.Body = req.Body
 	ent.StatusHeader = req.StatusHeader

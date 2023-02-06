@@ -2,9 +2,11 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/labstack/echo/v4"
 	"gitlab.linkaja.com/be/ditto/internal/services"
 	"net/http"
+	"time"
 )
 
 func (h handlers) routesApi() {
@@ -28,6 +30,43 @@ func (h handlers) routesApi() {
 	h.server.DELETE("/api/scenario/delete/:id", h.actDeleteScenario)
 
 	h.server.POST("/api/set/active_scenario", h.actSetActiveScenario)
+
+	h.server.Any("/mock/:collection/:path", h.actMock)
+
+}
+
+func (h handlers) actMock(ctx echo.Context) error {
+	method := ctx.Request().Method
+	path := ctx.Param("path")
+	collectionSlug := ctx.Param("collection")
+
+	scenario, err := h.serviceContainer.MockApi(context.Background(), collectionSlug, method, path)
+	if err != nil {
+		return ctx.String(404, err.Error())
+	}
+
+	var header map[string]string
+
+	err = json.Unmarshal([]byte(scenario.Header), &header)
+	if err != nil {
+		return ctx.String(500, err.Error())
+	}
+
+	for index, val := range header {
+		ctx.Response().Header().Set(index, val)
+	}
+
+	ctx.Response().WriteHeader(scenario.StatusHeader)
+
+	if scenario.Delay != nil && *scenario.Delay > 0 {
+		time.Sleep(time.Duration(*scenario.Delay) * time.Second)
+	}
+
+	_, err = ctx.Response().Write([]byte(scenario.Body))
+	if err != nil {
+		return ctx.String(500, err.Error())
+	}
+	return nil
 
 }
 
