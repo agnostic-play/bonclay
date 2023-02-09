@@ -49,6 +49,10 @@ func LoadConfigFile(path string) *Config {
 		log.Fatalf("failed parsing config, %v", err)
 	}
 
+	
+	jsonConfig, _ := json.Marshal(config)
+
+	log.Printf("config: %s", string(jsonConfig))
 	log.Printf("config loaded")
 
 	return config
