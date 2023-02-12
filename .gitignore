@@ -1,8 +1,7 @@
-./vendor/*
 ./.idea
 .idea
 .idea/
 .vscode
-./vendor
+vendor/
 
 /config.yaml

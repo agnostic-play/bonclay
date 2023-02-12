@@ -1,5 +1,17 @@
 version: "3.8"
 services:
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: root@321
+      MYSQL_USER: user
+      MYSQL_PASSWORD: root@321
+    ports:
+      - "3306:3306"
+    networks:
+      - backend
+
   ditto:
     build:
       context: .
@@ -8,15 +20,13 @@ services:
     restart: unless-stopped
     tty: true
     ports:
-      - "80:80"
+      - "8000:80"
     networks:
-      - internal-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - backend
 
 networks:
-  internal-network:
-    driver: bridge
+  backend:
+    external: true
 
 
 volumes:
