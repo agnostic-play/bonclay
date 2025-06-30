@@ -9,7 +9,7 @@
 
 FROM honolulu.allobank.local/allodevops/golang:1.23.9-alpine3.20
 
-ENV GOPROXY=http://california.allobank.local:8081/repository/golang-hosted
+ENV GOPROXY=http://california.allobank.local:8081/repository/golang-proxy
 
 ADD . /app/ditto
 WORKDIR /app/ditto
