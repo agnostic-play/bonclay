@@ -1,7 +1,7 @@
 version: "3.8"
 services:
   mysql:
-    image: mysql:8
+    image: honolulu.allobank.local/allodevops/mariadb:10.11-fixed
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: root@321
@@ -10,7 +10,7 @@ services:
     ports:
       - "3306:3306"
     networks:
-      - backend
+      - alexandrianet
 
   ditto:
     build:
@@ -22,10 +22,10 @@ services:
     ports:
       - "8000:80"
     networks:
-      - backend
+      - alexandrianet
 
 networks:
-  backend:
+  alexandrianet:
     external: true
 
 
