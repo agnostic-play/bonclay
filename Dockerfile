@@ -1,11 +1,13 @@
-FROM golang:1.19.3-alpine3.16 as builder
+#FROM golang:1.19.3-alpine3.16 as builder
 
-RUN apk update && \
-    apk upgrade && \
-    apk add --no-cache bash git openssh && \
-    apk add --no-cache git ca-certificates tzdata && \
-    cp /usr/share/zoneinfo/Asia/Jakarta /etc/localtime && \
-    echo "Asia/Jakarta" > /etc/timezone
+#RUN apk update && \
+#    apk upgrade && \
+#    apk add --no-cache bash git openssh && \
+#    apk add --no-cache git ca-certificates tzdata && \
+#    cp /usr/share/zoneinfo/Asia/Jakarta /etc/localtime && \
+#    echo "Asia/Jakarta" > /etc/timezone
+
+FROM honolulu.allobank.local/allodevops/golang:1.23.9-alpine3.20
 
 ADD . /app/ditto
 WORKDIR /app/ditto
@@ -35,4 +37,4 @@ CMD ["go","run","main.go"]
 #
 #EXPOSE 80
 
-CMD ["./ditto"]
+#CMD ["./ditto"]
