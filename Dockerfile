@@ -16,7 +16,7 @@ FROM alpine:3.20
 
 ENV GOPROXY=http://california.allobank.local:8081/repository/golang-proxy
 
-RUN apk add --no-cache tzdata
+
 WORKDIR /app
 
 # Copy artifacts
