@@ -1,6 +1,9 @@
 ARG GO_VERSION=1.23.9-alpine3.20
 ARG APP_PORT=6106
 
+ENV GOPROXY=http://california.allobank.local:8081/repository/golang-proxy
+
+
 # Stage 1: Builder
 FROM honolulu.allobank.local/allodevops/golang:${GO_VERSION} AS builder
 
