@@ -1,0 +1,33 @@
+version: "3.8"
+services:
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: root@321
+      MYSQL_USER: user
+      MYSQL_PASSWORD: root@321
+    ports:
+      - "3306:3306"
+    networks:
+      - backend
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "8000:80"
+    networks:
+      - backend
+
+networks:
+  backend:
+    external: true
+
+
+volumes:
+  data:

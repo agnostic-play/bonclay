@@ -1,0 +1,117 @@
+{{ define "modal_update_collection"}}
+
+<div class="modal modal-lg fade" id="updateCollection" tabindex="-1" aria-labelledby="updateCollectionLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="updateCollection
+                   Label">{{ .Data.collections.Name }} Collections</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="container">
+                    <form id="formEditCollection">
+                        <div class="mb-3 row">
+                            <label for="inptName" class="col-sm-3 col-form-label">Collection</label>
+                            <div class="col-12">
+                                <input type="text" class="form-control" id="updateCollectionInptName" name="name" value={{ .Data.collection.Name }}>
+                            </div>
+                        </div>
+                        <div class="mb-3 row">
+                            <label for="updateCollectionInptDocs" class="col-sm-3 col-form-label">Documents URL</label>
+                            <div class="col-12">
+                                <input type="text" class="form-control" id="updateCollectionInptDocs" name="docs" value={{ .Data.collection.Docs }}>
+                            </div>
+                        </div>
+                        <div class="mb-3 row">
+                            <label for="updateCollectionInptDesc" class="col-sm-12 col-form-label">Descriptions</label>
+                            <div class="col-12">
+                                <input type="text" class="form-control" id="updateCollectionInptDesc" name="desc" value={{ .Data.collection.Desc }}>
+                            </div>
+                        </div>
+                        <input type="submit" class="btn btn-warning float-end" value="update">
+                    </form>
+                    <button type="button" class="btn btn-secondary mx-2 float-end"
+                            data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-danger float-start" value="delete" onclick="actDeleteCollection()">Delete</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+    const formEditCollection = document.getElementById("formEditCollection");
+
+    formEditCollection.addEventListener("submit", (e) => {
+        e.preventDefault();
+        let data = {
+            name: document.getElementById("updateCollectionInptName").value,
+            desc: document.getElementById("updateCollectionInptDesc").value,
+            docs: document.getElementById("updateCollectionInptDocs").value,
+            squad_id: {{ .Data.collection.ID }},
+        };
+        const text = 'apakah anda yakin akan merubah nama collection '+ {{ .Data.collection.Name }}+'?';
+        if (confirm(text) == true) {
+            actUpdateDataCollection(data);
+        }
+    });
+
+      function actDeleteCollection() {
+        const baseURL = {{html .BaseURL}}+"/api/collection/delete/"+{{ .Data.collection.ID  }};
+        const text = "apakah anda yakin akan menghapus collection {{ .Data.collection.Name }} ?";
+        if (confirm(text) == true) {
+            fetch(baseURL, {
+                method: "DELETE",
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8",
+                },
+            })
+            .then((response) => {
+                return response.json();
+            })
+            .then((json) => {
+                if (json.status != 200){
+                    handlingError(json.status,json);
+                    return
+                }
+                return location.href = {{.BaseURL}}+"/squad/"+{{.Data.squad.Slug}}
+            })
+            .catch((error) => {
+                console.log(error)
+            })
+        }
+    }
+
+    function actUpdateDataCollection(data) {
+        const baseURL = {{html .BaseURL}}+"/api/collection/update/"+{{html .Data.collection.ID }};
+        fetch(baseURL, {
+                method: "PUT",
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8",
+                },
+            })
+            .then((response) => {
+                return response.json();
+            })
+            .then((json) => {
+                if (json.status != 200){
+                    handlingError(json.status,json);
+                    return
+                }
+                return location.reload();
+            })
+            .catch((error) => {
+               console.log(error)
+            })
+    }
+
+
+
+  
+</script>
+{{ end }}

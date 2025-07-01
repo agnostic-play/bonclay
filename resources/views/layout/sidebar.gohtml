@@ -1,0 +1,68 @@
+{{ define "components_sidebar" }}
+<div class="container-fluid pt-4">
+    <div class="row">
+        <div class="col-6 pt-1">
+            <a href="#"  data-bs-toggle="modal" data-bs-target="#updateSquad" class="customLink">
+                <h2 style=""><b>{{ .Data.squad.Name }}</b></h2>
+            </a>
+        </div>
+        <div class="col-6 pt-3">
+            <btn class="btn float-end btn-secondary rounded-2 m-0 px-2" style="font-size: 8px;"
+                 data-bs-toggle="modal" data-bs-target="#createCollection">New Collection</btn>
+        </div>
+    </div>
+    <div class="row px-2 my-3">
+        <input class="form-control search col-12" type="search" autocomplete="off" id="search"
+               placeholder="search collection ...">
+    </div>
+    {{ if .Data.collection }}
+    <div class="row">
+        <a href="#" class="card-squads-wrapper ">
+            <div class="card card-squads mb-3 mt-1 bg-secondary text-bg-secondary" style="">
+                <div class="card-body">
+                    <h5 class="card-title"> {{ .Data.collection.Name }}</h5>
+                    <p class="card-text"></p>
+                </div>
+            </div>
+        </a>
+    </div>
+    {{ end }}
+    <div class="row overflow-y-auto bg-body-tertiary" style="max-height:70%;" id="results">
+    </div>
+</div>
+
+
+<script>
+    var data = [];
+    data = {{.Data.squad.Collections}}
+    let search_term = "";
+    const results = document.getElementById("results");
+    let selectedCollectionSlug = "";
+    {{ if .Data.collection }}
+        selectedCollectionSlug = {{ .Data.collection.Slug }};
+    {{ end }}
+
+    const showList = () => {
+            results.innerHTML = "";
+            data
+                .filter((item) => {
+                    return (
+                        item.name.toLowerCase().includes(search_term)
+                    );
+                })
+                .forEach((e) => {
+                        if(selectedCollectionSlug!=e.slug){
+                            const cardSquad = `<a href="{{ .BaseURL }}/squad/{{ .Data.squad.Slug }}/collection/${e.slug}" class="card-squads-wrapper "><div class="card card-squads mb-4 bg-light pt-2" style=""><div class="card-body pt-3" >${e.name}</div></div></a>`
+                            results.innerHTML += cardSquad;
+                        }
+                });
+    };
+
+    showList();
+
+    search.addEventListener("input", (event) => {
+        search_term = event.target.value.toLowerCase();
+        showList();
+    });
+</script>
+{{ end }}

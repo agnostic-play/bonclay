@@ -1,0 +1,202 @@
+{{ define "squad_show" }}
+
+{{template "layout" .}}
+
+
+<main class="d-flex flex-nowrap">
+    <div class="d-flex flex-column flex-shrink-0 shadow bg-body-tertiary p-3 " style="width: 25%;" data-bs-theme="dark">
+        {{ template "components_sidebar" .}}
+    </div>
+    <div class="container overflow-auto px-5" >
+        {{ if .Data.collection }}
+            <div class="row mt-5">
+                <div class="col-12">
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#updateCollection" class="customLink">
+                        <h2 class="fw-bolder py-0 my-0" style=" " >
+                            {{ .Data.collection.Name }}
+                        </h2>
+                    </a>
+                    <p class="py-0 my-0 mb-3 text-monospace"  style="font-size: small;opacity:0.8;">
+                        [ Base URL: <a href="{{.BaseURL}}/mock/{{ .Data.collection.Slug }}" class="me-2" target="_blank">{{.BaseURL}}/mock/{{ .Data.collection.Slug }}</a>
+                        {{ if .Data.collection.Docs }}
+                            | <a class="ms-2" href="{{ .Data.collection.Docs }}">Documentation</a>
+                        {{ end }}
+                        ]
+                        <br/>
+
+                    </p>
+                    <p>
+                        {{ .Data.collection.Desc }}
+                    </p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <btn class="btn float-end btn-secondary rounded-2 m-0 px-2" style="font-size: 8px;"
+                         data-bs-toggle="modal" data-bs-target="#createEndpoint">New Endpoint</btn>
+                </div>
+            </div>
+            <hr/>
+            <div class="row mt-3">
+                    {{ if ne .Data.endpoints nil }}
+                        <div class="col-12">
+
+                            {{ $url := printf "%s/mock/%s" .BaseURL .Data.collection.Slug }}
+                            <table class="table px-0" id="endpointTable" style="">
+                                {{ range $index, $val := .Data.endpoints }}
+                                    <tr>
+                                        <td colspan="4">
+                                            <h4>{{ $index }}</h4>
+                                        </td>
+                                    </tr>
+                                    {{ range $val }}
+                                        {{ $buttonCollor := "btn-method-default" }}
+                                        {{ $rowCollor := "bg-method-default" }}
+                                        {{ if eq .Method "POST" }}
+                                            {{ $buttonCollor = "btn-method-post" }}
+                                            {{ $rowCollor = "bg-method-post" }}
+                                        {{ else if eq .Method "DELETE" }}
+                                            {{ $buttonCollor = "btn-method-delete" }}
+                                            {{ $rowCollor = "bg-method-delete" }}
+                                        {{ else if eq .Method "PATCH" }}
+                                            {{ $buttonCollor = "btn-method-patch" }}
+                                            {{ $rowCollor = "bg-method-patch" }}
+                                        {{ else if eq .Method "PUT" }}
+                                            {{ $buttonCollor = "btn-method-put" }}
+                                            {{ $rowCollor = "bg-method-put" }}
+                                        {{ else if eq .Method "GET" }}
+                                            {{ $buttonCollor = "btn-method-get" }}
+                                            {{ $rowCollor = "bg-method-get" }}
+                                        {{ end }}
+
+                                        <tr  class="{{html  $rowCollor }}">
+                                            <td  width="10%" >
+                                                <button class="btn text-white fw-bold text-center {{ $buttonCollor }}"
+                                                        style=";border-radius: 5px;font-size: 0.8em;width:80px;">{{ .Method }}</button>
+                                            </td>
+                                            <td width="50%" class="fw-bold">
+                                                <b><a href="#" class="customLink text-monospace" style="font-weight: bold;" onclick="copyContent('{{ printf "%s%s" $url .Path }}')">{{ .Path }}</a></b>
+                                            </td>
+                                            <td class="text-end ">
+                                                <a href="#"
+                                                   data-id="{{ .ID }}"
+                                                   data-method="{{ .Method }}"
+                                                   data-path="{{ .Path }}"
+                                                   data-description={{ .Desc }}
+                                                   data-category="{{ .Category }}"
+                                                   data-bs-toggle="modal" data-bs-target="#updateEndpoint" class="customLink showUpdateEndpointModal">
+                                                    <span class="" style="font-size: 0.9rem;">{{ .Desc }}</span>
+                                                </a>
+                                            </td>
+                                            <td width="10px" class="text-end">
+                                                <a  class="customLink" data-bs-toggle="collapse" href="#collapseEndpoint{{.ID}}"
+                                                    role="button" aria-expanded="false" aria-controls="collapseEndpoint{{.ID}}">
+                                                    <i class="bi bi-arrow-down-circle-fill text-secondary" style="font-size: 1.1rem;margin-right: 10px"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        <tr  class="mb-5">
+                                            <td  colspan="4" class="collapse" id="collapseEndpoint{{.ID}}" >
+                                                <table class="table table-striped px-0" style="vertical-align:middle;font-size: 0.9em;">
+                                                    <thead>
+                                                    <tr>
+                                                        <td colspan="4" class="text-end py-2">
+                                                            <btn class="btn float-end btn-secondary rounded-2 m-0 px-2 showCreateScenarioModal" style="font-size: 8px;"
+                                                                 data-endpointID="{{ .ID }}"
+                                                                 data-method="{{ .Method }}"
+                                                                 data-path="{{ .Path }}"
+                                                                 data-bs-toggle="modal" data-bs-target="#createScenario">New Scenario</btn>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th width="10%" class="text-center">
+                                                            Status Header
+                                                        </th>
+                                                        <th width="40%" class="text-start">Description</th>
+                                                        <th width="10%" class="text-center">Response Delay</th>
+                                                        <th width="10%" class="text-center">Is Active</th>
+                                                    </tr>
+                                                    </thead>
+                                                        {{ $activeScenario := .ActiveScenario }}
+                                                        {{ $method := .Method }}
+                                                        {{ $path := .Path }}
+                                                        {{ $length := len .ScenarioResponse }}
+                                                        <tbody>
+                                                        {{ range .ScenarioResponse }}
+                                                            <tr>
+                                                                <td width="10%" class="text-center">
+                                                                    {{ .StatusHeader }}
+                                                                </td>
+
+                                                                <td width="40%" class="text-start">
+                                                                    <a href="#"
+                                                                       data-desc="{{ .Desc }}"
+                                                                       data-statusHeader="{{ .StatusHeader }}"
+                                                                       data-delay="{{ .Delay }}"
+                                                                       data-body="{{ .Body }}"
+                                                                       data-header="{{ .Header }}"
+                                                                       data-scenario-id="{{ .ID }}"
+                                                                       data-endpoint-id="{{ .EndpointId }}"
+                                                                       data-endpoint-method="{{ $method }}"
+                                                                       data-endpoint-path="{{ $path }}"
+                                                                       data-bs-toggle="modal" data-bs-target="#updateScenario" class="customLink showUpdateModal">
+                                                                        <span class="" style="font-size: 0.9rem;">{{ .Desc }}</span></a>
+                                                                </td>
+
+                                                                <td class="text-center">{{ .Delay }} seconds</td>
+                                                                <td class="text-center">
+                                                                    <input class="form-check-input activeScenarioRadio" type="radio"
+                                                                           name="activeScenarioRadio{{.EndpointId}}"
+                                                                           data-scenarioID="{{ .ID }}"
+                                                                           data-endpointID="{{ .EndpointId }}"
+                                                                           data-scenarioDesc="{{ .Desc }}"
+                                                                           data-endpointMethod="{{ $method }}"
+                                                                           data-endpointPath="{{ $path }}"
+                                                                            {{ if eq .ID.String $activeScenario}}
+                                                                                checked
+                                                                            {{end}}
+                                                                    >
+                                                                </td>
+                                                            </tr>
+
+                                                        {{ end }}
+                                                        </tbody>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="4"> </td>
+                                        </tr>
+                                    {{ end }}
+                                {{ end }}
+
+                            </table>
+                        </div>
+                    {{ end }}
+            </div>
+        {{ else }}
+        <div class="row  align-items-center text-center vh-100"  >
+            <img src="{{ .BaseURL }}/static/img/logo.svg"  class="align-middle" style="height: 150px"><br><br>
+        </div>
+        {{ end }}
+    </div>
+
+</main>
+
+{{ template "modal_update_squad" . }}
+{{ template "modal_create_collection" . }}
+
+{{ if .Data.collection }}
+    {{ template "modal_edit_endpoint" . }}
+    {{ template "modal_create_endpoint" . }}
+    {{ template "modal_update_collection" . }}
+    {{ template "modal_create_scenario" . }}
+    {{ template "modal_update_scenario" . }}
+{{ end }}
+
+
+
+{{template "footer" }}
+
+
+{{ end }}

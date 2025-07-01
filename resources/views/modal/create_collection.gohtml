@@ -1,0 +1,81 @@
+{{ define "modal_create_collection"}}
+
+<div class="modal modal-lg fade"  id="createCollection" tabindex="-1" aria-labelledby="createCollectionLabel" aria-hidden="true">
+        <div class="modal-dialog" >
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="createCollection
+                   Label">Create New Collections</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" >
+                  <div class="container" >
+                      <form id="form"  >
+                          <div class="mb-3 row">
+                              <label for="createCollectionInptName" class="col-12 col-form-label">Collection</label>
+                              <div class="col-12">
+                                  <input type="text" class="form-control" id="createCollectionInptName" name="name" >
+                              </div>
+                          </div>
+                          <div class="mb-3 row">
+                              <label for="createCollectionInptDocs" class="col-12 col-form-label">Documents URL</label>
+                              <div class="col-12">
+                                  <input type="text" class="form-control" id="createCollectionInptDocs" name="docs">
+                              </div>
+                          </div>
+                          <div class="mb-3 row">
+                              <label for="createCollectionInptDesc" class="col-12 col-form-label">Descriptions</label>
+                              <div class="col-12">
+                                  <input type="text" class="form-control" id="createCollectionInptDesc" name="desc">
+                              </div>
+                          </div>
+                          <input type="submit" class="btn btn-primary float-end" value="create">
+                      </form>
+                  </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+<script>
+    const form = document.getElementById("form");
+
+    form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        let data = {
+            name: document.getElementById("createCollectionInptName").value,
+            desc: document.getElementById("createCollectionInptDesc").value,
+            docs: document.getElementById("createCollectionInptDocs").value,
+            squad_id: {{ .Data.squad.ID }},
+        };
+
+        actCreateCollection(data);
+    });
+
+
+    function actCreateCollection(data) {
+        const baseURL = {{html .BaseURL}}+"/api/collection/create";
+        fetch(baseURL, {
+                method: "POST",
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8",
+                },
+            })
+            .then((response) => {
+                return response.json();
+            })
+            .then((json) => {
+                if (json.status != 200){
+                    handlingError(json.status,json);
+                    return
+                }
+                return location.href = {{.BaseURL}}+"/squad/"+{{.Data.squad.Slug}}+"/collection/"+json.data.slug;
+            })
+            .catch((error) => {
+               console.log(error)
+            })
+    }
+</script>
+{{ end }}

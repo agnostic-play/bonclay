@@ -1,0 +1,164 @@
+{{ define "squadIndex"}}
+
+{{template "layout" .}}
+<div class="container-fluid ">
+    <div class="row justify-content-center mt-5 pt-3 ">
+        <div class="col-lg-6  ">
+            <div class="row ">
+                <div class="col-lg-6 pt-2 ">
+                    <h4><b>Squad List</b></h4>
+                </div>
+                <div class="col-lg-6 px-4">
+                    <btn class="btn  float-end btn-secondary rounded-2 " style="font-size: 11px;" data-bs-toggle="modal"
+                        data-bs-target="#createModal">New Squads</btn>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12   bg-body-tertiary rounded-3 mt-3 px-4 py-3 " style="height: 777px;">
+                    <div style="width: 100%" class="mt-2">
+                        <input class="form-control search" type="search" autocomplete="off" id="search"
+                            placeholder="search your squad ...">
+                    </div>
+                    <div class=" overflow-auto pt-3 mt-3 " style="max-height: 80%;" id="results">
+
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12 text-center my-5">
+                    <img src="{{ .BaseURL }}/static/img/logo.svg" style="height: 100px"><br><br>
+                    <span class="text-muted">made with love by davinci</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal modal-md fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="createModal
+                   Label">Create New Squads</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form">
+                        <div class="mb-3 row">
+                            <label for="staticEmail" class="col-sm-2 col-form-label">Squads</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" id="inptSquad" name="name">
+                            </div>
+                        </div>
+                        <div class="mb-3 row">
+                            <label for="inputPassword" class="col-sm-2 col-form-label">Password</label>
+                            <div class="col-sm-10">
+                                <input type="password" class="form-control" id="inptPassword"  name="password">
+                            </div>
+                        </div>
+                        <input type="submit" class="btn btn-primary float-end" value="create">
+                    </form>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var data = [];
+    let search_term = "";
+    const results = document.getElementById("results");
+
+    function fetchData() {
+        fetch('{{.BaseURL}}/api/squad')
+            .then((response) => {
+                if (response.status != 200) {
+                    console.log(response.status);
+                    console.log(response.json())
+                    return null
+                }
+                return response.json()
+            })
+            .then((json) => takeData(json)).catch((error) => console.log(error));
+        return;
+    }
+    fetchData();
+
+    function takeData(jsonData) {
+        if (jsonData != null) {
+            data = jsonData.data
+        }
+        showList();
+        return
+    }
+
+
+    const showList = () => {
+        results.innerHTML = "";
+        data
+            .filter((item) => {
+                return (
+                    item.name.toLowerCase().includes(search_term)
+                );
+            })
+            .forEach((e) => {
+                const cardSquad =
+                    `<a href="{{ .BaseURL }}/squad/${e.slug}" class="card-squads-wrapper "><div class="card card-squads mb-4" style=""><div class="card-body"><h5 class="card-title">${e.name}</h5><p class="card-text"></p></div></div></a>`;
+                results.innerHTML += cardSquad;
+            });
+    };
+
+    showList();
+
+    search.addEventListener("input", (event) => {
+        search_term = event.target.value.toLowerCase();
+        showList();
+    });
+</script>
+
+<script>
+    const form = document.getElementById("form");
+    const inptSquad = document.getElementById("inptSquad");
+    const inptPassword = document.getElementById("inptPassword");
+    
+    form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        let data = {
+            name: inptSquad.value,
+            password: inptPassword.value,
+        };
+
+        postData(data);
+    });
+
+
+
+
+    function postData(data) {
+        const baseURL = {{.BaseURL}}+"/api/squad/create";
+        fetch(baseURL, {
+                method: "POST",
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8",
+                },
+            })
+            .then((response) => {
+                return response.json();
+            })
+            .then((json) => {
+                if (json.status != 200){
+                    handlingError(json.status,json);
+                    return
+                }   
+                return location.reload();
+            })
+            .catch((error) => {
+               console.log(error)
+            })
+    }
+</script>
+{{template "footer" .}}
+
+{{end}}

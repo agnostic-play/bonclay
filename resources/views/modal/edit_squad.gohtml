@@ -1,0 +1,95 @@
+{{ define "modal_update_squad" }}
+
+<div class="modal modal-md fade" id="updateSquad" tabindex="-1" aria-labelledby="updateSquadLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="updateSquadLabel" style=" text-transform: capitalize;"><b>Squad
+                        {{ .Data.squad.Name }}</b></h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="container">
+                    <form id="formUpdateSquad">
+                        <div class="mb-3 row">
+                            <label for="inptName" class="col-sm-3 col-form-label">Squad</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="editSquadInptName" name="name"
+                                       value={{ .Data.squad.Name }}>
+                            </div>
+                        </div>
+                        <input type="submit" class="btn btn-warning float-end" value="update">
+                    </form>
+                    <button type="button" class="btn btn-secondary mx-2 float-end"
+                            data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-danger float-start" value="delete" onclick="actDeleteSquad()">Delete</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+    <script>
+        const formUpdate = document.getElementById("formUpdateSquad");
+
+        formUpdate.addEventListener("submit", (e) => {
+            e.preventDefault();
+            let data = {
+                name: document.getElementById("editSquadInptName").value,
+            };
+            const text = 'apakah anda yakin akan merubah nama squad '+ {{ .Data.squad.Name }}+'?';
+            if (confirm(text) == true) {
+                actUpdateSquad(data);
+            }
+        });
+
+        function actUpdateSquad(data) {
+                const baseURL = {{html .BaseURL}}+"/api/squad/update/"+{{ .Data.squad.ID  }};
+                fetch(baseURL, {
+                    method: "PUT",
+                    body: JSON.stringify(data),
+                    headers: {
+                        "Content-type": "application/json; charset=UTF-8",
+                    },
+                })
+                .then((response) => {
+                    return response.json();
+                })
+                .then((json) => {
+                    if (json.status != 200){
+                        handlingError(json.status,json);
+                        return
+                    }
+                    return location.reload();
+                })
+                .catch((error) => {
+                   console.log(error)
+                })
+        }
+        function actDeleteSquad() {
+            const baseURL = {{html .BaseURL}}+"/api/squad/delete/"+{{ .Data.squad.ID  }};
+            const text = "apakah anda yakin akan menghapus squad {{ .Data.squad.Name }} ?";
+            if (confirm(text) == true) {
+                fetch(baseURL, {
+                    method: "DELETE",
+                    headers: {
+                        "Content-type": "application/json; charset=UTF-8",
+                    },
+                })
+                .then((response) => {
+                    return response.json();
+                })
+                .then((json) => {
+                    if (json.status != 200){
+                        handlingError(json.status,json);
+                        return
+                    }
+                    return location.reload()
+                })
+                .catch((error) => {
+                    console.log(error)
+                })
+            } 
+        }
+    </script>
+{{ end }}
