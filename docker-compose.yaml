@@ -12,11 +12,11 @@ services:
     networks:
       - alexandrianet
 
-  ditto:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ditto
+    container_name: app
     restart: unless-stopped
     tty: true
     ports:

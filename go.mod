@@ -1,6 +1,6 @@
 module gitlab.linkaja.com/be/ditto
 
-go 1.19
+go 1.23
 
 require (
 	github.com/go-playground/locales v0.14.1
