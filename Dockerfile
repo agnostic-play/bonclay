@@ -2,7 +2,7 @@ ARG GO_VERSION=1.23.9-alpine3.20
 ARG APP_PORT=6106
 
 # Stage 1: Builder
-FROM honolulu.allobank.local/allodevops/golang:${GO_VERSION} AS builder
+FROM golang:${GO_VERSION} AS builder
 
 RUN apk add --no-cache tzdata
 COPY . /app

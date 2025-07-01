@@ -5,10 +5,10 @@ app:
   version: 1
   ctxTimeout: 30s
   baseURL: http://alexandria.allobank.local:18089/
-  templatePath: ["./resources/views/layout/.gohtml","./resources/views/modal/.gohtml","./resources/views/pages/*.gohtml"]
+  templatePath: ["./resources/views/pages/*.gohtml"]
   staticPath: "./resources/public/assets"
 database:
-  host: ditto-mariadb-1
+  host: mysql
   port: 3306
   user: root
   pass: root
