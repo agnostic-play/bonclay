@@ -2,14 +2,15 @@ package services
 
 import (
 	"context"
-	"gitlab.linkaja.com/be/ditto/internal/errs"
-	"gitlab.linkaja.com/be/ditto/internal/repository"
 	"net/http"
 	"strings"
+
+	"gitlab.linkaja.com/be/ditto/internal/errs"
+	"gitlab.linkaja.com/be/ditto/internal/repository"
 )
 
 type EndpointEntityReq struct {
-	Path         string `json:"path" validate:"required,urlPath"`
+	Path         string `json:"path" validate:"required"`
 	Method       string `json:"method" validate:"required,alpha"`
 	CollectionID string `json:"collection_id" validate:"required,uuid"`
 	Category     string `json:"category" validate:"required,customText"`
