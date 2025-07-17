@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"gitlab.linkaja.com/be/ditto/internal/errs"
-	"gitlab.linkaja.com/be/ditto/internal/repository"
+	"github.com/agnostic-play/ditoo/internal/errs"
+	"github.com/agnostic-play/ditoo/internal/repository"
 )
 
 type EndpointEntityReq struct {

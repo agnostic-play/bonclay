@@ -2,21 +2,21 @@ package main
 
 import (
 	"fmt"
-	"gitlab.linkaja.com/be/ditto/internal/cmd"
-	"gitlab.linkaja.com/be/ditto/internal/config"
+	"github.com/agnostic-play/ditoo/internal/cmd"
+	"github.com/agnostic-play/ditoo/internal/config"
 	"os"
 	"os/signal"
 	"runtime"
 )
 
 const banner = `
-██████╗ ██╗████████╗████████╗ ██████╗ 
-██╔══██╗██║╚══██╔══╝╚══██╔══╝██╔═══██╗
-██║  ██║██║   ██║      ██║   ██║   ██║
-██║  ██║██║   ██║      ██║   ██║   ██║
-██████╔╝██║   ██║      ██║   ╚██████╔╝
-╚═════╝ ╚═╝   ╚═╝      ╚═╝    ╚═════╝ 
-DITTO service for Mocking Service
+██████╗ ██╗████████╗ ██████╗  ██████╗ 
+██╔══██╗██║╚══██╔══╝██╔═══██╗██╔═══██╗
+██║  ██║██║   ██║   ██║   ██║██║   ██║
+██║  ██║██║   ██║   ██║   ██║██║   ██║
+██████╔╝██║   ██║   ╚██████╔╝╚██████╔╝
+╚═════╝ ╚═╝   ╚═╝    ╚═════╝  ╚═════╝ 
+DITOO service for Mocking Service
 version %s | OS %s %s %s CPU %v
 `
 

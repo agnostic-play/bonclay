@@ -1,12 +1,12 @@
 package cmd
 
 import (
+	"github.com/agnostic-play/ditoo/internal/config"
+	"github.com/agnostic-play/ditoo/internal/echo"
+	"github.com/agnostic-play/ditoo/internal/repository"
+	"github.com/agnostic-play/ditoo/internal/services"
+	"github.com/agnostic-play/ditoo/pkg/gorm"
 	"github.com/labstack/gommon/log"
-	"gitlab.linkaja.com/be/ditto/internal/config"
-	"gitlab.linkaja.com/be/ditto/internal/echo"
-	"gitlab.linkaja.com/be/ditto/internal/repository"
-	"gitlab.linkaja.com/be/ditto/internal/services"
-	"gitlab.linkaja.com/be/ditto/pkg/gorm"
 )
 
 func Init(conf *config.Config) (chan bool, chan bool) {

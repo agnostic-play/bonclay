@@ -3,8 +3,8 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"github.com/agnostic-play/ditoo/internal/services"
 	"github.com/labstack/echo/v4"
-	"gitlab.linkaja.com/be/ditto/internal/services"
 	"net/http"
 	"time"
 )

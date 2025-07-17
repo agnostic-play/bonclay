@@ -1,8 +1,8 @@
 package services
 
 import (
-	"gitlab.linkaja.com/be/ditto/internal/config"
-	"gitlab.linkaja.com/be/ditto/internal/repository"
+	"github.com/agnostic-play/ditoo/internal/config"
+	"github.com/agnostic-play/ditoo/internal/repository"
 )
 
 type ServiceContainer interface {

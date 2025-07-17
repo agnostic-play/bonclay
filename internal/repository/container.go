@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"gitlab.linkaja.com/be/ditto/internal/config"
+	"github.com/agnostic-play/ditoo/internal/config"
 	"gorm.io/gorm"
 )
 

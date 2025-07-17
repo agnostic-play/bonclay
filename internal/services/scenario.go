@@ -2,7 +2,7 @@ package services
 
 import (
 	"context"
-	"gitlab.linkaja.com/be/ditto/internal/repository"
+	"github.com/agnostic-play/ditoo/internal/repository"
 	"strings"
 )
 

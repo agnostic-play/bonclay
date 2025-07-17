@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/agnostic-play/ditoo/internal/config"
+	handler "github.com/agnostic-play/ditoo/internal/echo/handlers"
+	httpUtils "github.com/agnostic-play/ditoo/internal/echo/utils"
+	"github.com/agnostic-play/ditoo/internal/services"
+	"github.com/agnostic-play/ditoo/pkg/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
-	"gitlab.linkaja.com/be/ditto/internal/config"
-	handler "gitlab.linkaja.com/be/ditto/internal/echo/handlers"
-	httpUtils "gitlab.linkaja.com/be/ditto/internal/echo/utils"
-	"gitlab.linkaja.com/be/ditto/internal/services"
-	"gitlab.linkaja.com/be/ditto/pkg/validator"
 	"net/http"
 )
 

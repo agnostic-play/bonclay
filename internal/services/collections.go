@@ -2,7 +2,7 @@ package services
 
 import (
 	"context"
-	"gitlab.linkaja.com/be/ditto/internal/repository"
+	"github.com/agnostic-play/ditoo/internal/repository"
 	"strings"
 )
 
@@ -19,7 +19,7 @@ func (req CollectionEntityReq) translate() repository.CollectionEntity {
 	if val := strings.TrimSpace(req.Name); val != "" {
 		ent.Name = val
 	}
-	
+
 	if val := strings.TrimSpace(req.Docs); val != "" {
 		ent.Docs = val
 	}

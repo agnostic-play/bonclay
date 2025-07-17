@@ -1,8 +1,8 @@
 package handler
 
 import (
+	"github.com/agnostic-play/ditoo/internal/errs"
 	"github.com/labstack/echo/v4"
-	"gitlab.linkaja.com/be/ditto/internal/errs"
 	"net/http"
 	"strings"
 )

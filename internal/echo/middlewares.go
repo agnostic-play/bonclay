@@ -1,10 +1,10 @@
 package echo
 
 import (
+	"github.com/agnostic-play/ditoo/internal/constant"
+	httpUtils "github.com/agnostic-play/ditoo/internal/echo/utils"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"gitlab.linkaja.com/be/ditto/internal/constant"
-	httpUtils "gitlab.linkaja.com/be/ditto/internal/echo/utils"
 )
 
 func SetupMiddlewares(server *echo.Echo) {
