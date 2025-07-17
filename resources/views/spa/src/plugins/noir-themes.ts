@@ -1,15 +1,8 @@
-import { createApp } from 'vue'
-import './style.css';
-import App from './App.vue';
-import PrimeVue from 'primevue/config';
-import { definePreset } from '@primeuix/themes';
-import Material from '@primeuix/themes/material';
-import ToastService from 'primevue/toastservice';
-
-import 'primeicons/primeicons.css'
+import {definePreset} from "@primeuix/themes";
+import Material from "@primeuix/themes/material";
 
 
-const Noir = definePreset(Material, {
+export default definePreset(Material, {
     semantic: {
         primary: {
             50: '{zinc.50}',
@@ -56,18 +49,3 @@ const Noir = definePreset(Material, {
         }
     }
 });
-
-
-const app = createApp(App);
-app.use(PrimeVue, {
-     ripple: true,
-  inputStyle: 'outlined',
-    theme: {
-        preset: Noir
-    }
-});
-app.use(ToastService)
-app.mount('#app')
-
-
-

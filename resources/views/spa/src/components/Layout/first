@@ -2,8 +2,8 @@
   <div class="app-layout">
     <!-- Mobile Menu Button -->
     <div class="mobile-header">
-      <Button 
-        icon="pi pi-bars" 
+      <Button
+        icon="pi pi-bars"
         @click="toggleMobileSidebar"
         class="p-button-text p-button-plain mobile-menu-button"
         v-if="isMobile"
@@ -15,11 +15,11 @@
     </div>
 
     <!-- Sidebar -->
-    <div 
-      :class="['sidebar', { 
+    <div
+      :class="['sidebar', {
         'sidebar-collapsed': isCollapsed && !isMobile,
         'sidebar-mobile-open': isMobileMenuOpen && isMobile,
-        'sidebar-mobile': isMobile 
+        'sidebar-mobile': isMobile
       }]"
     >
       <!-- Logo Section -->
@@ -38,21 +38,21 @@
             <span class="section-title">
               <span v-if="!isCollapsed || isMobile">Home</span>
             </span>
-            <i :class="['pi', sections.home ? 'pi-chevron-down' : 'pi-chevron-right']" 
+            <i :class="['pi', sections.home ? 'pi-chevron-down' : 'pi-chevron-right']"
                v-if="!isCollapsed || isMobile"></i>
           </div>
-          
+
           <div v-if="sections.home" class="menu-items">
-            <div 
-              class="menu-item" 
+            <div
+              class="menu-item"
               :class="{ 'active': activeItem === 'dashboard' }"
               @click="setActiveItem('dashboard')"
             >
               <i class="pi pi-home menu-icon"></i>
               <span v-if="!isCollapsed || isMobile" class="menu-text">Dashboard</span>
             </div>
-            
-            <div 
+
+            <div
               class="menu-item"
               :class="{ 'active': activeItem === 'bookmarks' }"
               @click="setActiveItem('bookmarks')"
@@ -61,8 +61,8 @@
               <span v-if="!isCollapsed || isMobile" class="menu-text">Bookmarks</span>
               <Badge v-if="!isCollapsed || isMobile" value="8" class="menu-badge" />
             </div>
-            
-            <div 
+
+            <div
               class="menu-item"
               :class="{ 'active': activeItem === 'team' }"
               @click="setActiveItem('team')"
@@ -70,8 +70,8 @@
               <i class="pi pi-users menu-icon"></i>
               <span v-if="!isCollapsed || isMobile" class="menu-text">Team</span>
             </div>
-            
-            <div 
+
+            <div
               class="menu-item"
               :class="{ 'active': activeItem === 'messages' }"
               @click="setActiveItem('messages')"
@@ -80,8 +80,8 @@
               <span v-if="!isCollapsed || isMobile" class="menu-text">Messages</span>
               <Badge v-if="!isCollapsed || isMobile" value="2" severity="danger" class="menu-badge" />
             </div>
-            
-            <div 
+
+            <div
               class="menu-item"
               :class="{ 'active': activeItem === 'calendar' }"
               @click="setActiveItem('calendar')"
@@ -101,9 +101,9 @@
             <i :class="['pi', sections.networks ? 'pi-chevron-down' : 'pi-chevron-right']"
                v-if="!isCollapsed || isMobile"></i>
           </div>
-          
+
           <div v-if="sections.networks" class="menu-items">
-            <div 
+            <div
               class="menu-item network-item"
               :class="{ 'active': activeItem === 'frontend' }"
               @click="setActiveItem('frontend')"
@@ -113,8 +113,8 @@
               </div>
               <span v-if="!isCollapsed || isMobile" class="menu-text">Front-End Developers</span>
             </div>
-            
-            <div 
+
+            <div
               class="menu-item network-item"
               :class="{ 'active': activeItem === 'backend' }"
               @click="setActiveItem('backend')"
@@ -124,8 +124,8 @@
               </div>
               <span v-if="!isCollapsed || isMobile" class="menu-text">Back-End Developers</span>
             </div>
-            
-            <div 
+
+            <div
               class="menu-item network-item"
               :class="{ 'active': activeItem === 'uiux' }"
               @click="setActiveItem('uiux')"
@@ -141,7 +141,7 @@
 
       <!-- Collapse Toggle Button (Desktop Only) -->
       <div class="sidebar-footer" v-if="!isMobile">
-        <Button 
+        <Button
           :icon="isCollapsed ? 'pi pi-angle-double-right' : 'pi pi-angle-double-left'"
           @click="toggleSidebar"
           class="p-button-text p-button-plain collapse-button"
@@ -154,8 +154,8 @@
       <!-- Top Header -->
       <div class="content-header">
         <div class="header-left">
-          <Button 
-            icon="pi pi-bars" 
+          <Button
+            icon="pi pi-bars"
             @click="toggleSidebar"
             class="p-button-text p-button-plain"
             v-if="!isMobile"
@@ -163,8 +163,8 @@
         </div>
         <div class="header-right">
           <Button icon="pi pi-bell" class="p-button-text p-button-plain" badge="3" />
-          <Avatar 
-            image="https://primefaces.org/cdn/primevue/images/avatar/amyelsner.png" 
+          <Avatar
+            image="https://primefaces.org/cdn/primevue/images/avatar/amyelsner.png"
             shape="circle"
             class="user-avatar"
           />
@@ -178,8 +178,8 @@
     </div>
 
     <!-- Mobile Overlay -->
-    <div 
-      v-if="isMobileMenuOpen && isMobile" 
+    <div
+      v-if="isMobileMenuOpen && isMobile"
       class="mobile-overlay"
       @click="closeMobileSidebar"
     ></div>

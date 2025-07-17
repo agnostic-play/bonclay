@@ -1,0 +1,25 @@
+ {
+    id: 'APIMock',
+    title: 'API Mock',
+    isExpanded: true,
+    items: [
+
+    ]
+  },
+  {
+    id: 'alloTools',
+    title: 'Allo Tools',
+    isExpanded: true,
+    items: [
+      {
+        id: 'qr-emvco-parser',
+        label: 'QR EmvCo Parser',
+        icon: 'pi pi-qrcode'
+      },
+      {
+        id: 'encryption-tools',
+        label: 'Config Enryption',
+        icon: 'pi pi-shield'
+      },
+    ]
+  },
