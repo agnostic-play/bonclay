@@ -1,0 +1,33 @@
+{
+  "name": "octopus",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@primeuix/themes": "^1.1.2",
+    "@tailwindcss/vite": "^4.1.11",
+    "@types/node": "^24.0.4",
+    "@vueuse/core": "^13.4.0",
+    "primeflex": "^4.0.0",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.3.5",
+    "tailwindcss": "^4.1.11",
+    "vue": "^3.5.17",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@primevue/auto-import-resolver": "^4.3.5",
+    "@vitejs/plugin-vue": "^6.0.0",
+    "@vue/tsconfig": "^0.7.0",
+    "i": "^0.3.7",
+    "typescript": "~5.8.3",
+    "unplugin-vue-components": "^28.7.0",
+    "vite": "^7.0.0",
+    "vue-tsc": "^2.2.10"
+  }
+}

@@ -2,13 +2,18 @@ package handler
 
 import (
 	"context"
-	"github.com/labstack/echo/v4"
 	"net/http"
+
+	"github.com/labstack/echo/v4"
 )
 
 func (h handlers) routesViews() {
 	h.server.GET("/squad/:slug", h.viewShowSquad)
 	h.server.GET("/squad/:slug/collection/:collectionSlug", h.viewShowCollection)
+
+	h.server.Static("v2/assets", "resources/views/vue/dist/assets")
+	h.server.File("v2", "resources/views/vue/dist/index.html")
+	h.server.File("v2/*", "resources/views/vue/dist/index.html")
 }
 
 func (h handlers) viewShowCollection(ctx echo.Context) error {
