@@ -9,8 +9,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AppLayout: typeof import('./src/components/Layout/AppLayout.vue')['default']
-    HelloWorld: typeof import('./src/components/Layout/HelloWorld.vue')['default']
-    MainSidebar: typeof import('./src/components/Layout/MainSidebar.vue')['default']
+    First: typeof import('./src/components/Layout/first.vue')['default']
     MenuItem: typeof import('./src/components/Layout/MenuItem.vue')['default']
     MenuSection: typeof import('./src/components/Layout/MenuSection.vue')['default']
     MobileHeader: typeof import('./src/components/Layout/MobileHeader.vue')['default']
@@ -18,7 +17,6 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     Sidebar: typeof import('./src/components/Layout/Sidebar.vue')['default']
     SidebarHeader: typeof import('./src/components/Layout/SidebarHeader.vue')['default']
-    Topbar: typeof import('./src/components/Layout/Topbar.vue')['default']
     TopHeader: typeof import('./src/components/Layout/TopHeader.vue')['default']
   }
   export interface GlobalDirectives {

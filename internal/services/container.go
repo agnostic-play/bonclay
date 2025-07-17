@@ -12,6 +12,7 @@ type ServiceContainer interface {
 	ScenarioServiceInterface
 	EndpointScenarioServiceInterface
 	MockServiceInterface
+	ToolsService
 }
 
 func NewServiceContainer(repoContainer repository.RepoContainer,

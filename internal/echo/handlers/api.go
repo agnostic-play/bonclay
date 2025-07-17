@@ -30,6 +30,8 @@ func (h handlers) routesApi() {
 	h.server.DELETE("/api/scenario/delete/:id", h.actDeleteScenario)
 
 	h.server.POST("/api/set/active_scenario", h.actSetActiveScenario)
+	h.server.POST("/api/v2/tools/config-encryption/encrypt", h.actEncryptConfig)
+	h.server.POST("/api/v2/tools/config-encryption/decrypt", h.actDecryptConfig)
 
 	h.server.Any("/mock/:collection/:path", h.actMock)
 
@@ -312,4 +314,34 @@ func (h handlers) actSetActiveScenario(ctx echo.Context) error {
 	}
 
 	return h.json(ctx, 200, req)
+}
+
+func (h handlers) actEncryptConfig(ctx echo.Context) error {
+	var req services.EncryptionToolsEntity
+
+	if err := h.validateRequest(ctx, &req); err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	resp, err := h.serviceContainer.EncryptConfig(context.Background(), req)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, resp)
+}
+
+func (h handlers) actDecryptConfig(ctx echo.Context) error {
+	var req services.EncryptionToolsEntity
+
+	if err := h.validateRequest(ctx, &req); err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	resp, err := h.serviceContainer.DecryptConfig(context.Background(), req)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, resp)
 }

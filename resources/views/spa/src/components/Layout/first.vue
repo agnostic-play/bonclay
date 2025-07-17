@@ -190,7 +190,6 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import Button from 'primevue/button';
 import Badge from 'primevue/badge';
-import Avatar from 'primevue/avatar';
 
 // Reactive states
 const isCollapsed = ref(false);

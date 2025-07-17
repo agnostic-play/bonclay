@@ -24,7 +24,7 @@
 
 <script setup lang="ts">
 import MenuItem from './MenuItem.vue'
-import type { MenuSectionType } from '../types/menu'
+import type {MenuSectionType} from "@/types/menu.ts";
 
 interface Props {
   section: MenuSectionType

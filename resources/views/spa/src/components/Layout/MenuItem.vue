@@ -33,7 +33,7 @@
 
 <script setup lang="ts">
 import Badge from 'primevue/badge'
-import type { MenuItemType } from '../types/menu'
+import type {MenuItemType} from "@/types/menu.ts";
 
 interface Props {
   item: MenuItemType

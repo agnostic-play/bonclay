@@ -95,6 +95,13 @@
                       :disabled="!outputData"
                   />
                   <Button
+                      icon="pi pi-trash"
+                      @click="outputData = ''"
+                      class="p-button-text p-button-sm"
+                      v-tooltip="'Clear output'"
+                      :disabled="!outputData"
+                  />
+                  <Button
                       icon="pi pi-code"
                       @click="beautifyOutputJson"
                       class="p-button-text p-button-sm"
@@ -174,12 +181,30 @@ const inputData = ref('')
 const outputData = ref('')
 const isProcessing = ref(false)
 const lastApiCall = ref<{ success: boolean; duration: number } | null>(null)
+// Get base URL from current site
+const getBaseUrl = (): string => {
+  const { protocol, host } = window.location
+  return `${protocol}//${host}`
+}
 
 const API_CONFIG = {
-  baseUrl: 'https://your-api-domain.com/api',
+  baseUrl: getBaseUrl(),
   endpoints: {
-    encrypt: '/encrypt',
-    decrypt: '/decrypt'
+    encrypt: '/api/v2/tools/config-encryption/encrypt',
+    decrypt: '/api/v2/tools/config-encryption/decrypt'
+  }
+}
+
+// Base64 encoding/decoding functions
+const encodeBase64 = (str: string): string => {
+  return btoa(unescape(encodeURIComponent(str)))
+}
+
+const decodeBase64 = (str: string): string => {
+  try {
+    return decodeURIComponent(escape(atob(str)))
+  } catch (error) {
+    throw new Error('Invalid base64 string')
   }
 }
 
@@ -224,14 +249,17 @@ const encryptData = async () => {
 
   isProcessing.value = true
   try {
+    // Encode input data with base64 before sending to API
+    const encodedData = encodeBase64(inputData.value)
+
     const payload = {
       key: encryptionKey.value,
-      data: inputData.value
+      data: encodedData
     }
 
     const result = await callEncryptionApi(API_CONFIG.endpoints.encrypt, payload)
 
-    outputData.value = result.encryptedData || result.data
+    outputData.value = result.data
     toast.add({
       severity: 'success',
       summary: 'Encryption Successful',
@@ -262,7 +290,10 @@ const decryptData = async () => {
 
     const result = await callEncryptionApi(API_CONFIG.endpoints.decrypt, payload)
 
-    outputData.value = result.decryptedData || result.data
+    // Decode the result with base64 after receiving from API
+    const decodedData = decodeBase64(result.data)
+    outputData.value = decodedData
+
     toast.add({
       severity: 'success',
       summary: 'Decryption Successful',
@@ -270,10 +301,17 @@ const decryptData = async () => {
       life: 3000
     })
   } catch (error) {
+    let errorMessage = 'API request failed'
+    if (error instanceof Error) {
+      errorMessage = error.message.includes('Invalid base64')
+          ? 'Invalid encrypted data format'
+          : error.message
+    }
+
     toast.add({
       severity: 'error',
       summary: 'Decryption Failed',
-      detail: error instanceof Error ? error.message : 'API request failed',
+      detail: errorMessage,
       life: 5000
     })
   } finally {
