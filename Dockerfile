@@ -1,63 +1,53 @@
-# ARGs shared by all stages
 ARG GO_VERSION=1.23.9-alpine3.20
-ARG NODE_VERSION=20-alpine
-ARG APP_PORT=6106
 
-##############################
-# Stage 1: Golang Builder
-##############################
-FROM honolulu.allobank.local/allodevops/golang:${GO_VERSION} AS golang-builder
+# Stage 0: Vue builder
+FROM honolulu.allobank.local/allodevops/node:20.17.0-alpine3.20 AS vue-builder
+
+RUN npm install -g pnpm
+
+# Set custom registry for pnpm
+RUN pnpm config set registry http://10.8.200.11:8081/repository/npm-registry/
+
+WORKDIR /app
+
+COPY resources/views/spa/pnpm-lock.yaml resources/views/spa/package.json ./
+
+RUN pnpm install --frozen-lockfile
+
+COPY resources/views/spa/ ./
+
+RUN pnpm build
+
+
+# Stage 1: Go builder
+FROM honolulu.allobank.local/allodevops/golang:${GO_VERSION} AS go-builder
 
 ENV GOPROXY=http://california.allobank.local:8081/repository/golang-proxy
 
 WORKDIR /app
-
-COPY go.mod go.sum ./
-RUN go mod download
-
 COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -ldflags="-s -w" -o /app/bin/runner main.go
 
 
-##############################
-# Stage 2: Vue Builder (with pnpm)
-##############################
-FROM node:${NODE_VERSION} AS vue-builder
+# Stage 2: Final runtime image
+FROM alpine:3.20
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-WORKDIR /spa
-
-# Copy only necessary files for install first
-COPY resources/views/spa/pnpm-lock.yaml resources/views/spa/package.json ./
-RUN pnpm install --frozen-lockfile
-
-# Then copy rest of Vue code
-COPY resources/views/spa .
-
-# Build Vue app (assumes output is ./dist)
-RUN pnpm build
-
-
-##############################
-# Stage 3: Final Runtime
-##############################
-FROM alpine:3.20 AS final
-
-ARG APP_PORT
+ARG APP_PORT=6106
 ENV GOPROXY=http://california.allobank.local:8081/repository/golang-proxy
 
 WORKDIR /app
 
-# Copy Go binary and config
-COPY --from=golang-builder /app/bin/runner .
-COPY --from=golang-builder /app/config.yaml .
-COPY --from=golang-builder /app/resources ./resources
+# Copy Go binary
+COPY --from=go-builder /app/bin/runner .
 
-# Copy built Vue app into your resources folder if Go serves static from there
-COPY --from=vue-builder /spa/dist ./resources/views/spa/dist
+# Copy non-Vue app resources
+COPY --from=go-builder /app/config.yaml .
+COPY --from=go-builder /app/resources ./resources
+
+# Copy Vue dist output (assumes default Vite/CRA output to 'dist')
+COPY --from=vue-builder /app/dist ./resources/views/spa
 
 EXPOSE ${APP_PORT}
 

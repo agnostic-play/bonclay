@@ -11,9 +11,9 @@ func (h handlers) routesViews() {
 	h.server.GET("/squad/:slug", h.viewShowSquad)
 	h.server.GET("/squad/:slug/collection/:collectionSlug", h.viewShowCollection)
 
-	h.server.Static("/v2/assets", "resources/views/spa/dist/assets")
-	h.server.File("/v2", "resources/views/spa/dist/index.html")
-	h.server.File("/v2/*", "resources/views/spa/dist/index.html")
+	// h.server.Static("/v2/assets", "resources/views/spa/dist/assets")
+	// h.server.File("/v2", "resources/views/spa/dist/index.html")
+	// h.server.File("/v2/*", "resources/views/spa/dist/index.html")
 }
 
 func (h handlers) viewShowCollection(ctx echo.Context) error {
