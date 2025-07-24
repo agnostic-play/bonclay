@@ -8,7 +8,7 @@ import AppLayout from '@/components/Layout/AppLayout.vue'
 import Dashboard from '@/pages/Dashboard.vue'
 
 // Auth pages (without layout)
-import Login from '@/pages/auth/Login.vue'
+import Login2 from '@/pages/auth/Login2.vue'
 import EncryptionTools from "@/pages/tools/EncryptionTools.vue";
 
 const routes: RouteRecordRaw[] = [
@@ -16,7 +16,7 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/login',
         name: 'Login',
-        component: Login,
+        component: Login2,
         meta: {requiresAuth: false}
     },
     // Main app routes (with layout)
