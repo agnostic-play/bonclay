@@ -3,10 +3,11 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"github.com/agnostic-play/ditoo/internal/services"
-	"github.com/labstack/echo/v4"
 	"net/http"
 	"time"
+
+	"github.com/agnostic-play/ditoo/internal/services"
+	"github.com/labstack/echo/v4"
 )
 
 func (h handlers) routesApi() {
@@ -20,6 +21,8 @@ func (h handlers) routesApi() {
 	h.server.DELETE("/api/collection/delete/:id", h.actDeleteCollection)
 	h.server.GET("/api/collection/:slug/endpoint", h.actGetEndpoint)
 	h.server.GET("/api/collection/endpoint_scenario/:collectionSlug", h.getCollectionEndpoint)
+
+	h.server.GET("/api/collection/custom_variable/:collectionSlug", h.getCustomVariable)
 
 	h.server.POST("/api/endpoint/create", h.actCreateEndpoint)
 	h.server.PUT("/api/endpoint/update/:id", h.actUpdateEndpoint)
@@ -201,6 +204,17 @@ func (h handlers) getCollectionEndpoint(ctx echo.Context) error {
 	}
 
 	return h.json(ctx, 200, endpointScenario)
+}
+
+func (h handlers) getCustomVariable(ctx echo.Context) error {
+	c := context.Background()
+
+	customVariable, err := h.serviceContainer.GetCustomVariable(c, ctx.Param("collectionSlug"))
+	if err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	return h.json(ctx, 200, customVariable)
 }
 
 func (h handlers) actCreateEndpoint(ctx echo.Context) error {

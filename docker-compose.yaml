@@ -4,7 +4,7 @@ services:
     image: mysql:8
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: root@321
+      MYSQL_DATABASE: bonclay
       MYSQL_USER: user
       MYSQL_PASSWORD: root@321
     ports:
@@ -12,17 +12,17 @@ services:
     networks:
       - backend
 
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: app
-    restart: unless-stopped
-    tty: true
-    ports:
-      - "8000:80"
-    networks:
-      - backend
+# app:
+#   build:
+#     context: .
+#     dockerfile: Dockerfile
+#   container_name: app
+#   restart: unless-stopped
+#   tty: true
+#   ports:
+#     - "8000:80"
+#   networks:
+#     - backend
 
 networks:
   backend:
