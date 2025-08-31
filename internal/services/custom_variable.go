@@ -2,11 +2,14 @@ package services
 
 import (
 	"context"
+	"net/http"
 
+	"github.com/agnostic-play/ditoo/internal/errs"
 	"github.com/agnostic-play/ditoo/internal/repository"
 )
 
 type CustomVariableReq struct {
+	Method       string `json:"method" validate:"required,alpha"`
 	CollectionID string `json:"collection_id" validate:"required,uuid"`
 	Key          string `json:"key" validate:"required"`
 	Value        string `json:"value" validate:"required"`
@@ -27,6 +30,23 @@ func (req CustomVariableReq) translate() repository.CustomVariableEntity {
 
 type CustomVariableServiceInterface interface {
 	GetCustomVariable(ctx context.Context, slug string) ([]repository.CustomVariableEntity, error)
+	CreateOrUpdateCustomVariable(ctx context.Context, id string, req CustomVariableReq) (repository.CustomVariableEntity, error)
+}
+
+func (cont serviceContainer) CreateOrUpdateCustomVariable(ctx context.Context, id string, req CustomVariableReq) (repository.CustomVariableEntity, error) {
+	switch req.Method {
+	case http.MethodGet, http.MethodPut, http.MethodDelete,
+		http.MethodPatch, http.MethodPost,
+		http.MethodOptions, http.MethodTrace:
+	default:
+		return repository.CustomVariableEntity{}, errs.BadRequest("invalid method")
+	}
+
+	resp, err := cont.repoContainer.CreateOrUpdateCustomVariable(ctx, id, req.translate())
+	if err != nil {
+		return repository.CustomVariableEntity{}, err
+	}
+	return resp, nil
 }
 
 func (cont serviceContainer) GetCustomVariable(ctx context.Context, slug string) ([]repository.CustomVariableEntity, error) {
