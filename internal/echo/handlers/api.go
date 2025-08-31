@@ -22,7 +22,8 @@ func (h handlers) routesApi() {
 	h.server.GET("/api/collection/:slug/endpoint", h.actGetEndpoint)
 	h.server.GET("/api/collection/endpoint_scenario/:collectionSlug", h.getCollectionEndpoint)
 
-	h.server.GET("/api/collection/custom_variable/:collectionSlug", h.getCustomVariable)
+	h.server.GET("/api/collection/custom_variable/list/:collectionSlug", h.getCustomVariable)
+	h.server.POST("/api/collection/custom_variable/create", h.actCreateCustomVariable)
 
 	h.server.POST("/api/endpoint/create", h.actCreateEndpoint)
 	h.server.PUT("/api/endpoint/update/:id", h.actUpdateEndpoint)
@@ -215,6 +216,21 @@ func (h handlers) getCustomVariable(ctx echo.Context) error {
 	}
 
 	return h.json(ctx, 200, customVariable)
+}
+
+func (h handlers) actCreateCustomVariable(ctx echo.Context) error {
+	var req services.CustomVariableReq
+
+	if err := h.validateRequest(ctx, &req); err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	resp, err := h.serviceContainer.CreateOrUpdateCustomVariable(context.Background(), "", req)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, resp)
 }
 
 func (h handlers) actCreateEndpoint(ctx echo.Context) error {
