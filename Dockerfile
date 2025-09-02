@@ -31,7 +31,9 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
 
 
 # Stage 2: Final runtime image
-FROM alpine:3.20
+
+FROM honolulu.allobank.local/allodevops/alpine:3.20
+
 
 ARG APP_PORT=6106
 ENV GOPROXY=http://california.allobank.local:8081/repository/golang-proxy
