@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
+
 	"gorm.io/gorm"
 )
 
@@ -93,4 +95,24 @@ func (cont repoContainerGorm) DeleteScenario(ctx context.Context, squadID string
 	}
 
 	return nil
+}
+
+func (scenario *ScenarioEntity) ApplyEnv(env map[string]string) {
+	// Match {{varName}}
+	re := regexp.MustCompile(`\{\{(.+?)\}\}`)
+
+	// Replace each match with env value
+	result := re.ReplaceAllStringFunc(scenario.Body, func(m string) string {
+		// Extract key name without {{ }}
+		key := re.FindStringSubmatch(m)[1]
+		if val, ok := env[key]; ok {
+			return val
+		}
+		// If not found, keep original placeholder
+		return m
+	})
+
+	scenario.Body = result
+
+	return
 }
