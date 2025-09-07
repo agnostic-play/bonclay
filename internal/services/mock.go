@@ -3,8 +3,9 @@ package services
 import (
 	"context"
 	"fmt"
-	"github.com/agnostic-play/ditoo/internal/repository"
 	"strings"
+
+	"github.com/agnostic-play/ditoo/internal/repository"
 )
 
 type MockServiceInterface interface {
@@ -34,5 +35,19 @@ func (cont serviceContainer) MockApi(ctx context.Context, collectionSlug, method
 		return repository.ScenarioEntity{}, err
 	}
 
+	customVar, err := cont.repoContainer.GetListCustomVariableByCollectionId(ctx, collection.ID.String())
+	if err != nil {
+		return repository.ScenarioEntity{}, err
+	}
+	scenario.ApplyEnv(envSliceToMap(customVar))
+
 	return scenario, nil
+}
+
+func envSliceToMap(envs []repository.CustomVariableEntity) map[string]string {
+	result := make(map[string]string)
+	for _, e := range envs {
+		result[e.Key] = e.Value
+	}
+	return result
 }
