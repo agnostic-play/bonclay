@@ -17,8 +17,9 @@ ARG GO_VERSION=1.23.9-alpine3.20
 #
 #RUN pnpm build
 
-
+# ============================================
 # Stage 1: Go builder
+# ============================================
 FROM honolulu.allobank.local/allodevops/golang:${GO_VERSION} AS go-builder
 
 ENV GOPROXY=http://california.allobank.local:8081/repository/golang-proxy
@@ -29,14 +30,13 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -ldflags="-s -w" -o /app/bin/runner main.go
 
-
-# Stage 2: Final runtime image
-
-FROM honolulu.allobank.local/allodevops/alpine:3.20
-
+# ============================================
+# Stage 2: Final runtime image (distroless)
+# ============================================
+FROM california.allobank.local:9004/distroless/static:nonroot
 
 ARG APP_PORT=6106
-ENV GOPROXY=http://california.allobank.local:8081/repository/golang-proxy
+ENV APP_PORT=${APP_PORT}
 
 WORKDIR /app
 
@@ -52,4 +52,6 @@ COPY --from=go-builder /app/resources ./resources
 
 EXPOSE ${APP_PORT}
 
-CMD ["./runner"]
+USER nonroot:nonroot
+
+ENTRYPOINT ["./runner"]
