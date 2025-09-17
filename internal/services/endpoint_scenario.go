@@ -3,18 +3,20 @@ package services
 import (
 	"context"
 	"fmt"
+
 	"github.com/agnostic-play/ditoo/internal/errs"
 	"github.com/agnostic-play/ditoo/internal/repository"
 )
 
 type SetActiveScenarioEntityReq struct {
 	EndpointID string `json:"endpoint_id" validate:"required,uuid"`
-	ScenarioID string `json:"scenario_id" validate:"required,uuid"`
+	ScenarioID string `json:"scenario_id" validate:"required"`
 }
 
 type EndpointScenarioServiceInterface interface {
 	GetEndpointScenario(ctx context.Context, slug string) (map[string][]repository.EndpointScenario, error)
 	SetActiveResponse(ctx context.Context, req SetActiveScenarioEntityReq) error
+	RemoveScenario(ctx context.Context, req SetActiveScenarioEntityReq) error
 }
 
 func (cont serviceContainer) SetActiveResponse(ctx context.Context, req SetActiveScenarioEntityReq) error {
@@ -28,6 +30,20 @@ func (cont serviceContainer) SetActiveResponse(ctx context.Context, req SetActiv
 	}
 
 	err = cont.repoContainer.SetActiveResponse(ctx, req.EndpointID, req.ScenarioID)
+	if err != nil {
+		err := errs.BadRequest(fmt.Sprintf("can not set active response: %s", err.Error()))
+		return err
+	}
+	return nil
+}
+
+func (cont serviceContainer) RemoveScenario(ctx context.Context, req SetActiveScenarioEntityReq) error {
+	_, err := cont.repoContainer.GetEndpoint(ctx, req.EndpointID)
+	if err != nil {
+		return err
+	}
+
+	err = cont.repoContainer.RemoveScenario(ctx, req.EndpointID)
 	if err != nil {
 		err := errs.BadRequest(fmt.Sprintf("can not set active response: %s", err.Error()))
 		return err

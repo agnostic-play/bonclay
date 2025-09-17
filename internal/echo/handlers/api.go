@@ -3,10 +3,12 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"github.com/agnostic-play/ditoo/internal/services"
-	"github.com/labstack/echo/v4"
 	"net/http"
 	"time"
+
+	"github.com/labstack/echo/v4"
+
+	"github.com/agnostic-play/ditoo/internal/services"
 )
 
 func (h handlers) routesApi() {
@@ -21,6 +23,9 @@ func (h handlers) routesApi() {
 	h.server.GET("/api/collection/:slug/endpoint", h.actGetEndpoint)
 	h.server.GET("/api/collection/endpoint_scenario/:collectionSlug", h.getCollectionEndpoint)
 
+	h.server.GET("/api/collection/custom_variable/list/:collectionSlug", h.getCustomVariable)
+	h.server.POST("/api/collection/custom_variable/create", h.actCreateCustomVariable)
+
 	h.server.POST("/api/endpoint/create", h.actCreateEndpoint)
 	h.server.PUT("/api/endpoint/update/:id", h.actUpdateEndpoint)
 	h.server.DELETE("/api/endpoint/delete/:id", h.actDeleteEndpoint)
@@ -29,6 +34,7 @@ func (h handlers) routesApi() {
 	h.server.PUT("/api/scenario/update/:id", h.actUpdateScenario)
 	h.server.DELETE("/api/scenario/delete/:id", h.actDeleteScenario)
 
+	h.server.POST("/api/remove_active_scenario/:id", h.actRemoveActiveScenario)
 	h.server.POST("/api/set/active_scenario", h.actSetActiveScenario)
 	h.server.POST("/api/v2/tools/config-encryption/encrypt", h.actEncryptConfig)
 	h.server.POST("/api/v2/tools/config-encryption/decrypt", h.actDecryptConfig)
@@ -42,7 +48,7 @@ func (h handlers) actMock(ctx echo.Context) error {
 	path := ctx.Param("path")
 	collectionSlug := ctx.Param("collection")
 
-	scenario, err := h.serviceContainer.MockApi(context.Background(), collectionSlug, method, path)
+	scenario, err := h.serviceContainer.MockAPI(ctx, collectionSlug, method, path)
 	if err != nil {
 		return ctx.String(404, err.Error())
 	}
@@ -68,6 +74,7 @@ func (h handlers) actMock(ctx echo.Context) error {
 	if err != nil {
 		return ctx.String(500, err.Error())
 	}
+
 	return nil
 
 }
@@ -179,7 +186,6 @@ func (h handlers) actUpdateCollection(ctx echo.Context) error {
 }
 
 func (h handlers) actDeleteCollection(ctx echo.Context) error {
-
 	id, err := h.validateUUID(ctx)
 	if err != nil {
 		return h.errorJson(ctx, http.StatusBadRequest, err)
@@ -201,6 +207,32 @@ func (h handlers) getCollectionEndpoint(ctx echo.Context) error {
 	}
 
 	return h.json(ctx, 200, endpointScenario)
+}
+
+func (h handlers) getCustomVariable(ctx echo.Context) error {
+	c := context.Background()
+
+	customVariable, err := h.serviceContainer.GetCustomVariable(c, ctx.Param("collectionSlug"))
+	if err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	return h.json(ctx, 200, customVariable)
+}
+
+func (h handlers) actCreateCustomVariable(ctx echo.Context) error {
+	var req services.CustomVariableReq
+
+	if err := h.validateRequest(ctx, &req); err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	resp, err := h.serviceContainer.CreateOrUpdateCustomVariable(context.Background(), "", req)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, resp)
 }
 
 func (h handlers) actCreateEndpoint(ctx echo.Context) error {
@@ -309,6 +341,17 @@ func (h handlers) actSetActiveScenario(ctx echo.Context) error {
 	}
 
 	err := h.serviceContainer.SetActiveResponse(context.Background(), req)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, req)
+}
+
+func (h handlers) actRemoveActiveScenario(ctx echo.Context) error {
+	var req services.SetActiveScenarioEntityReq
+	req.EndpointID = ctx.Param("id")
+	err := h.serviceContainer.RemoveScenario(context.Background(), req)
 	if err != nil {
 		return h.errorJson(ctx, http.StatusInternalServerError, err)
 	}

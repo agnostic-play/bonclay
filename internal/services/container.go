@@ -11,6 +11,7 @@ type ServiceContainer interface {
 	EndpointServiceInterface
 	ScenarioServiceInterface
 	EndpointScenarioServiceInterface
+	CustomVariableServiceInterface
 	MockServiceInterface
 	ToolsService
 }

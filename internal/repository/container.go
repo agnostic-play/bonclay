@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
 	"github.com/agnostic-play/ditoo/internal/config"
 	"gorm.io/gorm"
 )
@@ -14,6 +15,7 @@ type RepoContainer interface {
 	EndpointRepoInterface
 	ScenarioRepoInterface
 	EndpointScenarioRepoInterface
+	CustomVariableRepoInterface
 	Begin()
 	Rollback() error
 	Commit() error
