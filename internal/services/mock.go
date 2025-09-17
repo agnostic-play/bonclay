@@ -133,13 +133,11 @@ func (cont serviceContainer) forwardToProxy(echoCtx echo.Context, proxyURL, path
 		}
 	}
 
-	marshal, err := json.Marshal(echoCtx.Request().Body)
-	if err != nil {
-		return MockEntityRes{}, err
+	if echoCtx.Request().Body != nil {
+		marshal, _ := json.Marshal(echoCtx.Request().Body)
+		log.Printf("[REQUEST] Forwarding request: method=%s url=%s headers=%v body=%v",
+			req.Method, req.URL.String(), req.Header, marshal)
 	}
-
-	log.Printf("[REQUEST] Forwarding request: method=%s url=%s headers=%v body=%v",
-		req.Method, req.URL.String(), req.Header, marshal)
 
 	// Execute proxy request
 	resp, err := client.Do(req)
@@ -147,17 +145,20 @@ func (cont serviceContainer) forwardToProxy(echoCtx echo.Context, proxyURL, path
 		log.Printf("[ERROR] proxy request failed: %v", err)
 		return MockEntityRes{}, fmt.Errorf("proxy request failed: %w", err)
 	}
+
 	defer resp.Body.Close()
+	var bodyBytes []byte
+	if resp.Body != nil {
+		// Read response body
+		bodyBytes, err = io.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("[ERROR] failed to read proxy response body: %v", err)
+			return MockEntityRes{}, fmt.Errorf("failed to read proxy response body: %w", err)
+		}
 
-	// Read response body
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("[ERROR] failed to read proxy response body: %v", err)
-		return MockEntityRes{}, fmt.Errorf("failed to read proxy response body: %w", err)
+		log.Printf("[RESPONSE] status=%d headers=%v body=%s",
+			resp.StatusCode, resp.Header, string(bodyBytes))
 	}
-
-	log.Printf("[RESPONSE] status=%d headers=%v body=%s",
-		resp.StatusCode, resp.Header, string(bodyBytes))
 
 	// Prepare proxy response
 	proxyHeaders := make(http.Header)
