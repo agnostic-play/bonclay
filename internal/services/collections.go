@@ -2,8 +2,9 @@ package services
 
 import (
 	"context"
-	"github.com/agnostic-play/ditoo/internal/repository"
 	"strings"
+
+	"github.com/agnostic-play/ditoo/internal/repository"
 )
 
 type CollectionEntityReq struct {
@@ -11,6 +12,9 @@ type CollectionEntityReq struct {
 	Docs    string `json:"docs"`
 	SquadID string `json:"squad_id" validate:"required,uuid"`
 	Desc    string `json:"desc"`
+
+	ForwardProxyURL string `json:"forward_proxy_url"`
+	IsProxyEnable   bool   `json:"is_proxy_enable" `
 }
 
 func (req CollectionEntityReq) translate() repository.CollectionEntity {
@@ -28,6 +32,11 @@ func (req CollectionEntityReq) translate() repository.CollectionEntity {
 		ent.Desc = val
 	}
 
+	if val := strings.TrimSpace(req.ForwardProxyURL); val != "" {
+		ent.ForwardProxyURL = val
+	}
+
+	ent.IsProxyEnable = req.IsProxyEnable
 	ent.SquadID = req.SquadID
 	return ent
 }

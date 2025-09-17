@@ -146,7 +146,7 @@ COMMIT;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */
 ;
 
-CREATE TABLE bonclay.custom_variables (
+CREATE TABLE custom_variables (
     id char(36) NOT NULL,
     collection_id char(36) NULL,
     `key` varchar(255) NOT NULL,

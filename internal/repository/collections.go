@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"gorm.io/gorm"
 )
 
@@ -16,6 +17,9 @@ type CollectionEntity struct {
 	Slug    string `json:"slug"`
 	SquadID string `json:"squad_id"`
 	Desc    string `json:"desc"`
+
+	ForwardProxyURL string `json:"forward_proxy_url" gorm:"column:forward_proxy_url"`
+	IsProxyEnable   bool   `json:"is_proxy_enable" gorm:"column:is_proxy_enable"`
 }
 
 type CollectionRepoInterface interface {
