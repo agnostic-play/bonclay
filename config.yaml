@@ -4,7 +4,7 @@ app:
   port: 6106
   version: 1
   ctxTimeout: 30s
-  baseURL: http://localhost:6106
+  baseURL: https://api-mockup.alexandria.allobank.local
   templatePath: ["./resources/views/layout/*.gohtml","./resources/views/modal/*.gohtml","./resources/views/pages/*.gohtml"]
   staticPath: "./resources/public/assets"
 database:
