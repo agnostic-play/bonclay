@@ -15,6 +15,7 @@ type EndpointEntityReq struct {
 	CollectionID string `json:"collection_id" validate:"required,uuid"`
 	Category     string `json:"category" validate:"required,customText"`
 	Desc         string `json:"desc" validate:"required"`
+	Script       string `json:"script"`
 }
 
 type EndpointCreateReq struct {
@@ -43,6 +44,10 @@ func (req EndpointEntityReq) translate() repository.EndpointEntity {
 
 	if val := strings.TrimSpace(req.Category); val != "" {
 		ent.Category = strings.ToLower(val)
+	}
+
+	if val := req.Script; val != "" {
+		ent.Script = req.Script
 	}
 
 	return ent

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"gorm.io/gorm"
 )
 
@@ -17,6 +18,7 @@ type EndpointEntity struct {
 	Category       string `json:"category" gorm:"column:category"`
 	ActiveScenario string `json:"active_scenario" gorm:"column:active_scenario"`
 	Desc           string `json:"desc" gorm:"column:desc"`
+	Script         string `json:"-" gorm:"script"`
 }
 
 func (EndpointEntity) TableName() string {

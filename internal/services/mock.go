@@ -3,11 +3,13 @@ package services
 import (
 	"context"
 	"fmt"
+	"log"
 	"reflect"
 	"regexp"
 	"strings"
 
 	"github.com/agnostic-play/ditoo/internal/repository"
+	"github.com/dop251/goja"
 )
 
 type MockEntityRes struct {
@@ -17,6 +19,16 @@ type MockEntityRes struct {
 	Body         string `json:"body" gorm:"column:body"`
 	StatusHeader int    `json:"status_header" gorm:"column:status_header"`
 	Delay        *int   `json:"delay" gorm:"column:delay"`
+}
+
+type EndpointEntity struct {
+	Path           string `json:"path" gorm:"column:path"`
+	Method         string `json:"method" gorm:"column:method"`
+	CollectionID   string `json:"collection_id" gorm:"column:collection_id"`
+	Category       string `json:"category" gorm:"column:category"`
+	ActiveScenario string `json:"active_scenario" gorm:"column:active_scenario"`
+	Desc           string `json:"desc" gorm:"column:desc"`
+	Script         string `json:"-" gorm:"script"`
 }
 
 type MockServiceInterface interface {
@@ -52,7 +64,20 @@ func (cont serviceContainer) MockApi(ctx context.Context, collectionSlug, method
 	if err != nil {
 		return MockEntityRes{}, err
 	}
-	mockScenario.ApplyEnv(envSliceToMap(customVar))
+
+	scriptedCustomVar, err := RunScript(envSliceToMap(customVar), endpoint.Script)
+	if err != nil {
+		return MockEntityRes{}, err
+	}
+
+	mockScenario.ApplyEnv(scriptedCustomVar)
+
+	log.Printf("Data: %+v", scriptedCustomVar)
+
+	_, err = cont.repoContainer.CreateOrUpdateMultipleCustomVariable(ctx, collection.ID.String(), scriptedCustomVar)
+	if err != nil {
+		return MockEntityRes{}, err
+	}
 
 	return mockScenario, nil
 }
@@ -95,4 +120,34 @@ func ConvertStruct(src, dst interface{}) {
 			f.Set(sv.Field(i))
 		}
 	}
+}
+
+func RunScript(env map[string]string, script string) (map[string]string, error) {
+	vm := goja.New()
+
+	// Expose env map as JS object
+	jsEnv := vm.NewObject()
+	for k, v := range env {
+		_ = jsEnv.Set(k, v)
+	}
+	_ = vm.Set("env", jsEnv)
+
+	// Run the script
+	_, err := vm.RunString(script)
+	if err != nil {
+		return env, err
+	}
+
+	// Extract updated env
+	newEnv := make(map[string]string)
+	for _, key := range jsEnv.Keys() {
+		val := jsEnv.Get(key)
+		if str, ok := val.Export().(string); ok {
+			newEnv[key] = str
+		} else {
+			newEnv[key] = fmt.Sprintf("%v", val.Export())
+		}
+	}
+
+	return newEnv, nil
 }

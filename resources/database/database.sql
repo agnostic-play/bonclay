@@ -155,3 +155,10 @@ CREATE TABLE bonclay.custom_variables (
     deleted_at timestamp NULL,
     updated_at timestamp NULL
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+
+
+ALTER TABLE bonclay.endpoints ADD script TEXT NULL;
+ALTER TABLE bonclay.endpoints CHANGE script script TEXT NULL AFTER active_scenario;
+
+ALTER TABLE bonclay.custom_variables ADD CONSTRAINT custom_variables_pk PRIMARY KEY (id);
+ALTER TABLE bonclay.custom_variables ADD CONSTRAINT custom_variables_unique UNIQUE KEY (collection_id,`key`);
