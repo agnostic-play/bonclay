@@ -2,12 +2,12 @@ package handler
 
 import (
 	"context"
-	`encoding/json`
+	"encoding/json"
 	"net/http"
 	`time`
 
 	"github.com/labstack/echo/v4"
-	`github.com/labstack/gommon/log`
+	"github.com/labstack/gommon/log"
 
 	"github.com/agnostic-play/ditoo/internal/services"
 )
@@ -54,16 +54,15 @@ func (h handlers) actMock(ctx echo.Context) error {
 		return ctx.String(404, err.Error())
 	}
 
-	ctx.Response().WriteHeader(scenario.StatusHeader)
 	if scenario.ProxyIsEnabled {
 		log.Info("proxy run")
 		for key, values := range scenario.ProxyResponseHeader {
 			for _, value := range values {
-				log.Info(key, " ", value)
 				ctx.Response().Header().Add(key, value)
 			}
 		}
 
+		ctx.Response().WriteHeader(scenario.StatusHeader)
 		_, err = ctx.Response().Write(scenario.ProxyResponseBody)
 		if err != nil {
 			return ctx.String(500, err.Error())
@@ -74,15 +73,15 @@ func (h handlers) actMock(ctx echo.Context) error {
 
 	var header map[string]string
 
-	ctx.Response().WriteHeader(scenario.StatusHeader)
-	err = json.Unmarshal([]byte(scenario.Header), &header)
-	if err != nil {
+	if err = json.Unmarshal([]byte(scenario.Header), &header); err != nil {
 		return ctx.String(500, err.Error())
 	}
 
 	for index, val := range header {
 		ctx.Response().Header().Set(index, val)
 	}
+
+	ctx.Response().WriteHeader(scenario.StatusHeader)
 
 	if scenario.Delay != nil && *scenario.Delay > 0 {
 		time.Sleep(time.Duration(*scenario.Delay) * time.Second)
@@ -92,7 +91,6 @@ func (h handlers) actMock(ctx echo.Context) error {
 	if err != nil {
 		return ctx.String(500, err.Error())
 	}
-
 	return nil
 
 }

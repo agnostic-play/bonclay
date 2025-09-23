@@ -78,7 +78,7 @@ func (cont serviceContainer) MockAPI(echoCtx echo.Context, collectionSlug, metho
 	var mockScenario MockEntityRes
 
 	// Handle proxy forwarding if enabled
-	if collection.IsProxyEnable && collection.ForwardProxyURL != "" {
+	if collection.IsProxyEnable && collection.ForwardProxyURL != "" && endpoint.ActiveScenario == "" {
 		proxyResponse, err := cont.forwardToProxy(echoCtx, collection.ForwardProxyURL, path)
 		if err != nil {
 			return MockEntityRes{}, fmt.Errorf("proxy forwarding failed: %w", err)
