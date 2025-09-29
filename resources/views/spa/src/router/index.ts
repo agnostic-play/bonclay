@@ -10,6 +10,7 @@ import Dashboard from '@/pages/Dashboard.vue'
 // Auth pages (without layout)
 import Login from '@/pages/auth/Login.vue'
 import EncryptionTools from "@/pages/tools/EncryptionTools.vue";
+import EncryptionImegTools from "@/pages/tools/EncryptionImegTools.vue";
 
 const routes: RouteRecordRaw[] = [
     // Auth routes (no layout)
@@ -36,6 +37,12 @@ const routes: RouteRecordRaw[] = [
                 name: 'EncryptionTools',
                 component: EncryptionTools,
                 meta: {title: 'Encryption Tools', menuItem: 'encryption-tools'}
+            },
+            {
+                path: '/encryption-imeg-tools',
+                name: 'EncryptionImegTools',
+                component: EncryptionImegTools,
+                meta: {title: 'Encryption Imeg Tools', menuItem: 'encryption-imeg-tools'}
             },
         ]
     },

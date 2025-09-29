@@ -83,6 +83,12 @@ const menuSections = ref<MenuSectionType[]>([
         label: 'Encryption Tools',
         icon: 'pi pi-shield',
         route: '/encryption-tools'
+      },
+      {
+        id: 'encryption-imeg-tools',
+        label: 'Encryption Imeg Tools',
+        icon: 'pi pi-shield',
+        route: '/encryption-imeg-tools'
       }
     ]
   },
