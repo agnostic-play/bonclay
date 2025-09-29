@@ -9,9 +9,16 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	`strings`
+)
+
+var (
+	key = []byte("Random1234567890")
+	iv  = []byte("RandomInitVector")
 )
 
 type EncryptionToolsEntity struct {
+	Type string `json:"type"`
 	Key  string `json:"key"`
 	Data string `json:"data"`
 }
@@ -27,6 +34,10 @@ func (cont serviceContainer) EncryptConfig(ctx context.Context, req EncryptionTo
 		return "", err
 	}
 
+	if strings.ToLower(req.Type) == "imeg" {
+		return EncryptImeg(decodeString, key, iv)
+	}
+
 	key := sha256.Sum256([]byte(req.Key))
 	encryptedConf, err := encrypt(key[:], decodeString)
 	if err != nil {
@@ -37,6 +48,14 @@ func (cont serviceContainer) EncryptConfig(ctx context.Context, req EncryptionTo
 }
 
 func (cont serviceContainer) DecryptConfig(ctx context.Context, req EncryptionToolsEntity) (string, error) {
+	if strings.ToLower(req.Type) == "imeg" {
+		result, err := DecryptImeg(req.Data, key, iv)
+		if err != nil {
+			return "", err
+		}
+		return base64.StdEncoding.EncodeToString(result), nil
+	}
+
 	key := sha256.Sum256([]byte(req.Key))
 	conf, err := decrypt(key[:], req.Data)
 	if err != nil || conf == nil {
