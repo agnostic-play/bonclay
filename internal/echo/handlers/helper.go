@@ -1,10 +1,11 @@
 package handler
 
 import (
-	"github.com/agnostic-play/ditoo/internal/errs"
-	"github.com/labstack/echo/v4"
 	"net/http"
 	"strings"
+
+	"github.com/agnostic-play/ditoo/internal/common/errs"
+	"github.com/labstack/echo/v4"
 )
 
 type validateID struct {

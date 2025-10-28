@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>{{ .Title }}</title>
+    <style>
+        :root {
+            --bg: #fff;
+            --fg: #0f172a;
+            --muted: #64748b;
+            --border: #e5e7eb;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--fg);
+            font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+        }
+
+        .wrap {
+            height: 100%;
+            display: grid;
+            grid-template-rows: auto 1fr;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: .5rem;
+            align-items: center;
+            justify-content: space-between;
+            padding: .6rem .9rem;
+            border-bottom: 1px solid var(--border);
+            background: #fff;
+            position: sticky;
+            top: 0;
+        }
+
+        .toolbar .title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .btn {
+            font-size: 12px;
+            border: 1px solid var(--border);
+            background: #fff;
+            padding: .35rem .55rem;
+            border-radius: .375rem;
+            cursor: pointer;
+        }
+
+        .btn:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+        .divider {
+            width: 1px;
+            height: 20px;
+            background: var(--border);
+            margin: 0 .25rem;
+        }
+
+        .stage {
+            position: relative;
+            height: calc(100vh - 48px);
+        }
+
+        .preview {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .placeholder {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .error {
+            position: absolute;
+            inset: auto 12px 12px 12px;
+            border: 1px solid #fecaca;
+            background: #fff1f2;
+            color: #b91c1c;
+            font-size: 12px;
+            padding: .5rem .75rem;
+            border-radius: .5rem;
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="toolbar">
+        <div class="title">Live Diagram Preview</div>
+        <div>
+            <button class="btn" type="button" onclick="zoomOut()">−</button>
+            <button class="btn" type="button" onclick="resetView()">Reset</button>
+            <button class="btn" type="button" onclick="zoomIn()">＋</button>
+            <span class="divider"></span>
+            <button class="btn" type="button" onclick="downloadSVG()">SVG</button>
+        </div>
+    </div>
+
+    <div class="stage">
+        <div id="preview" class="preview" aria-live="polite"></div>
+        <div id="placeholder" class="placeholder">Rendered diagram will appear here</div>
+        <div id="error" class="error" style="display:none"></div>
+    </div>
+</div>
+
+<!-- Mermaid + Panzoom from CDNs. Pin versions as you prefer. -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/panzoom@9.4.3/dist/panzoom.min.js"></script>
+
+<!-- Mermaid source provided by Go template variable. Escaped as HTML to be safe. -->
+<script id="mmd-source" type="text/plain">{{ .Mermaid | html }}</script>
+
+<script>
+    (function () {
+        const placeholder = document.getElementById('placeholder');
+        const preview = document.getElementById('preview');
+        const errEl = document.getElementById('error');
+        let pz = null;
+
+        function showError(msg) {
+            if (!msg) return;
+            errEl.textContent = 'Syntax error: ' + msg;
+            errEl.style.display = 'block';
+        }
+
+        function clearError() {
+            errEl.textContent = '';
+            errEl.style.display = 'none';
+        }
+
+        function attachPanzoom() {
+            const svgEl = preview.querySelector('svg');
+            if (!svgEl) return;
+// Make SVG responsive and fill container
+            svgEl.removeAttribute('width');
+            svgEl.removeAttribute('height');
+            svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+            svgEl.style.width = '100%';
+            svgEl.style.height = '100%';
+// Dispose previous instance if any
+            try {
+                pz && pz.dispose && pz.dispose();
+            } catch (_) {
+            }
+// @ts-ignore - provided by CDN
+            pz = panzoom(svgEl, {smoothScroll: true, zoomSpeed: 0.065, maxZoom: 8, minZoom: 0.25, bounds: false});
+        }
+
+        function render() {
+            const srcEl = document.getElementById('mmd-source');
+            const source = srcEl ? srcEl.textContent : '';
+            if (!source) return;
+            clearError();
+            const id = 'mmd-' + Math.random().toString(36).slice(2);
+            try {
+// Try validating first; if invalid, mermaid.parse throws
+// @ts-ignore - parse available at runtime
+                mermaid.parse(source);
+            } catch (e) {
+                showError(e && e.message ? e.message : 'Mermaid syntax error.');
+                return;
+            }
+// Initialize + render
+// @ts-ignore - mermaid global from CDN
+            mermaid.initialize({startOnLoad: false, securityLevel: 'loose', theme: '{{ or .Theme "default" }}'});
+// @ts-ignore
+            mermaid.render(id, source).then(({svg}) => {
+                preview.innerHTML = svg;
+                placeholder.style.display = 'none';
+                attachPanzoom();
+            }).catch((e) => {
+                showError(e && e.message ? e.message : 'Failed to render diagram.');
+            });
+        }
+
+// Expose simple controls
+        window.zoomIn = function () {
+            try {
+                pz && pz.smoothZoom && pz.smoothZoom(0, 0, 1.25);
+            } catch (_) {
+            }
+        };
+        window.zoomOut = function () {
+            try {
+                pz && pz.smoothZoom && pz.smoothZoom(0, 0, 0.8);
+            } catch (_) {
+            }
+        };
+        window.resetView = function () {
+            try {
+                if (pz) {
+                    pz.moveTo && pz.moveTo(0, 0);
+                    pz.zoomAbs && pz.zoomAbs(0, 0, 1);
+                }
+            } catch (_) {
+            }
+        };
+        window.downloadSVG = function () {
+            const svg = preview.innerHTML;
+            if (!svg) return;
+            const blob = new Blob([svg], {type: 'image/svg+xml;charset=utf-8'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '{{ or .FileName "diagram" }}.svg';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        };
+
+// Kick off
+        render();
+    })();
+</script>
+</body>
+</html>
+
+
+{{/*https://chatgpt.com/c/69013e52-1bf0-8323-b9a7-c08f5e4ea6f1*/}}

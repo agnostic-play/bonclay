@@ -1,7 +1,7 @@
 package echo
 
 import (
-	"github.com/agnostic-play/ditoo/internal/constant"
+	"github.com/agnostic-play/ditoo/internal/common/constant"
 	httpUtils "github.com/agnostic-play/ditoo/internal/echo/utils"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"

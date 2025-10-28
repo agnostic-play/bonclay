@@ -3,7 +3,8 @@ package services
 import (
 	"context"
 	"fmt"
-	"github.com/agnostic-play/ditoo/internal/errs"
+
+	"github.com/agnostic-play/ditoo/internal/common/errs"
 	"github.com/agnostic-play/ditoo/internal/repository"
 )
 

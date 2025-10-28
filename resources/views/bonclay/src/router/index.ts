@@ -1,7 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
-import Index from "@/pages/mockApi/Index.vue";
-import ShowCollection from "@/pages/mockApi/ShowCollection.vue";
+import MermaidDiagramToolsIndex from "@/pages/mermaidDiagram/Index.vue";
+import MermaidDiagramToolsShow from "@/pages/mermaidDiagram/Show.vue";
+
+import MockAPIToolsIndex from "@/pages/mockApi/Index.vue";
+import MockAPIToolsIndexShowCollection from "@/pages/mockApi/ShowCollection.vue";
 
 const routes: RouteRecordRaw[] = [
     {
@@ -15,13 +18,34 @@ const routes: RouteRecordRaw[] = [
                     {
                         path: '',
                         name: 'MockApiTools-Index',
-                        component: Index,
+                        component: MockAPIToolsIndex,
                     },
                     {
                         path: 'collection/:id',
                         name: 'MockApiTools-CollectionShow',
-                        component: ShowCollection,
+                        component: MockAPIToolsIndexShowCollection,
                     }
+                ]
+            },
+            {
+                path: 'mermaid-diagram',
+                name: 'MermaidDiagramTools',
+                children: [
+                    {
+                        path: '',
+                        name: 'MermaidDiagramTools-Index',
+                        component: MermaidDiagramToolsIndex,
+                    },
+                    {
+                        path: 'project/:id',
+                        name: 'MermaidDiagramTools-ProjectShow',
+                        component: MermaidDiagramToolsShow,
+                    }
+                    // {
+                    //     path: 'projects/:id',
+                    //     name: 'MermaidDiagramTools-CollectionShow',
+                    //     component: ShowCollection,
+                    // }
                 ]
             },
             // You can add more children here

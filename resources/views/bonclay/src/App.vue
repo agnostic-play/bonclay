@@ -32,7 +32,7 @@ const route = useRoute()
             <BreadcrumbList>
               <BreadcrumbItem class="hidden md:block">
                 <BreadcrumbLink href="#">
-                  Mock API
+                  Mermaid Diagram
                 </BreadcrumbLink>
               </BreadcrumbItem>
 <!--              <BreadcrumbSeparator class="hidden md:block" />-->

@@ -37,3 +37,15 @@ export interface Scenario {
     createdAt: string
     response?: any
 }
+
+export interface MermaidDiagramTools {
+    id: string
+    endpointPath: string
+    httpStatus: number
+    name: string
+    description: string
+    responseDelay: number
+    isActive: boolean
+    createdAt: string
+    response?: any
+}

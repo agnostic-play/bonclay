@@ -4,7 +4,7 @@ import { type SidebarProps} from '@/components/ui/sidebar'
 
 import {
   Clover,
-  SquareTerminal,
+  SquareTerminal, WorkflowIcon,
 } from "lucide-vue-next"
 import NavMain from '@/components/NavMain.vue'
 import NavUser from '@/components/NavUser.vue'
@@ -55,6 +55,22 @@ const data = computed(() => ({
           title: "Histories",
           routeName: "MockApiTools-Index",
         },
+      ],
+    },
+    {
+      title: "Mermaid Diagram",
+      url: "#",
+      icon: WorkflowIcon,
+      isActive: route.path.startsWith("/tools/mermaid-diagram"),
+      items: [
+        {
+          title: "Projects",
+          routeName: "MermaidDiagramTools-Index",
+        },
+        // {
+        //   title: "Show",
+        //   routeName: "MermaidDiagramTools-ProjectShow",
+        // }
       ],
     },
   ],

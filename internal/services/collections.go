@@ -2,8 +2,9 @@ package services
 
 import (
 	"context"
-	"github.com/agnostic-play/ditoo/internal/repository"
 	"strings"
+
+	"github.com/agnostic-play/ditoo/internal/repository"
 )
 
 type CollectionEntityReq struct {
