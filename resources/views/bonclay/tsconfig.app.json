@@ -10,12 +10,20 @@
     },
 
     /* Linting */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+//    "strict": true,
+//    "noUnusedLocals": true,
+//    "noUnusedParameters": true,
+//    "erasableSyntaxOnly": true,
+//    "noFallthroughCasesInSwitch": true,
+//    "noUncheckedSideEffectImports": true,
+
+    // use this for dev
+    "strict": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "erasableSyntaxOnly": false,
+    "noFallthroughCasesInSwitch": false,
+    "noUncheckedSideEffectImports": false
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
 }

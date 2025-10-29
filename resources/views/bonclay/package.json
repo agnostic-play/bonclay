@@ -21,6 +21,7 @@
     "mermaid": "^11.12.1",
     "monaco-editor": "^0.54.0",
     "panzoom": "^9.4.3",
+    "pinia": "^3.0.3",
     "radix-vue": "^1.9.17",
     "reka-ui": "^2.4.1",
     "tailwind-merge": "^3.3.1",

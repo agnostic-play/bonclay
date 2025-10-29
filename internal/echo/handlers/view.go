@@ -14,6 +14,10 @@ func (h handlers) routesViews() {
 	h.server.Static("/v2/assets", "resources/views/spa/dist/assets")
 	h.server.File("/v2", "resources/views/spa/dist/index.html")
 	h.server.File("/v2/*", "resources/views/spa/dist/index.html")
+
+	h.server.Static("/v3/assets", "resources/views/bonclay/public/bonclay/assets")
+	h.server.File("/v3", "resources/views/bonclay/public/bonclay/index.html")
+	h.server.File("/v3/*", "resources/views/bonclay/public/bonclay/index.html")
 }
 
 func (h handlers) viewShowCollection(ctx echo.Context) error {
