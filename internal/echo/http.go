@@ -4,14 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+
+	"github.com/agnostic-play/ditoo/internal/common/constant"
 	"github.com/agnostic-play/ditoo/internal/config"
 	handler "github.com/agnostic-play/ditoo/internal/echo/handlers"
 	httpUtils "github.com/agnostic-play/ditoo/internal/echo/utils"
 	"github.com/agnostic-play/ditoo/internal/services"
 	"github.com/agnostic-play/ditoo/pkg/validator"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
-	"net/http"
 )
 
 func RunHttpServer(config *config.Config, container services.ServiceContainer) chan bool {
@@ -23,7 +26,22 @@ func RunHttpServer(config *config.Config, container services.ServiceContainer) c
 
 	e.Static("/static", config.App.StaticPath)
 
-	SetupMiddlewares(e)
+	e.Pre(middleware.RemoveTrailingSlash())
+	e.Use(func(h echo.HandlerFunc) echo.HandlerFunc {
+		return func(ctx echo.Context) error {
+			session := httpUtils.NewSessionRequest()
+			session.IP = ctx.RealIP()
+			session.URL = ctx.Request().URL.String()
+			session.Method = ctx.Request().Method
+
+			ctx.Set(constant.AppSessionRequest, session)
+			return h(ctx)
+		}
+	})
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*", "http://localhost:*", "http://localhost:5173/*"},
+	}))
+
 	handler.NewSetupHandlers(e, config.App.BaseURL, container).Routes()
 
 	go func() {

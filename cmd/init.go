@@ -25,8 +25,10 @@ func Init(conf *config.Config) (chan bool, chan bool) {
 			PoolMaxConnLifetime: conf.Database.PoolMaxConnLifetime,
 		})
 	)
-	repoContainer := repository.NewRepoContainerGorm(db, sqlDB, conf)
-	serviceContainer := services.NewServiceContainer(repoContainer, conf)
+
+	dbClient := repository.NewDBClient(db)
+	repoContainer := repository.NewRepoContainerGorm(db, conf)
+	serviceContainer := services.NewServiceContainer(conf, repoContainer, dbClient)
 
 	serverExitSignal := echo.RunHttpServer(conf, serviceContainer)
 

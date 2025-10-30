@@ -18,6 +18,7 @@ type DBClient interface {
 
 	client(ctx context.Context) *gorm.DB
 }
+
 type dbClient struct {
 	gormDB *gorm.DB
 }

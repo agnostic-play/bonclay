@@ -20,7 +20,7 @@ func (h handlers) render(ctx echo.Context, page string, data interface{}) error 
 	})
 }
 
-func (h handlers) json(ctx echo.Context, status int, data interface{}) error {
+func respJSON(ctx echo.Context, status int, data interface{}) error {
 	return ctx.JSON(status, map[string]interface{}{
 		"status":  status,
 		"message": "success",
@@ -28,7 +28,7 @@ func (h handlers) json(ctx echo.Context, status int, data interface{}) error {
 	})
 }
 
-func (h handlers) errorJson(ctx echo.Context, status int, err error) error {
+func respErrJSON(ctx echo.Context, status int, err error) error {
 	msg := err.Error()
 
 	if strings.Contains(err.Error(), "not found") {
@@ -50,7 +50,7 @@ func (h handlers) errorJson(ctx echo.Context, status int, err error) error {
 	})
 }
 
-func (h handlers) validateRequest(ctx echo.Context, payload interface{}) (err error) {
+func validateRequest(ctx echo.Context, payload interface{}) (err error) {
 	if err = ctx.Bind(&payload); err != nil {
 		return
 	}
@@ -60,7 +60,7 @@ func (h handlers) validateRequest(ctx echo.Context, payload interface{}) (err er
 	return nil
 }
 
-func (h handlers) validateUUID(ctx echo.Context) (string, error) {
+func validateUUID(ctx echo.Context) (string, error) {
 
 	var uuid validateID
 

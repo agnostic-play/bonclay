@@ -13,7 +13,7 @@ import (
 )
 
 type BaseCRUDRepo[T any] interface {
-	GetAll(ctx context.Context, query *pagination.ListQuery) (*pagination.ListResult[T], error)
+	GetList(ctx context.Context, query *pagination.ListQuery) (*pagination.ListResult[T], error)
 	Create(ctx context.Context, entity T) (T, error)
 
 	Get(ctx context.Context, id string) (T, error)
@@ -33,7 +33,7 @@ func NewBaseCRUDRepo[T any](entity entities.BaseEntityInterface[T], dbClient DBC
 	}
 }
 
-func (r *baseRepository[T]) GetAll(ctx context.Context, paginationQuery *pagination.ListQuery) (*pagination.ListResult[T], error) {
+func (r *baseRepository[T]) GetList(ctx context.Context, paginationQuery *pagination.ListQuery) (*pagination.ListResult[T], error) {
 	var (
 		totalItems int64
 		listItems  []T
@@ -54,9 +54,13 @@ func (r *baseRepository[T]) GetAll(ctx context.Context, paginationQuery *paginat
 		return result, nil
 	}
 
-	getItems := rawExec.Scopes(Sort(paginationQuery)).
-		Scopes(Paginate(paginationQuery)).
-		Find(&listItems)
+	getItems := rawExec.Scopes(Sort(paginationQuery))
+
+	if !paginationQuery.ShowAll {
+		getItems = getItems.Scopes(Paginate(paginationQuery))
+	}
+
+	getItems = getItems.Find(&listItems)
 	if err := getItems.Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return result, nil
@@ -65,6 +69,8 @@ func (r *baseRepository[T]) GetAll(ctx context.Context, paginationQuery *paginat
 		return &pagination.ListResult[T]{}, err
 	}
 
+	result.SetData(int(totalItems), listItems)
+	
 	return result, nil
 }
 

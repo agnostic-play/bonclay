@@ -44,6 +44,13 @@ func SearchScope(q *pagination.ListQuery, fields ...string) func(db *gorm.DB) *g
 				query = query.Or(field+" LIKE ?", searchTerm)
 			}
 		}
+
+		if q.Filters != nil && len(q.Filters) > 0 {
+			for field, val := range q.Filters {
+				query = query.Where(field, val)
+			}
+		}
+
 		return query
 	}
 }

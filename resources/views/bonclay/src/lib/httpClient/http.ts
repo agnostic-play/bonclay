@@ -135,7 +135,7 @@ export class BaseHttpClient {
             message: axErr?.message || 'An unexpected error occurred',
             status: axErr?.response?.status ?? 0,
             code: axErr?.code,
-            details: axErr?.response?.data,
+            data: axErr?.response?.data,
         };
         return apiError;
     }
@@ -259,6 +259,7 @@ export class BaseHttpClient {
             throw norm;
         }
     }
+
 
     protected async put<T = unknown>(
         url: string,

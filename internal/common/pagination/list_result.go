@@ -1,7 +1,7 @@
 package pagination
 
 type ListResult[T any] struct {
-	Data       []T  `json:"data"`        // The actual items
+	List       []T  `json:"list"`        // The actual items
 	Total      int  `json:"total"`       // Total number of items
 	Page       int  `json:"page"`        // Current page number
 	PageSize   int  `json:"page_size"`   // Items per page
@@ -21,7 +21,7 @@ func NewListResult[T any](query *ListQuery) *ListResult[T] {
 	totalPages := 0
 
 	return &ListResult[T]{
-		Data:       []T{},
+		List:       []T{},
 		Total:      0,
 		Page:       query.Page,
 		PageSize:   query.PageSize,
@@ -40,5 +40,5 @@ func (l *ListResult[T]) SetData(totalData int, data []T) {
 	}
 
 	l.Total = totalData
-	l.Data = data
+	l.List = data
 }

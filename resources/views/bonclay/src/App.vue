@@ -16,7 +16,8 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import {useRoute} from "vue-router";
-
+import { Toaster } from '@/components/ui/sonner'
+import 'vue-sonner/style.css'
 const route = useRoute()
 </script>
 
@@ -45,6 +46,7 @@ const route = useRoute()
       </header>
       <div class="flex flex-1 flex-col gap-4 p-4 pt-0">
         <router-view/>
+        <Toaster position="top-right" rich-colors close-button />
 <!--        <div class="grid auto-rows-min gap-4 md:grid-cols-3">-->
 <!--          <div class="aspect-video rounded-xl bg-muted/50" />-->
 <!--          <div class="aspect-video rounded-xl bg-muted/50" />-->

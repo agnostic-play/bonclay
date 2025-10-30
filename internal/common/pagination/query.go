@@ -17,6 +17,10 @@ type ListQuery struct {
 	// Sorting
 	SortBy    string `json:"sort_by" form:"sort_by"`       // Field to sort by
 	SortOrder string `json:"sort_order" form:"sort_order"` // "asc" or "desc"
+
+	ShowAll bool `json:"-" `
+
+	Filters map[string]interface{} `json:"filters" form:"filters"`
 }
 
 // Normalize validates and normalizes the query parameters

@@ -37,7 +37,7 @@ const routes: RouteRecordRaw[] = [
                         component: MermaidDiagramToolsIndex,
                     },
                     {
-                        path: 'project/:id',
+                        path: 'collection/:id',
                         name: 'MermaidDiagramTools-ProjectShow',
                         component: MermaidDiagramToolsShow,
                     }

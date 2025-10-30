@@ -3,6 +3,7 @@
 // ================================
 
 // Base HTTP Client Types
+
 export interface RequestOptions {
     headers?: Record<string, string>
     params?: Record<string, any>
@@ -38,7 +39,7 @@ export interface PaginationParams {
 }
 
 export interface PaginatedResponse<T> {
-    data: T[]
+    list: T[]
     page_number: number
     page_size: number
     total_items: number
@@ -242,6 +243,16 @@ export interface Comment extends TimestampedEntity {
     parent_id?: number | null
 }
 
+export interface ApiError {
+    error?: string
+    message?: string
+    code?: string
+    status?: number
+    data?: any
+}
+
+
+
 // ================================
 // Export all types
 // ================================
@@ -270,3 +281,4 @@ export const DEFAULT_PAGE_SIZE = 10
 export const DEFAULT_TIMEOUT = 30000
 export const MAX_RETRIES = 3
 export const RETRY_DELAY = 1000
+
