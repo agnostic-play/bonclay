@@ -27,7 +27,6 @@ export abstract class BonClayHttpClient<T> extends BaseHttpClient {
         return this.get<PaginatedResponse<T>>(`/${this.resource}/list`, { ...options, params })
     }
 
-
     async getDetail(
         id: string | number,
         options?: RequestOptions,
@@ -39,7 +38,7 @@ export abstract class BonClayHttpClient<T> extends BaseHttpClient {
         data: Partial<T>,
         options?: RequestOptions,
     ): Promise<T> {
-        return this.post<T>(`/${this.resource}`, data, options)
+        return this.post<T>(`/${this.resource}/create`, data, options)
     }
 
     async actUpdate(

@@ -59,10 +59,8 @@ export interface ApiResponse<T = any> {
 }
 
 export interface ApiErrorResponse {
-    error?: string
+    data?: Record<string, string>
     message?: string
-    notification?: ApiNotification
-    errors?: Record<string, string[]> // For validation errors
     status?: number
 }
 

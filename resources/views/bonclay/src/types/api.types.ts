@@ -61,8 +61,10 @@ export interface DiagramSummary {
     id: string | number;
     title: string;
     syntax: string;
+    syntaxType: string;
     description?: string;
     latestUpdated?: string;
+    collectionID: string;
 }
 
 export interface DiagramDetail extends DiagramSummary {

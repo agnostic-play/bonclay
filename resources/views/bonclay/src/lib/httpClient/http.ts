@@ -6,7 +6,7 @@ import type {
     InternalAxiosRequestConfig,
     AxiosRequestHeaders,
 } from 'axios';
-import type { ApiError, ApiResponse, RequestOptions } from './types';
+import type {ApiError, ApiErrorResponse, ApiResponse, RequestOptions} from './types';
 
 export class BaseHttpClient {
     protected readonly instance: AxiosInstance;
@@ -193,7 +193,20 @@ export class BaseHttpClient {
      * - ApiResponse<T>
      * - T
      */
-    private unwrap<T>(response: unknown): T {
+    private unwrap<T>(response: AxiosResponse): T {
+        // if (response.status === 200) {
+        // }
+
+        // if (response.status >= 400 && response.status < 500) {
+        //     const payload = response.data as any;
+        //     if (payload && typeof payload === 'object' && 'data' in payload) {
+        //         const data = payload.data as ApiResponse;
+        //         throw new
+        //     }
+        //
+        //     return payload as T;
+        // }
+
         // AxiosResponse
         if (response && typeof response === 'object' && 'data' in (response as any)) {
             const r = response as AxiosResponse<ApiResponse<T> | T>;
@@ -211,6 +224,7 @@ export class BaseHttpClient {
         if (payload && typeof payload === 'object' && 'data' in payload) {
             return (payload as ApiResponse<T>).data as T;
         }
+
         return payload as T;
     }
 
@@ -226,6 +240,7 @@ export class BaseHttpClient {
                 timeout: options.timeout,
                 headers: options.headers,
             });
+
             return this.unwrap<T>(res);
         } catch (err) {
             const norm = this.normalizeError(err);

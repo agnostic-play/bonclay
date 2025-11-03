@@ -1,31 +1,33 @@
 <!-- src/pages/DiagramCollectionShow.vue -->
 <script lang="ts" setup>
-import { nextTick, onBeforeUnmount, onMounted, ref, watch, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import {nextTick, onBeforeUnmount, onMounted, ref, watch, computed} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
 import mermaid from 'mermaid'
-import panzoom, { type PanZoom } from 'panzoom'
+import panzoom, {type PanZoom} from 'panzoom'
 import * as monaco from "monaco-editor"
-import { loader } from "@guolao/vue-monaco-editor"
-loader.config({ monaco })
-import { toast } from 'vue-sonner'
+import {loader} from "@guolao/vue-monaco-editor"
 
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Check, ChevronsUpDown, FilePlus2, Save, Search, Pencil, Trash2 } from 'lucide-vue-next'
-import { cn } from '@/lib/utils'
+loader.config({monaco})
+import {toast} from 'vue-sonner'
+
+import {Card, CardContent} from '@/components/ui/card'
+import {Button} from '@/components/ui/button'
+import {Check, ChevronsUpDown, FilePlus2, Save, Search, Pencil, Trash2} from 'lucide-vue-next'
+import {cn} from '@/lib/utils'
 import {
   Combobox, ComboboxAnchor, ComboboxEmpty, ComboboxGroup,
   ComboboxInput, ComboboxItem, ComboboxItemIndicator, ComboboxList, ComboboxTrigger,
 } from '@/components/ui/combobox'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
+import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter} from '@/components/ui/dialog'
+import {Input} from '@/components/ui/input'
+import {Textarea} from '@/components/ui/textarea'
+import {Label} from '@/components/ui/label'
 
 /* 🔌 API service */
 import diagramCollectionAPI from '@/api/diagramCollectionServices'
-import type { DiagramCollection, DiagramDetail, DiagramSummary } from '@/types/api.types'
-import { useApiFeedback } from "@/composables/useApiFeedback.ts"
+import type {DiagramCollection, DiagramDetail, DiagramSummary} from '@/types/api.types'
+import {useApiFeedback} from "@/composables/useApiFeedback.ts"
+import diagramServices from "@/api/diagramServices.ts";
 
 /* ---------------- route & id ---------------- */
 const route = useRoute()
@@ -40,6 +42,7 @@ const diagrams = ref<DiagramSummary[]>([])
 const isLoadingDiagrams = ref(false)
 
 const selectedId = ref<string>('')                 // combobox v-model
+const searchText = ref<string>('')                 // combobox v-model
 const selectedDiagram = ref<DiagramDetail | null>(null)
 const isSavingDiagram = ref(false)
 
@@ -47,12 +50,13 @@ const apiError = ref<string | null>(null)
 
 /* combobox search term (prevents UUID showing in the input) */
 const comboSearch = ref('')
+
 function onComboOpenChange(open: boolean) {
   if (open) comboSearch.value = ''
 }
 
 /* ---------------- mermaid + monaco ---------------- */
-mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', theme: 'default' })
+mermaid.initialize({startOnLoad: false, securityLevel: 'loose', theme: 'default'})
 const source = ref<string>('') // editor text
 const svgMarkup = ref<string>('') // rendered svg
 const error = ref<string | null>(null)
@@ -78,10 +82,21 @@ const lastUpdatedText = computed(() => {
 })
 
 /* ---------------- helpers ---------------- */
-function disposePanzoom(i: PanZoom | null) { try { (i as any)?.dispose?.() } catch {} }
+function disposePanzoom(i: PanZoom | null) {
+  try {
+    (i as any)?.dispose?.()
+  } catch {
+  }
+}
 
 function attachPanZoom(containerRef: typeof previewRef, fullscreen: boolean) {
-  if (fullscreen) { disposePanzoom(fsPz); fsPz = null } else { disposePanzoom(pz); pz = null }
+  if (fullscreen) {
+    disposePanzoom(fsPz);
+    fsPz = null
+  } else {
+    disposePanzoom(pz);
+    pz = null
+  }
   const container = containerRef.value
   if (!container) return
   const svgEl = container.querySelector('svg') as SVGSVGElement | null
@@ -91,13 +106,16 @@ function attachPanZoom(containerRef: typeof previewRef, fullscreen: boolean) {
   svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet')
   svgEl.style.width = '100%'
   svgEl.style.height = '100%'
-  const instance = panzoom(svgEl, { smoothScroll: true, zoomSpeed: 0.065, maxZoom: 8, minZoom: 0.25, bounds: false })
+  const instance = panzoom(svgEl, {smoothScroll: true, zoomSpeed: 0.065, maxZoom: 8, minZoom: 0.25, bounds: false})
   if (fullscreen) fsPz = instance; else pz = instance
 }
 
 async function validateSyntax(text: string) {
   const trimmed = (text ?? '').trim()
-  if (!trimmed) { error.value = null; return false }
+  if (!trimmed) {
+    error.value = null;
+    return false
+  }
   try {
     await (mermaid as any).parse(trimmed)
     error.value = null
@@ -110,11 +128,14 @@ async function validateSyntax(text: string) {
 
 async function renderDiagram() {
   const ok = await validateSyntax(source.value)
-  if (!ok) { svgMarkup.value = ''; return }
+  if (!ok) {
+    svgMarkup.value = '';
+    return
+  }
   isRendering.value = true
   try {
     const id = 'mmd-' + Math.random().toString(36).slice(2)
-    const { svg } = await mermaid.render(id, source.value)
+    const {svg} = await mermaid.render(id, source.value)
     svgMarkup.value = svg
     await nextTick()
     attachPanZoom(previewRef, false)
@@ -129,14 +150,16 @@ async function renderDiagram() {
 function onEditorChange() {
   if (debounceTimer) window.clearTimeout(debounceTimer)
   if (editor) source.value = editor.getValue()
-  debounceTimer = window.setTimeout(() => { void renderDiagram() }, 300)
+  debounceTimer = window.setTimeout(() => {
+    void renderDiagram()
+  }, 300)
 }
 
 function createEditor() {
   if (!editorEl.value) return
   loader.init().then((m) => {
     try {
-      m.languages.register({ id: 'mermaid' })
+      m.languages.register({id: 'mermaid'})
       m.languages.setMonarchTokensProvider('mermaid', {
         tokenizer: {
           root: [
@@ -149,14 +172,15 @@ function createEditor() {
           ],
         },
       })
-    } catch {}
+    } catch {
+    }
     editor = m.editor.create(editorEl.value!, {
       value: source.value,
       language: 'mermaid',
       automaticLayout: true,
       fontSize: 12,
       wordWrap: 'on',
-      minimap: { enabled: false },
+      minimap: {enabled: false},
       scrollBeyondLastLine: false,
       theme: 'vs',
     })
@@ -167,27 +191,32 @@ function createEditor() {
 /* ---------------- API glue ---------------- */
 async function loadCollection() {
   if (!collectionId.value) return
-  isLoadingCollection.value = true; apiError.value = null
+  isLoadingCollection.value = true;
+  apiError.value = null
   try {
     const res: DiagramCollection = await diagramCollectionAPI.getDetail(collectionId.value);
     collection.value = res
-  } catch (e: any) { apiError.value = e?.message || 'Failed to load collection.' }
-  finally { isLoadingCollection.value = false }
+  } catch (e: any) {
+    apiError.value = e?.message || 'Failed to load collection.'
+  } finally {
+    isLoadingCollection.value = false
+  }
 }
 
-const { withApiFeedback } = useApiFeedback();
+const {withApiFeedback} = useApiFeedback();
 
 /** list diagrams; first selection uses list payload (no extra API call) */
 async function loadDiagramList() {
   if (!collectionId.value) return
-  isLoadingDiagrams.value = true; apiError.value = null
+  isLoadingDiagrams.value = true;
+  apiError.value = null
   try {
     const data = await withApiFeedback(
         diagramCollectionAPI.getDiagram(collectionId.value),
-        { errorMessage: "Failed to load diagrams." }
+        {errorMessage: "Failed to load diagrams."}
     )
     const list: DiagramSummary[] = data?.list ?? []
-    diagrams.value = list.map(d => ({ ...d, id: String(d.id) }))
+    diagrams.value = list.map(d => ({...d, id: String(d.id)}))
     if (diagrams.value.length) {
       selectedId.value = ""   // watcher will render from list
     } else {
@@ -197,8 +226,11 @@ async function loadDiagramList() {
       svgMarkup.value = ''
       error.value = null
     }
-  } catch (e: any) { apiError.value = e?.message || 'Failed to load diagrams.' }
-  finally { isLoadingDiagrams.value = false }
+  } catch (e: any) {
+    apiError.value = e?.message || 'Failed to load diagrams.'
+  } finally {
+    isLoadingDiagrams.value = false
+  }
 }
 
 /** prefer list payload for detail; fallback to API detail call if needed */
@@ -214,6 +246,7 @@ function fromListAsDetail(id: string): DiagramDetail | null {
     latestUpdated: (hit as any).latestUpdated,
   } as DiagramDetail
 }
+
 async function fetchDetail(id: string) {
   const svc: any = diagramCollectionAPI as any
   const d: DiagramDetail =
@@ -229,17 +262,20 @@ async function saveDiagram() {
   try {
     const svc: any = diagramCollectionAPI as any
     if (svc.actSaveDiagram) {
-      await svc.actSaveDiagram(collectionId.value, selectedDiagram.value.id, { syntax: source.value })
+      await svc.actSaveDiagram(collectionId.value, selectedDiagram.value.id, {syntax: source.value})
     } else {
-      await svc.saveDiagram(collectionId.value, selectedDiagram.value.id, { syntax: source.value })
+      await svc.saveDiagram(collectionId.value, selectedDiagram.value.id, {syntax: source.value})
     }
     selectedDiagram.value.syntax = source.value
     const idx = diagrams.value.findIndex(d => String(d.id) === String(selectedDiagram.value!.id))
     if (idx >= 0) (diagrams.value[idx] as any).syntax = source.value
     toast.success('Diagram saved')
     await renderDiagram()
-  } catch (e: any) { toast.error(e?.message || 'Failed to save diagram.') }
-  finally { isSavingDiagram.value = false }
+  } catch (e: any) {
+    toast.error(e?.message || 'Failed to save diagram.')
+  } finally {
+    isSavingDiagram.value = false
+  }
 }
 
 /** update collection */
@@ -252,7 +288,9 @@ async function submitEditCollection() {
     toast.success('Collection updated')
     showEditCollection.value = false
     await loadCollection()
-  } catch (e: any) { toast.error(e?.message || 'Failed to update collection.') }
+  } catch (e: any) {
+    toast.error(e?.message || 'Failed to update collection.')
+  }
 }
 
 /** remove collection */
@@ -260,32 +298,39 @@ async function removeCollection() {
   try {
     await (diagramCollectionAPI as any).remove?.(collectionId.value)
     toast('Collection removed')
-    router.replace({ name: 'MermaidDiagramTools-ProjectList' })
-  } catch (e: any) { toast.error(e?.message || 'Failed to remove collection.') }
+    router.replace({name: 'MermaidDiagramTools-ProjectList'})
+  } catch (e: any) {
+    toast.error(e?.message || 'Failed to remove collection.')
+  }
 }
 
 /** create new diagram */
 const showCreate = ref(false)
-const createForm = ref({ title: '', syntax: 'flowchart TD\n  A[Start] --> B[End]\n' })
+const createForm = ref({title: '', syntax: 'flowchart TD\n  A[Start] --> B[End]\n'})
+
 async function submitCreateDiagram() {
   if (!createForm.value.title.trim()) return
   try {
-    const created =
-        await (diagramCollectionAPI as any).createDiagram(collectionId.value, {
-          title: createForm.value.title.trim(),
-          syntax: createForm.value.syntax,
-        })
+    const created = await diagramServices.actCreate({
+      collectionID: collectionId.value,
+      title: createForm.value.title.trim(),
+      syntax: createForm.value.syntax,
+      syntaxType: "mermaid",
+    })
     toast.success('Diagram created')
     showCreate.value = false
-    createForm.value = { title: '', syntax: 'flowchart TD\n  A[Start] --> B[End]\n' }
+    createForm.value = {title: '', syntax: 'flowchart TD\n  A[Start] --> B[End]\n'}
     await loadDiagramList()
     if (created?.id) selectedId.value = String(created.id)
-  } catch (e: any) { toast.error(e?.message || 'Failed to create diagram.') }
+  } catch (e: any) {
+    toast.error('Failed to create diagram.')
+  }
 }
 
 /* ---------------- edit collection modal ---------------- */
 const showEditCollection = ref(false)
-const editForm = ref({ name: '', description: '' })
+const editForm = ref({name: '', description: ''})
+
 function openEditCollection() {
   editForm.value.name = collection.value?.name ?? ''
   editForm.value.description = collection.value?.description ?? ''
@@ -294,8 +339,11 @@ function openEditCollection() {
 
 /* ---------------- downloads & fullscreen ---------------- */
 function downloadSVG() {
-  if (!svgMarkup.value) { toast.error('No SVG to download.'); return }
-  const blob = new Blob([svgMarkup.value], { type: 'image/svg+xml' })
+  if (!svgMarkup.value) {
+    toast.error('No SVG to download.');
+    return
+  }
+  const blob = new Blob([svgMarkup.value], {type: 'image/svg+xml'})
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -303,26 +351,41 @@ function downloadSVG() {
   a.click()
   URL.revokeObjectURL(url)
 }
+
 function openFullScreen() {
   isFullScreen.value = true
   nextTick(() => attachPanZoom(fsPreviewRef, true))
 }
+
 function closeFullScreen() {
   isFullScreen.value = false
-  disposePanzoom(fsPz); fsPz = null
+  disposePanzoom(fsPz);
+  fsPz = null
 }
+
 function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape' && isFullScreen.value) { e.stopPropagation(); closeFullScreen() }
+  if (e.key === 'Escape' && isFullScreen.value) {
+    e.stopPropagation();
+    closeFullScreen()
+  }
 }
+
 function zoomIn(target: 'fs' | 'normal' = 'normal') {
-  const inst = target === 'fs' ? fsPz : pz; inst?.smoothZoom?.(0, 0, 1.25)
+  const inst = target === 'fs' ? fsPz : pz;
+  inst?.smoothZoom?.(0, 0, 1.25)
 }
+
 function zoomOut(target: 'fs' | 'normal' = 'normal') {
-  const inst = target === 'fs' ? fsPz : pz; inst?.smoothZoom?.(0, 0, 0.8)
+  const inst = target === 'fs' ? fsPz : pz;
+  inst?.smoothZoom?.(0, 0, 0.8)
 }
+
 function resetView(target: 'fs' | 'normal' = 'normal') {
   const inst = target === 'fs' ? fsPz : pz
-  if (inst) { inst.moveTo?.(0, 0); inst.zoomAbs?.(0, 0, 1) }
+  if (inst) {
+    inst.moveTo?.(0, 0);
+    inst.zoomAbs?.(0, 0, 1)
+  }
 }
 
 /* ---------------- lifecycle ---------------- */
@@ -332,7 +395,10 @@ onMounted(async () => {
   await loadDiagramList()
   window.addEventListener('keydown', onKeydown)
 })
-onBeforeUnmount(() => { editor?.dispose(); disposePanzoom(pz) })
+onBeforeUnmount(() => {
+  editor?.dispose();
+  disposePanzoom(pz)
+})
 
 /* ---------------- Combobox behavior ---------------- */
 function onComboChange(val: string) {
@@ -388,7 +454,7 @@ watch(selectedId, async (id) => {
 
             <div class="flex gap-2 flex-none">
               <Combobox
-                  :model-value="selectedId"
+                  :model-value="searchText"
                   @update:modelValue="onComboChange"
                   @openChange="onComboOpenChange"
               >
@@ -399,7 +465,7 @@ watch(selectedId, async (id) => {
                         diagrams.find(d => String(d.id) === String(selectedId))?.title
                         ?? (isLoadingDiagrams ? 'Loading…' : (diagrams.length ? 'Select Diagram' : 'No diagrams'))
                       }}
-                      <ChevronsUpDown class="ml-2 h-4 w-3 shrink-0 opacity-50" />
+                      <ChevronsUpDown class="ml-2 h-4 w-3 shrink-0 opacity-50"/>
                     </Button>
                   </ComboboxTrigger>
                 </ComboboxAnchor>
@@ -414,7 +480,7 @@ watch(selectedId, async (id) => {
                         placeholder="Search diagram…"
                     />
                     <span class="absolute left-0 inset-y-0 flex items-center justify-center px-3">
-                      <Search class="size-4 text-muted-foreground" />
+                      <Search class="size-4 text-muted-foreground"/>
                     </span>
                   </div>
 
@@ -429,19 +495,21 @@ watch(selectedId, async (id) => {
                     >
                       {{ d.title }}
                       <ComboboxItemIndicator>
-                        <Check :class="cn('ml-auto h-4 w-4')" />
+                        <Check :class="cn('ml-auto h-4 w-4')"/>
                       </ComboboxItemIndicator>
                     </ComboboxItem>
                   </ComboboxGroup>
 
                   <ComboboxItem value="__create__" class="text-primary">
-                    <FilePlus2 class="mr-2 h-4 w-4" /> Create new diagram
+                    <FilePlus2 class="mr-2 h-4 w-4"/>
+                    Create new diagram
                   </ComboboxItem>
                 </ComboboxList>
               </Combobox>
 
               <Button variant="outline" size="sm" class="h-9" @click="openEditCollection">
-                <Pencil class="mr-2 h-4 w-4" /> Edit Collection
+                <Pencil class="mr-2 h-4 w-4"/>
+                Edit Collection
               </Button>
             </div>
           </div>
@@ -455,12 +523,12 @@ watch(selectedId, async (id) => {
                 <div class="text-xs text-muted-foreground">
                   <span v-if="lastUpdatedText" class="text-xs text-muted-foreground">{{ lastUpdatedText }}</span>
                   <Button size="xs" class="px-2 py-1 border text-xs" @click="saveDiagram">
-                    <Save />
+                    <Save/>
                   </Button>
                 </div>
               </div>
 
-              <div ref="editorEl" class="flex-1 min-h-0" />
+              <div ref="editorEl" class="flex-1 min-h-0"/>
 
               <div v-if="error" class="m-3 rounded-md border border-red-200 bg-red-50 p-3 text-red-700 text-xs">
                 <strong class="font-medium">Syntax error:</strong>
@@ -476,16 +544,19 @@ watch(selectedId, async (id) => {
                   <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="zoomOut()">−</button>
                   <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="resetView()">Reset</button>
                   <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="zoomIn()">＋</button>
-                  <div class="w-px h-5 bg-gray-200 mx-1" />
+                  <div class="w-px h-5 bg-gray-200 mx-1"/>
                   <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="downloadSVG">SVG</button>
                   <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="downloadSVG">PNG</button>
-                  <div class="w-px h-5 bg-gray-200 mx-1" />
-                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="openFullScreen">Full screen</button>
+                  <div class="w-px h-5 bg-gray-200 mx-1"/>
+                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="openFullScreen">Full
+                    screen
+                  </button>
                 </div>
               </div>
 
               <div class="relative flex-1 overflow-hidden">
-                <div ref="previewRef" :class="{ 'opacity-50': isRendering }" class="absolute inset-0 select-none" v-html="svgMarkup" />
+                <div ref="previewRef" :class="{ 'opacity-50': isRendering }" class="absolute inset-0 select-none"
+                     v-html="svgMarkup"/>
                 <div v-if="!svgMarkup && !error" class="absolute inset-0 grid place-items-center text-sm text-gray-400">
                   Rendered diagram will appear here
                 </div>
@@ -498,17 +569,20 @@ watch(selectedId, async (id) => {
                 <div class="text-sm font-medium">Full Screen Preview</div>
                 <div class="flex items-center gap-2">
                   <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="zoomOut('fs')">−</button>
-                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="resetView('fs')">Reset</button>
+                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="resetView('fs')">Reset
+                  </button>
                   <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="zoomIn('fs')">＋</button>
-                  <div class="w-px h-5 bg-gray-200 mx-1" />
+                  <div class="w-px h-5 bg-gray-200 mx-1"/>
                   <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="downloadSVG">SVG</button>
                   <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="downloadSVG">PNG</button>
-                  <div class="w-px h-5 bg-gray-200 mx-1" />
-                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="closeFullScreen">Close (Esc)</button>
+                  <div class="w-px h-5 bg-gray-200 mx-1"/>
+                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="closeFullScreen">Close
+                    (Esc)
+                  </button>
                 </div>
               </div>
               <div class="relative h-[calc(100vh-48px)]">
-                <div ref="fsPreviewRef" class="absolute inset-0 select-none" v-html="svgMarkup" />
+                <div ref="fsPreviewRef" class="absolute inset-0 select-none" v-html="svgMarkup"/>
               </div>
             </div>
           </div>
@@ -527,22 +601,24 @@ watch(selectedId, async (id) => {
         <div class="grid gap-3 py-2">
           <div class="grid gap-1.5">
             <Label for="ec-title">Title</Label>
-            <Input id="ec-title" v-model="editForm.name" placeholder="Collection title" />
+            <Input id="ec-title" v-model="editForm.name" placeholder="Collection title"/>
           </div>
           <div class="grid gap-1.5">
             <Label for="ec-desc">Description</Label>
-            <Textarea id="ec-desc" v-model="editForm.description" rows="3" />
+            <Textarea id="ec-desc" v-model="editForm.description" rows="3"/>
           </div>
         </div>
 
         <DialogFooter class="flex items-center justify-between">
           <Button variant="destructive" @click="removeCollection">
-            <Trash2 class="mr-2 h-4 w-4" /> Remove
+            <Trash2 class="mr-2 h-4 w-4"/>
+            Remove
           </Button>
           <div class="space-x-2">
             <Button variant="outline" @click="showEditCollection = false">Cancel</Button>
             <Button :disabled="!editForm.name.trim()" @click="submitEditCollection">
-              <Save class="mr-2 h-4 w-4" /> Update
+              <Save class="mr-2 h-4 w-4"/>
+              Update
             </Button>
           </div>
         </DialogFooter>
@@ -560,18 +636,19 @@ watch(selectedId, async (id) => {
         <div class="grid gap-3 py-2">
           <div class="grid gap-1.5">
             <Label for="cd-title">Title</Label>
-            <Input id="cd-title" v-model="createForm.title" placeholder="My Diagram" />
+            <Input id="cd-title" v-model="createForm.title" placeholder="My Diagram"/>
           </div>
           <div class="grid gap-1.5">
             <Label for="cd-syntax">Initial Syntax</Label>
-            <Textarea id="cd-syntax" v-model="createForm.syntax" rows="6" class="font-mono text-xs" />
+            <Textarea id="cd-syntax" v-model="createForm.syntax" rows="6" class="font-mono text-xs"/>
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" @click="showCreate = false">Cancel</Button>
           <Button :disabled="!createForm.title.trim()" @click="submitCreateDiagram">
-            <FilePlus2 class="mr-2 h-4 w-4" /> Create
+            <FilePlus2 class="mr-2 h-4 w-4"/>
+            Create
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -580,7 +657,17 @@ watch(selectedId, async (id) => {
 </template>
 
 <style scoped>
-:deep(.monaco-scrollable-element)::-webkit-scrollbar { width: 8px; height: 8px; }
-:deep(.monaco-scrollable-element)::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 6px; }
-:deep(.monaco-scrollable-element)::-webkit-scrollbar-track { background: transparent; }
+:deep(.monaco-scrollable-element)::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+:deep(.monaco-scrollable-element)::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 6px;
+}
+
+:deep(.monaco-scrollable-element)::-webkit-scrollbar-track {
+  background: transparent;
+}
 </style>
