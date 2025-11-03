@@ -36,7 +36,7 @@ type DiagramEntity struct {
 
 	CollectionID uuid.UUID `json:"collection_id" gorm:"type:uuid;not null;index" validate:"required,uuid" example:"550e8400-e29b-41d4-a716-446655440000"`
 	Title        string    `json:"title" gorm:"type:varchar(255);not null" validate:"required,min=3,max=255" example:"Payment Flow Sequence Diagram"`
-	Description  string    `json:"description,omitempty" gorm:"type:text" validate:"omitempty,max=1000" example:"Shows sequence of events between payment services."`
+	Description  string    `json:"description" gorm:"type:text" validate:"omitempty,max=1000" example:"Shows sequence of events between payment services."`
 	SyntaxType   string    `json:"syntax_type" gorm:"type:varchar(50);default:'mermaid'" validate:"required,oneof=mermaid plantuml bpmn uml other" example:"mermaid"`
 	Syntax       string    `json:"syntax" gorm:"type:text;not null" validate:"required,min=5" example:"graph TD; A-->B; B-->C;"`
 

@@ -58,7 +58,7 @@ func (h baseCRUDRoutes[T]) getAll(c echo.Context) error {
 
 	res, err := h.services.GetList(context.Background(), &q)
 	if err != nil {
-		return respErrJSON(c, http.StatusInternalServerError, err)
+		return respErr(c, http.StatusInternalServerError, err)
 	}
 	return respJSON(c, http.StatusOK, res)
 }
@@ -67,7 +67,7 @@ func (h baseCRUDRoutes[T]) getAll(c echo.Context) error {
 func (h baseCRUDRoutes[T]) getPagination(c echo.Context) error {
 	q, err := extractPaginationQuery(c)
 	if err != nil {
-		return respErrJSON(c, http.StatusBadRequest, err)
+		return respErr(c, http.StatusBadRequest, err)
 	}
 
 	// Normalize limit/offset if only page/page_size given
@@ -79,7 +79,7 @@ func (h baseCRUDRoutes[T]) getPagination(c echo.Context) error {
 	}
 	res, err := h.services.GetList(context.Background(), &q)
 	if err != nil {
-		return respErrJSON(c, http.StatusInternalServerError, err)
+		return respErr(c, http.StatusInternalServerError, err)
 	}
 	return respJSON(c, http.StatusOK, res)
 }
@@ -88,11 +88,11 @@ func (h baseCRUDRoutes[T]) getPagination(c echo.Context) error {
 func (h baseCRUDRoutes[T]) actCreate(c echo.Context) error {
 	var req T
 	if err := validateRequest(c, &req); err != nil {
-		return respErrJSON(c, http.StatusBadRequest, err)
+		return respErr(c, http.StatusBadRequest, err)
 	}
 	created, err := h.services.Create(context.Background(), req)
 	if err != nil {
-		return respErrJSON(c, http.StatusInternalServerError, err)
+		return respErr(c, http.StatusInternalServerError, err)
 	}
 	return respJSON(c, http.StatusOK, created)
 }
@@ -101,11 +101,11 @@ func (h baseCRUDRoutes[T]) actCreate(c echo.Context) error {
 func (h baseCRUDRoutes[T]) getShow(c echo.Context) error {
 	id, err := validateUUID(c)
 	if err != nil {
-		return respErrJSON(c, http.StatusBadRequest, err)
+		return respErr(c, http.StatusBadRequest, err)
 	}
 	item, err := h.services.Get(context.Background(), id)
 	if err != nil {
-		return respErrJSON(c, http.StatusInternalServerError, err)
+		return respErr(c, http.StatusInternalServerError, err)
 	}
 	return respJSON(c, http.StatusOK, item)
 }
@@ -114,15 +114,15 @@ func (h baseCRUDRoutes[T]) getShow(c echo.Context) error {
 func (h baseCRUDRoutes[T]) actUpdate(c echo.Context) error {
 	id, err := validateUUID(c)
 	if err != nil {
-		return respErrJSON(c, http.StatusBadRequest, err)
+		return respErr(c, http.StatusBadRequest, err)
 	}
 	var req T
 	if err := validateRequest(c, &req); err != nil {
-		return respErrJSON(c, http.StatusBadRequest, err)
+		return respErr(c, http.StatusBadRequest, err)
 	}
 	updated, err := h.services.Patch(context.Background(), id, req)
 	if err != nil {
-		return respErrJSON(c, http.StatusInternalServerError, err)
+		return respErr(c, http.StatusInternalServerError, err)
 	}
 	return respJSON(c, http.StatusOK, updated)
 }
@@ -131,10 +131,10 @@ func (h baseCRUDRoutes[T]) actUpdate(c echo.Context) error {
 func (h baseCRUDRoutes[T]) actRemove(c echo.Context) error {
 	id, err := validateUUID(c)
 	if err != nil {
-		return respErrJSON(c, http.StatusBadRequest, err)
+		return respErr(c, http.StatusBadRequest, err)
 	}
 	if err := h.services.Delete(context.Background(), id); err != nil {
-		return respErrJSON(c, http.StatusInternalServerError, err)
+		return respErr(c, http.StatusInternalServerError, err)
 	}
 	return respJSON(c, http.StatusOK, echo.Map{"status": "ok"})
 }
