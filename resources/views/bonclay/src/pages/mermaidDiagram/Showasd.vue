@@ -23,8 +23,8 @@ import {
 } from '@/components/ui/combobox'
 
 /* 🔌 API */
-import diagramCollectionAPI from '@/api/diagramCollectionServices'
-import type { DiagramCollection, DiagramDetail, DiagramSummary } from '@/types/api.types'
+import diagramCollectionAPI from '@/api/DiagramCollectionServices.ts'
+import type { DiagramCollection, DiagramDetail, DiagramSummary } from '@/types/entities.ts'
 
 /* -----------------------------
    👇 Keep: accept a projectId prop
@@ -99,7 +99,6 @@ async function validateSyntax(text: string) {
     return false
   }
   try {
-    // @ts-expect-error: upstream type gaps (parse is async on v11)
     await mermaid.parse(trimmed)
     error.value = null
     return true
@@ -133,7 +132,6 @@ async function renderDiagram() {
 
 function disposePanzoom(instance: PanZoom | null) {
   try {
-    // @ts-expect-error: optional dispose
     instance?.dispose?.()
   } catch { /* noop */ }
 }
@@ -165,17 +163,14 @@ function attachPanZoom(containerRef: typeof previewRef, fullscreen: boolean) {
 
 function zoomIn(target: 'fs' | 'normal' = 'normal') {
   const inst = target === 'fs' ? fsPz : pz
-  // @ts-expect-error: smoothZoom present at runtime
   inst?.smoothZoom?.(0, 0, 1.25)
 }
 function zoomOut(target: 'fs' | 'normal' = 'normal') {
   const inst = target === 'fs' ? fsPz : pz
-  // @ts-expect-error
   inst?.smoothZoom?.(0, 0, 0.8)
 }
 function resetView(target: 'fs' | 'normal' = 'normal') {
   const inst = target === 'fs' ? fsPz : pz
-  // @ts-expect-error
   if (inst) {
     inst.moveTo?.(0, 0)
     inst.zoomAbs?.(0, 0, 1)
@@ -335,7 +330,7 @@ async function loadDiagrams() {
   isLoadingDiagrams.value = true
   apiError.value = null
   try {
-    const resp = await diagramCollectionAPI.getDiagrams(props.projectId)
+    const resp = await diagramCollectionAPI.getDiagram(props.projectId)
     const list = resp?.list ?? []
     diagrams.value = list.map((d: DiagramSummary) => ({
       id: String(d.id),

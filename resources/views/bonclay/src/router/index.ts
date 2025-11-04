@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import MermaidDiagramToolsIndex from "@/pages/mermaidDiagram/Index.vue";
 import MermaidDiagramToolsShow from "@/pages/mermaidDiagram/Show.vue";
-
+import EncryptionToolsIndex from "@/pages/encryptionTools/Index.vue";
 import MockAPIToolsIndex from "@/pages/mockApi/Index.vue";
 import MockAPIToolsIndexShowCollection from "@/pages/mockApi/ShowCollection.vue";
 
@@ -24,6 +24,17 @@ const routes: RouteRecordRaw[] = [
                         path: 'collection/:id',
                         name: 'MockApiTools-CollectionShow',
                         component: MockAPIToolsIndexShowCollection,
+                    }
+                ]
+            },
+            {
+                path: 'encryption-tools',
+                name: 'EncryptionTools',
+                children: [
+                    {
+                        path: '',
+                        name: 'EncryptionTools-Index',
+                        component: EncryptionToolsIndex,
                     }
                 ]
             },

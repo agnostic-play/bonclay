@@ -110,12 +110,12 @@ func (h baseCRUDRoutes[T]) getShow(c echo.Context) error {
 	return respJSON(c, http.StatusOK, item)
 }
 
-// PATCH {path}/:id/update
 func (h baseCRUDRoutes[T]) actUpdate(c echo.Context) error {
 	id, err := validateUUID(c)
 	if err != nil {
 		return respErr(c, http.StatusBadRequest, err)
 	}
+
 	var req T
 	if err := validateRequest(c, &req); err != nil {
 		return respErr(c, http.StatusBadRequest, err)
@@ -124,10 +124,10 @@ func (h baseCRUDRoutes[T]) actUpdate(c echo.Context) error {
 	if err != nil {
 		return respErr(c, http.StatusInternalServerError, err)
 	}
+	
 	return respJSON(c, http.StatusOK, updated)
 }
 
-// DELETE {path}/:id/remove
 func (h baseCRUDRoutes[T]) actRemove(c echo.Context) error {
 	id, err := validateUUID(c)
 	if err != nil {

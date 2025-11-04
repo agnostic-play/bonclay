@@ -14,10 +14,11 @@ type BaseEntityInterface[T any] interface {
 	GetPreloadTables() []string
 	GetFieldForKeywords() []string
 	GetEntity() *T
+	GetExcludeFieldForUpdate() []string
 }
 
 type BaseEntityWithID struct {
-	ID        uuid.UUID      `json:"id"  gorm:"column:id;type:uuid;primary_key"`
+	ID        uuid.UUID      `json:"id"  gorm:"column:id;type:uuid;primary_key;default:uuid_generate_v4()"`
 	CreatedAt time.Time      `json:"-"  gorm:"column:created_at"`
 	UpdatedAt time.Time      `json:"-"  gorm:"column:updated_at"`
 	DeletedAt gorm.DeletedAt `json:"-" `
@@ -27,7 +28,6 @@ func (e BaseEntityWithID) GetFieldIdentifier() string {
 	return "id"
 }
 
-//
 //func (e *BaseEntityWithID) BeforeCreate(tx *gorm.DB) (err error) {
 //	e.ID = uuid.New()
 //	return

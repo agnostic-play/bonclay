@@ -70,7 +70,7 @@ func (r *baseRepository[T]) GetList(ctx context.Context, paginationQuery *pagina
 	}
 
 	result.SetData(int(totalItems), listItems)
-	
+
 	return result, nil
 }
 
@@ -116,6 +116,7 @@ func (r *baseRepository[T]) Patch(ctx context.Context, id string, entity T) (T, 
 		Table(r.ent.GetTableName()).
 		Model(r.ent.GetEntity()).
 		Where("id = ?", id).
+		Omit(r.ent.GetExcludeFieldForUpdate()...).
 		Updates(r.structToMap(entity))
 	if exec.Error != nil {
 		return result, exec.Error
@@ -130,7 +131,9 @@ func (r *baseRepository[T]) Patch(ctx context.Context, id string, entity T) (T, 
 
 // Delete deletes an entity by its ID
 func (r *baseRepository[T]) Delete(ctx context.Context, id string) error {
-	exec := r.dbClient.client(ctx).Model(new(T)).Where("id = ?", id).Delete(new(T))
+	exec := r.dbClient.client(ctx).
+		Model(new(T)).Table(r.ent.GetTableName()).
+		Where("id = ?", id).Delete(new(T))
 	if exec.Error != nil {
 		return exec.Error
 	}

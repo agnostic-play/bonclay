@@ -3,7 +3,7 @@ import { type SidebarProps} from '@/components/ui/sidebar'
 
 
 import {
-  Clover,
+  Clover, FileKey2,
   SquareTerminal, WorkflowIcon,
 } from "lucide-vue-next"
 import NavMain from '@/components/NavMain.vue'
@@ -55,6 +55,18 @@ const data = computed(() => ({
           title: "Histories",
           routeName: "MockApiTools-Index",
         },
+      ],
+    },
+    {
+      title: "Encryption Tools",
+      url: "#",
+      icon: FileKey2,
+      isActive: route.path.startsWith("/tools/encryption"),
+      items: [
+        {
+          title: "Encryption Tools",
+          routeName: "EncryptionTools-Index",
+        }
       ],
     },
     {

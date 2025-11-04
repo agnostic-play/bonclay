@@ -1,10 +1,60 @@
+
+<template>
+  <div class="min-h-screen bg-white p-5 pt-0 ">
+    <div class="mx-auto">
+      <Card class="overflow-hidden border shadow-sm bg-white">
+        <CardContent class="pt-5">
+          <div class="p-8 px-4 py-0">
+            <div class="space-y-4">
+              <CollectionHeader
+                  :total-endpoints="totalEndpoints"
+                  :active-scenario-count="activeScenarioCount"
+                  :category-count="apiCategories.length"
+                  @edit-collection="handleEditCollection"
+                  @create-new-endpoint="handleCreateNewEndpoint"
+              />
+
+              <ConfigurationSection
+                  :base-url="baseUrl"
+                  :documentation-url="documentationUrl"
+              />
+            </div>
+          </div>
+
+          <ApiCategoriesSection
+              :categories="apiCategories"
+              :scenarios="scenarios"
+              @scenarios-updated="handleScenarioUpdate"
+          />
+        </CardContent>
+      </Card>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+</style>
+
+
 <script setup lang="ts">
 import {ref, computed} from 'vue'
 import {Card, CardContent} from '@/components/ui/card'
 import CollectionHeader from '@/pages/mockApi/components/CollectionHeader.vue'
 import ConfigurationSection from '@/pages/mockApi/components/ConfigurationSection.vue'
 import ApiCategoriesSection from '@/pages/mockApi/components/ApiCategoriesSection.vue'
-import type {ApiCategory, Scenario} from '@/types/api.types'
+import type {ApiCategory, Scenario} from '@/types/entities.ts'
 
 // Mock data
 const apiCategories: ApiCategory[] = [
@@ -201,51 +251,3 @@ const handleScenarioUpdate = (updatedScenarios: Scenario[]) => {
   scenarios.value = updatedScenarios
 }
 </script>
-
-<template>
-  <div class="min-h-screen bg-white p-5 pt-0 ">
-    <div class="mx-auto">
-      <Card class="overflow-hidden border shadow-sm bg-white">
-        <CardContent class="pt-5">
-          <div class="p-8 px-4 py-0">
-            <div class="space-y-4">
-              <CollectionHeader
-                  :total-endpoints="totalEndpoints"
-                  :active-scenario-count="activeScenarioCount"
-                  :category-count="apiCategories.length"
-                  @edit-collection="handleEditCollection"
-                  @create-new-endpoint="handleCreateNewEndpoint"
-              />
-
-              <ConfigurationSection
-                  :base-url="baseUrl"
-                  :documentation-url="documentationUrl"
-              />
-            </div>
-          </div>
-
-          <ApiCategoriesSection
-              :categories="apiCategories"
-              :scenarios="scenarios"
-              @scenarios-updated="handleScenarioUpdate"
-          />
-        </CardContent>
-      </Card>
-    </div>
-  </div>
-</template>
-
-<style scoped>
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-</style>

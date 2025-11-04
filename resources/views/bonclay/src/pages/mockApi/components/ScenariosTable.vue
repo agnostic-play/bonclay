@@ -11,7 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useScenarioUtils } from '@/pages/mockApi/composables/useScenarioUtils'
-import type { Scenario } from '@/types/api.types'
+import type { Scenario } from '@/types/entities.ts'
 
 interface Props {
   scenarios: Scenario[]

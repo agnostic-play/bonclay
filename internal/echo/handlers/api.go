@@ -43,11 +43,6 @@ func (h handlers) routesApi() {
 	diagramRoutes.RegisterRoutes(v2)
 
 	h.server.Any("/mock/:collection/:path", h.actMock)
-
-	//for _, route := range h.server.Routes() {
-	//	fmt.Printf("%-6s -> %s\n", route.Method, route.Path)
-	//}
-
 }
 
 func (h handlers) actMock(ctx echo.Context) error {
@@ -330,7 +325,7 @@ func (h handlers) actSetActiveScenario(ctx echo.Context) error {
 }
 
 func (h handlers) actEncryptConfig(ctx echo.Context) error {
-	var req services.EncryptionToolsEntity
+	var req services.EncryptionReq
 
 	if err := validateRequest(ctx, &req); err != nil {
 		return respErrJSON(ctx, http.StatusBadRequest, err)
@@ -345,7 +340,7 @@ func (h handlers) actEncryptConfig(ctx echo.Context) error {
 }
 
 func (h handlers) actDecryptConfig(ctx echo.Context) error {
-	var req services.EncryptionToolsEntity
+	var req services.EncryptionReq
 
 	if err := validateRequest(ctx, &req); err != nil {
 		return respErrJSON(ctx, http.StatusBadRequest, err)

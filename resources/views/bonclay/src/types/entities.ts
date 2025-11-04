@@ -1,3 +1,5 @@
+import {BaseHttpClient} from "@/lib/httpClient/http.ts";
+
 export interface Parameter {
     name: string
     type: string
@@ -61,10 +63,10 @@ export interface DiagramSummary {
     id: string | number;
     title: string;
     syntax: string;
-    syntaxType: string;
+    syntax_type: string;
     description?: string;
-    latestUpdated?: string;
-    collectionID: string;
+    latest_updated?: string;
+    collection_id: string;
 }
 
 export interface DiagramDetail extends DiagramSummary {
@@ -80,3 +82,18 @@ export interface DiagramCollection {
     name: string;
     description?: string;
 }
+
+
+
+
+export interface DiagramSummary {
+    id: string | number;
+    title: string;
+    syntax: string;
+    syntaxType: string;
+    description?: string;
+    latestUpdated?: string;
+    collectionID: string;
+}
+
+

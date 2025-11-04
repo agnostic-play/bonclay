@@ -1,11 +1,11 @@
 // src/api/diagramCollectionAPI.ts
 import type { PaginatedResponse, PaginationParams, RequestOptions} from "@/lib/httpClient/types";
 import {BaseHttpClient} from "@/lib/httpClient/http.ts";
-import {BonClayHttpClient} from "@/api/bonClayHttpClient.ts";
-import type {DiagramCollection, DiagramDetail, DiagramSummary} from "@/types/api.types.ts"; // your base from the snippet
+import {BaseCRUDServices} from "@/api/BaseCRUDServices.ts";
+import type {DiagramCollection, DiagramDetail, DiagramSummary} from "@/types/entities.ts"; // your base from the snippet
 
 
-class DiagramCollectionServices extends BonClayHttpClient<DiagramCollection> {
+class DiagramCollectionServices extends BaseCRUDServices<DiagramCollection> {
     constructor() {
         super("diagram_collections");
     }

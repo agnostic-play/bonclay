@@ -1,50 +1,4 @@
-<script setup lang="ts">
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { computed, ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
 
-import diagramCollectionAPI from "@/api/diagramCollectionServices";
-import { useApiFeedback } from "@/composables/useApiFeedback";
-import type {DiagramCollection} from "@/types/api.types.ts";
-
-const router = useRouter();
-const searchQuery = ref("");
-
-const diagramCollections = ref<DiagramCollection[]>([]);
-const loading = ref(true);
-
-const { withApiFeedback } = useApiFeedback();
-
-async function loadCollections() {
-  loading.value = true;
-  try {
-    const data = await withApiFeedback(
-        diagramCollectionAPI.getList(), // returns { list, ... }
-        { errorMessage: "Failed to load collections." }
-    );
-    diagramCollections.value = data.list ?? [];
-  } finally {
-    loading.value = false;
-  }
-}
-
-onMounted(loadCollections);
-
-const filteredDiagramCollections = computed(() => {
-  if (!searchQuery.value) return diagramCollections.value;
-  const q = searchQuery.value.toLowerCase();
-  return diagramCollections.value.filter(c =>
-      c.name?.toLowerCase()?.includes(q) ||
-      c.description?.toLowerCase()?.includes(q)
-  );
-});
-
-const go = (id: string | number) => {
-  router.push({ name: "MermaidDiagramTools-ProjectShow", params: { id } });
-};
-</script>
 <template>
   <div class="min-h-[90vh] w-full flex justify-center rounded-lg bg-muted/10">
     <!-- Responsive main container -->
@@ -150,3 +104,53 @@ const go = (id: string | number) => {
   overflow: hidden;
 }
 </style>
+
+
+<script setup lang="ts">
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { computed, ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+
+import diagramCollectionAPI from "@/api/DiagramCollectionServices.ts";
+import { useApiFeedback } from "@/composables/useApiFeedback";
+import type {DiagramCollection} from "@/types/entities.ts";
+
+const router = useRouter();
+const searchQuery = ref("");
+
+const diagramCollections = ref<DiagramCollection[]>([]);
+const loading = ref(true);
+
+const { withApiFeedback } = useApiFeedback();
+
+async function loadCollections() {
+  loading.value = true;
+  try {
+    const data = await withApiFeedback(
+        diagramCollectionAPI.getList(), // returns { list, ... }
+        { errorMessage: "Failed to load collections." }
+    );
+
+    diagramCollections.value = data.data?.list ?? [];
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(loadCollections);
+
+const filteredDiagramCollections = computed(() => {
+  if (!searchQuery.value) return diagramCollections.value;
+  const q = searchQuery.value.toLowerCase();
+  return diagramCollections.value.filter(c =>
+      c.name?.toLowerCase()?.includes(q) ||
+      c.description?.toLowerCase()?.includes(q)
+  );
+});
+
+const go = (id: string | number) => {
+  router.push({ name: "MermaidDiagramTools-ProjectShow", params: { id } });
+};
+</script>

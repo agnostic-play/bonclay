@@ -1,42 +1,3 @@
-<script setup lang="ts">
-import {ScrollArea} from "@/components/ui/scroll-area";
-import {Input} from "@/components/ui/input";
-import {Card, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {computed, ref} from 'vue'
-
-interface Team {
-  id: string
-  name: string
-  description: string
-  totalCollections: number
-}
-
-const searchQuery = ref('')
-
-const teams = computed<Team[]>(() =>
-    Array.from({length: 50}, (_, i) => ({
-      id: `team-${i}`,
-      name: `Colelction ${i + 1}`,
-      description: `This is the description for Team ${i + 1}. They work on various projects and initiatives.`,
-      totalCollections: Math.floor(Math.random() * 20) + 1
-    }))
-)
-
-const filteredTeams = computed(() => {
-  if (!searchQuery.value) return teams.value
-
-  return teams.value.filter(team =>
-      team.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      team.description.toLowerCase().includes(searchQuery.value.toLowerCase())
-  )
-})
-
-import { useRouter } from 'vue-router'
-const router = useRouter()
-const go = (id: string | number) => {
-  router.push({ name: 'MockApiTools-CollectionShow', params: { id } })
-}
-</script>
 
 <template>
   <div class="h-[90vh] w-full flex justify-center rounded-lg  bg-muted/10">
@@ -119,3 +80,44 @@ const go = (id: string | number) => {
   overflow: hidden;
 }
 </style>
+
+
+<script setup lang="ts">
+import {ScrollArea} from "@/components/ui/scroll-area";
+import {Input} from "@/components/ui/input";
+import {Card, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {computed, ref} from 'vue'
+
+interface Team {
+  id: string
+  name: string
+  description: string
+  totalCollections: number
+}
+
+const searchQuery = ref('')
+
+const teams = computed<Team[]>(() =>
+    Array.from({length: 50}, (_, i) => ({
+      id: `team-${i}`,
+      name: `Colelction ${i + 1}`,
+      description: `This is the description for Team ${i + 1}. They work on various projects and initiatives.`,
+      totalCollections: Math.floor(Math.random() * 20) + 1
+    }))
+)
+
+const filteredTeams = computed(() => {
+  if (!searchQuery.value) return teams.value
+
+  return teams.value.filter(team =>
+      team.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      team.description.toLowerCase().includes(searchQuery.value.toLowerCase())
+  )
+})
+
+import { useRouter } from 'vue-router'
+const router = useRouter()
+const go = (id: string | number) => {
+  router.push({ name: 'MockApiTools-CollectionShow', params: { id } })
+}
+</script>

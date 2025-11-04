@@ -7,7 +7,7 @@ import (
 type DiagramCollectionEntity struct {
 	BaseEntityWithID
 
-	Name        string `json:"name" gorm:"type:varchar(255);not null" validate:"required,min=3,max=255" example:"System Architecture"`
+	Name        string `json:"name" gorm:"type:varchar(255);not null;" validate:"required,min=3,max=255" example:"System Architecture"`
 	Description string `json:"description,omitempty" gorm:"type:text" validate:"omitempty,max=1000" example:"High-level architecture diagrams for backend systems."`
 }
 
@@ -27,6 +27,10 @@ func (c DiagramCollectionEntity) GetFieldForKeywords() []string {
 	return []string{"name", "description"}
 }
 
+func (c DiagramCollectionEntity) GetExcludeFieldForUpdate() []string {
+	return []string{}
+}
+
 func (c DiagramCollectionEntity) GetEntity() *DiagramCollectionEntity {
 	return &c
 }
@@ -34,14 +38,11 @@ func (c DiagramCollectionEntity) GetEntity() *DiagramCollectionEntity {
 type DiagramEntity struct {
 	BaseEntityWithID
 
-	CollectionID uuid.UUID `json:"collection_id" gorm:"type:uuid;not null;index" validate:"required,uuid" example:"550e8400-e29b-41d4-a716-446655440000"`
-	Title        string    `json:"title" gorm:"type:varchar(255);not null" validate:"required,min=3,max=255" example:"Payment Flow Sequence Diagram"`
+	CollectionID uuid.UUID `json:"collection_id" gorm:"type:uuid;not null;index" validate:"omitempty,required" `
+	Title        string    `json:"title" gorm:"type:varchar(255);not null" validate:"omitempty,required,min=3,max=255" example:"Payment Flow Sequence Diagram"`
 	Description  string    `json:"description" gorm:"type:text" validate:"omitempty,max=1000" example:"Shows sequence of events between payment services."`
-	SyntaxType   string    `json:"syntax_type" gorm:"type:varchar(50);default:'mermaid'" validate:"required,oneof=mermaid plantuml bpmn uml other" example:"mermaid"`
-	Syntax       string    `json:"syntax" gorm:"type:text;not null" validate:"required,min=5" example:"graph TD; A-->B; B-->C;"`
-
-	// Relations
-	Collection *DiagramCollectionEntity `json:"collection,omitempty" gorm:"foreignKey:CollectionID;constraint:OnDelete:CASCADE;"`
+	SyntaxType   string    `json:"syntax_type" gorm:"type:varchar(50);default:'mermaid'" validate:"omitempty,required,oneof=mermaid plantuml bpmn uml other" example:"mermaid"`
+	Syntax       string    `json:"syntax" gorm:"type:text;not null" validate:"omitempty,required,min=5" example:"graph TD; A-->B; B-->C;"`
 }
 
 func (d DiagramEntity) GetTableName() string {
@@ -58,6 +59,10 @@ func (d DiagramEntity) GetPreloadTables() []string {
 
 func (d DiagramEntity) GetFieldForKeywords() []string {
 	return []string{"title", "description", "syntax_type"}
+}
+
+func (c DiagramEntity) GetExcludeFieldForUpdate() []string {
+	return []string{"id", "collection_id", "syntax_type"}
 }
 
 func (d DiagramEntity) GetEntity() *DiagramEntity {

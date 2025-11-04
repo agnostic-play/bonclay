@@ -1,443 +1,5 @@
-<!-- src/pages/DiagramCollectionShow.vue -->
-<script lang="ts" setup>
-import {nextTick, onBeforeUnmount, onMounted, ref, watch, computed} from 'vue'
-import {useRoute, useRouter} from 'vue-router'
-import mermaid from 'mermaid'
-import panzoom, {type PanZoom} from 'panzoom'
-import * as monaco from "monaco-editor"
-import {loader} from "@guolao/vue-monaco-editor"
-
-loader.config({monaco})
-import {toast} from 'vue-sonner'
-
-import {Card, CardContent} from '@/components/ui/card'
-import {Button} from '@/components/ui/button'
-import {Check, ChevronsUpDown, FilePlus2, Save, Search, Pencil, Trash2} from 'lucide-vue-next'
-import {cn} from '@/lib/utils'
-import {
-  Combobox, ComboboxAnchor, ComboboxEmpty, ComboboxGroup,
-  ComboboxInput, ComboboxItem, ComboboxItemIndicator, ComboboxList, ComboboxTrigger,
-} from '@/components/ui/combobox'
-import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter} from '@/components/ui/dialog'
-import {Input} from '@/components/ui/input'
-import {Textarea} from '@/components/ui/textarea'
-import {Label} from '@/components/ui/label'
-
-/* 🔌 API service */
-import diagramCollectionAPI from '@/api/diagramCollectionServices'
-import type {DiagramCollection, DiagramDetail, DiagramSummary} from '@/types/api.types'
-import {useApiFeedback} from "@/composables/useApiFeedback.ts"
-import diagramServices from "@/api/diagramServices.ts";
-
-/* ---------------- route & id ---------------- */
-const route = useRoute()
-const router = useRouter()
-const collectionId = computed(() => String(route.params.id ?? ''))
-
-/* ---------------- state ---------------- */
-const collection = ref<DiagramCollection | null>(null)
-const isLoadingCollection = ref(false)
-
-const diagrams = ref<DiagramSummary[]>([])
-const isLoadingDiagrams = ref(false)
-
-const selectedId = ref<string>('')                 // combobox v-model
-const searchText = ref<string>('')                 // combobox v-model
-const selectedDiagram = ref<DiagramDetail | null>(null)
-const isSavingDiagram = ref(false)
-
-const apiError = ref<string | null>(null)
-
-/* combobox search term (prevents UUID showing in the input) */
-const comboSearch = ref('')
-
-function onComboOpenChange(open: boolean) {
-  if (open) comboSearch.value = ''
-}
-
-/* ---------------- mermaid + monaco ---------------- */
-mermaid.initialize({startOnLoad: false, securityLevel: 'loose', theme: 'default'})
-const source = ref<string>('') // editor text
-const svgMarkup = ref<string>('') // rendered svg
-const error = ref<string | null>(null)
-const isRendering = ref(false)
-const previewRef = ref<HTMLDivElement | null>(null)
-
-let pz: PanZoom | null = null
-let debounceTimer: number | undefined
-
-const editorEl = ref<HTMLDivElement | null>(null)
-let editor: import('monaco-editor').editor.IStandaloneCodeEditor | null = null
-
-/* fullscreen */
-const isFullScreen = ref(false)
-const fsPreviewRef = ref<HTMLDivElement | null>(null)
-let fsPz: PanZoom | null = null
-
-/* computed helpers */
-const isDirty = computed(() => !!selectedDiagram.value && source.value !== (selectedDiagram.value.syntax ?? ''))
-const lastUpdatedText = computed(() => {
-  const iso = (selectedDiagram.value as any)?.latestUpdated
-  return iso ? `Last updated ${new Date(iso).toLocaleString()}` : ''
-})
-
-/* ---------------- helpers ---------------- */
-function disposePanzoom(i: PanZoom | null) {
-  try {
-    (i as any)?.dispose?.()
-  } catch {
-  }
-}
-
-function attachPanZoom(containerRef: typeof previewRef, fullscreen: boolean) {
-  if (fullscreen) {
-    disposePanzoom(fsPz);
-    fsPz = null
-  } else {
-    disposePanzoom(pz);
-    pz = null
-  }
-  const container = containerRef.value
-  if (!container) return
-  const svgEl = container.querySelector('svg') as SVGSVGElement | null
-  if (!svgEl) return
-  svgEl.removeAttribute('width')
-  svgEl.removeAttribute('height')
-  svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet')
-  svgEl.style.width = '100%'
-  svgEl.style.height = '100%'
-  const instance = panzoom(svgEl, {smoothScroll: true, zoomSpeed: 0.065, maxZoom: 8, minZoom: 0.25, bounds: false})
-  if (fullscreen) fsPz = instance; else pz = instance
-}
-
-async function validateSyntax(text: string) {
-  const trimmed = (text ?? '').trim()
-  if (!trimmed) {
-    error.value = null;
-    return false
-  }
-  try {
-    await (mermaid as any).parse(trimmed)
-    error.value = null
-    return true
-  } catch (e: any) {
-    error.value = e?.message || 'Mermaid syntax error.'
-    return false
-  }
-}
-
-async function renderDiagram() {
-  const ok = await validateSyntax(source.value)
-  if (!ok) {
-    svgMarkup.value = '';
-    return
-  }
-  isRendering.value = true
-  try {
-    const id = 'mmd-' + Math.random().toString(36).slice(2)
-    const {svg} = await mermaid.render(id, source.value)
-    svgMarkup.value = svg
-    await nextTick()
-    attachPanZoom(previewRef, false)
-    if (isFullScreen.value) attachPanZoom(fsPreviewRef, true)
-  } catch (e: any) {
-    error.value = e?.message || 'Failed to render diagram.'
-  } finally {
-    isRendering.value = false
-  }
-}
-
-function onEditorChange() {
-  if (debounceTimer) window.clearTimeout(debounceTimer)
-  if (editor) source.value = editor.getValue()
-  debounceTimer = window.setTimeout(() => {
-    void renderDiagram()
-  }, 300)
-}
-
-function createEditor() {
-  if (!editorEl.value) return
-  loader.init().then((m) => {
-    try {
-      m.languages.register({id: 'mermaid'})
-      m.languages.setMonarchTokensProvider('mermaid', {
-        tokenizer: {
-          root: [
-            [/\b(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram-v2|erDiagram|journey|gantt|pie)\b/, 'keyword'],
-            [/\b(subgraph|end|click|style|linkStyle|accTitle|accDescr)\b/, 'keyword.control'],
-            [/-->|==>|===|\+\+|--|==/, 'operator'],
-            [/\[[^\]]*\]|\([^\)]*\)|\{[^}]*\}/, 'string'],
-            [/"[^"]*"|'[^']*'/, 'string'],
-            [/%%.*/, 'comment'],
-          ],
-        },
-      })
-    } catch {
-    }
-    editor = m.editor.create(editorEl.value!, {
-      value: source.value,
-      language: 'mermaid',
-      automaticLayout: true,
-      fontSize: 12,
-      wordWrap: 'on',
-      minimap: {enabled: false},
-      scrollBeyondLastLine: false,
-      theme: 'vs',
-    })
-    editor.onDidChangeModelContent(onEditorChange)
-  })
-}
-
-/* ---------------- API glue ---------------- */
-async function loadCollection() {
-  if (!collectionId.value) return
-  isLoadingCollection.value = true;
-  apiError.value = null
-  try {
-    const res: DiagramCollection = await diagramCollectionAPI.getDetail(collectionId.value);
-    collection.value = res
-  } catch (e: any) {
-    apiError.value = e?.message || 'Failed to load collection.'
-  } finally {
-    isLoadingCollection.value = false
-  }
-}
-
-const {withApiFeedback} = useApiFeedback();
-
-/** list diagrams; first selection uses list payload (no extra API call) */
-async function loadDiagramList() {
-  if (!collectionId.value) return
-  isLoadingDiagrams.value = true;
-  apiError.value = null
-  try {
-    const data = await withApiFeedback(
-        diagramCollectionAPI.getDiagram(collectionId.value),
-        {errorMessage: "Failed to load diagrams."}
-    )
-    const list: DiagramSummary[] = data?.list ?? []
-    diagrams.value = list.map(d => ({...d, id: String(d.id)}))
-    if (diagrams.value.length) {
-      selectedId.value = ""   // watcher will render from list
-    } else {
-      selectedId.value = ''
-      selectedDiagram.value = null
-      source.value = ''
-      svgMarkup.value = ''
-      error.value = null
-    }
-  } catch (e: any) {
-    apiError.value = e?.message || 'Failed to load diagrams.'
-  } finally {
-    isLoadingDiagrams.value = false
-  }
-}
-
-/** prefer list payload for detail; fallback to API detail call if needed */
-function fromListAsDetail(id: string): DiagramDetail | null {
-  const hit = diagrams.value.find(d => String(d.id) === String(id))
-  if (!hit) return null
-  return {
-    id: String(hit.id),
-    title: hit.title,
-    description: (hit as any).description ?? '',
-    syntax_type: (hit as any).syntax_type ?? 'mermaid',
-    syntax: (hit as any).syntax ?? '',
-    latestUpdated: (hit as any).latestUpdated,
-  } as DiagramDetail
-}
-
-async function fetchDetail(id: string) {
-  const svc: any = diagramCollectionAPI as any
-  const d: DiagramDetail =
-      (svc.getDiagramDetail ? await svc.getDiagramDetail(collectionId.value, id)
-          : await svc.getDiagram(collectionId.value, id))
-  return d
-}
-
-/** save syntax */
-async function saveDiagram() {
-  if (!selectedDiagram.value || !isDirty.value) return
-  isSavingDiagram.value = true
-  try {
-    const svc: any = diagramCollectionAPI as any
-    if (svc.actSaveDiagram) {
-      await svc.actSaveDiagram(collectionId.value, selectedDiagram.value.id, {syntax: source.value})
-    } else {
-      await svc.saveDiagram(collectionId.value, selectedDiagram.value.id, {syntax: source.value})
-    }
-    selectedDiagram.value.syntax = source.value
-    const idx = diagrams.value.findIndex(d => String(d.id) === String(selectedDiagram.value!.id))
-    if (idx >= 0) (diagrams.value[idx] as any).syntax = source.value
-    toast.success('Diagram saved')
-    await renderDiagram()
-  } catch (e: any) {
-    toast.error(e?.message || 'Failed to save diagram.')
-  } finally {
-    isSavingDiagram.value = false
-  }
-}
-
-/** update collection */
-async function submitEditCollection() {
-  try {
-    await (diagramCollectionAPI as any).actUpdate(collectionId.value, {
-      name: editForm.value.name.trim(),
-      description: editForm.value.description,
-    })
-    toast.success('Collection updated')
-    showEditCollection.value = false
-    await loadCollection()
-  } catch (e: any) {
-    toast.error(e?.message || 'Failed to update collection.')
-  }
-}
-
-/** remove collection */
-async function removeCollection() {
-  try {
-    await (diagramCollectionAPI as any).remove?.(collectionId.value)
-    toast('Collection removed')
-    router.replace({name: 'MermaidDiagramTools-ProjectList'})
-  } catch (e: any) {
-    toast.error(e?.message || 'Failed to remove collection.')
-  }
-}
-
-/** create new diagram */
-const showCreate = ref(false)
-const createForm = ref({title: '', syntax: 'flowchart TD\n  A[Start] --> B[End]\n'})
-
-async function submitCreateDiagram() {
-  if (!createForm.value.title.trim()) return
-  try {
-    const created = await diagramServices.actCreate({
-      collectionID: collectionId.value,
-      title: createForm.value.title.trim(),
-      syntax: createForm.value.syntax,
-      syntaxType: "mermaid",
-    })
-    toast.success('Diagram created')
-    showCreate.value = false
-    createForm.value = {title: '', syntax: 'flowchart TD\n  A[Start] --> B[End]\n'}
-    await loadDiagramList()
-    if (created?.id) selectedId.value = String(created.id)
-  } catch (e: any) {
-    toast.error('Failed to create diagram.')
-  }
-}
-
-/* ---------------- edit collection modal ---------------- */
-const showEditCollection = ref(false)
-const editForm = ref({name: '', description: ''})
-
-function openEditCollection() {
-  editForm.value.name = collection.value?.name ?? ''
-  editForm.value.description = collection.value?.description ?? ''
-  showEditCollection.value = true
-}
-
-/* ---------------- downloads & fullscreen ---------------- */
-function downloadSVG() {
-  if (!svgMarkup.value) {
-    toast.error('No SVG to download.');
-    return
-  }
-  const blob = new Blob([svgMarkup.value], {type: 'image/svg+xml'})
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = (selectedDiagram.value?.title || 'diagram') + '.svg'
-  a.click()
-  URL.revokeObjectURL(url)
-}
-
-function openFullScreen() {
-  isFullScreen.value = true
-  nextTick(() => attachPanZoom(fsPreviewRef, true))
-}
-
-function closeFullScreen() {
-  isFullScreen.value = false
-  disposePanzoom(fsPz);
-  fsPz = null
-}
-
-function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape' && isFullScreen.value) {
-    e.stopPropagation();
-    closeFullScreen()
-  }
-}
-
-function zoomIn(target: 'fs' | 'normal' = 'normal') {
-  const inst = target === 'fs' ? fsPz : pz;
-  inst?.smoothZoom?.(0, 0, 1.25)
-}
-
-function zoomOut(target: 'fs' | 'normal' = 'normal') {
-  const inst = target === 'fs' ? fsPz : pz;
-  inst?.smoothZoom?.(0, 0, 0.8)
-}
-
-function resetView(target: 'fs' | 'normal' = 'normal') {
-  const inst = target === 'fs' ? fsPz : pz
-  if (inst) {
-    inst.moveTo?.(0, 0);
-    inst.zoomAbs?.(0, 0, 1)
-  }
-}
-
-/* ---------------- lifecycle ---------------- */
-onMounted(async () => {
-  createEditor()
-  await loadCollection()
-  await loadDiagramList()
-  window.addEventListener('keydown', onKeydown)
-})
-onBeforeUnmount(() => {
-  editor?.dispose();
-  disposePanzoom(pz)
-})
-
-/* ---------------- Combobox behavior ---------------- */
-function onComboChange(val: string) {
-  if (val === '__create__') {
-    showCreate.value = true;
-    return;
-  }
-  // accept only known IDs
-  const exists = diagrams.value.some(d => String(d.id) === String(val))
-  if (!exists) return
-  selectedId.value = String(val)
-}
-
-
-/* When selectedId changes: use list payload first; if absent, fetch detail */
-watch(selectedId, async (id) => {
-  if (!id || id === '__create__') return
-  const fromList = fromListAsDetail(id)
-  if (fromList) {
-    selectedDiagram.value = fromList
-    source.value = fromList.syntax ?? ''
-    editor?.setValue(source.value)
-    await renderDiagram()
-  } else {
-    try {
-      const d = await fetchDetail(id)
-      selectedDiagram.value = d
-      source.value = d?.syntax ?? ''
-      editor?.setValue(source.value)
-      await renderDiagram()
-    } catch (e: any) {
-      toast.error(e?.message || 'Failed to load diagram.')
-    }
-  }
-})
-</script>
-
 <template>
-  <div class="min-h-screen bg-white ">
+  <div class="min-h-screen bg-white p-5 pt-0">
     <div class="mx-auto">
       <Card class="overflow-hidden border shadow-sm bg-white">
         <CardContent class="">
@@ -520,10 +82,22 @@ watch(selectedId, async (id) => {
             <div class="w-2/5 h-full flex flex-col rounded-lg border bg-white">
               <div class="flex items-center justify-between p-3 border-b">
                 <h2 class="text-sm font-semibold">Mermaid Editor</h2>
-                <div class="text-xs text-muted-foreground">
+                <div class="text-xs text-muted-foreground flex items-center gap-2">
                   <span v-if="lastUpdatedText" class="text-xs text-muted-foreground">{{ lastUpdatedText }}</span>
                   <Button size="xs" class="px-2 py-1 border text-xs" @click="saveDiagram">
                     <Save/>
+                  </Button>
+
+                  <!-- Share Diagram button -->
+                  <Button size="xs" variant="outline" class="px-2 py-1 text-xs" @click="openShare">
+                    <Share2 class="mr-1 h-3.5 w-3.5" />
+                    Share
+                  </Button>
+
+                  <!-- Edit Diagram button -->
+                  <Button size="xs" variant="outline" class="px-2 py-1 text-xs" @click="openEditDiagram">
+                    <Pencil class="mr-1 h-3.5 w-3.5" />
+                    Edit
                   </Button>
                 </div>
               </div>
@@ -653,6 +227,68 @@ watch(selectedId, async (id) => {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <!-- Edit Diagram Modal (with Remove button) -->
+    <Dialog v-model:open="showEditDiagram">
+      <DialogContent class="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Edit Diagram</DialogTitle>
+          <DialogDescription>Update the diagram details.</DialogDescription>
+        </DialogHeader>
+
+        <div class="grid gap-3 py-2">
+          <div class="grid gap-1.5">
+            <Label for="ed-title">Title</Label>
+            <Input id="ed-title" v-model="editDiagramForm.title" placeholder="Diagram title"/>
+          </div>
+          <div class="grid gap-1.5">
+            <Label for="ed-desc">Description</Label>
+            <Textarea id="ed-desc" v-model="editDiagramForm.description" rows="3"/>
+          </div>
+        </div>
+
+        <DialogFooter class="flex items-center justify-between">
+          <Button variant="destructive" @click="removeDiagram">
+            <Trash2 class="mr-2 h-4 w-4"/>
+            Remove
+          </Button>
+          <div class="space-x-2">
+            <Button variant="outline" @click="showEditDiagram = false">Cancel</Button>
+            <Button :disabled="!editDiagramForm.title.trim()" @click="submitEditDiagram">
+              <Save class="mr-2 h-4 w-4"/>
+              Update
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Share Diagram Modal -->
+    <Dialog v-model:open="showShare">
+      <DialogContent class="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Share Diagram</DialogTitle>
+          <DialogDescription>Anyone with this link can view the diagram preview.</DialogDescription>
+        </DialogHeader>
+
+        <div class="grid gap-3 py-2">
+          <div class="grid gap-1.5">
+            <Label for="share-url">Share URL</Label>
+            <div class="flex items-center gap-2">
+              <Input id="share-url" :model-value="shareUrl" readonly class="font-mono text-xs" />
+              <Button variant="outline" size="sm" @click="copyShareUrl">
+                <Copy class="mr-2 h-4 w-4" />
+                Copy
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter class="justify-end">
+          <Button variant="outline" @click="showShare = false">Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
@@ -671,3 +307,584 @@ watch(selectedId, async (id) => {
   background: transparent;
 }
 </style>
+
+<!-- src/pages/DiagramCollectionShow.vue -->
+<script lang="ts" setup>
+import {nextTick, onBeforeUnmount, onMounted, ref, watch, computed} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
+import mermaid from 'mermaid'
+import panzoom, {type PanZoom} from 'panzoom'
+import * as monaco from "monaco-editor"
+import {loader} from "@guolao/vue-monaco-editor"
+
+loader.config({monaco})
+import {toast} from 'vue-sonner'
+
+import {Card, CardContent} from '@/components/ui/card'
+import {Button} from '@/components/ui/button'
+import {Check, ChevronsUpDown, FilePlus2, Save, Search, Pencil, Trash2, Share2, Copy} from 'lucide-vue-next'
+import {cn} from '@/lib/utils'
+import {
+  Combobox, ComboboxAnchor, ComboboxEmpty, ComboboxGroup,
+  ComboboxInput, ComboboxItem, ComboboxItemIndicator, ComboboxList, ComboboxTrigger,
+} from '@/components/ui/combobox'
+import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter} from '@/components/ui/dialog'
+import {Input} from '@/components/ui/input'
+import {Textarea} from '@/components/ui/textarea'
+import {Label} from '@/components/ui/label'
+
+/* 🔌 API service */
+import diagramCollectionAPI from '@/api/DiagramCollectionServices.ts'
+import type {DiagramCollection, DiagramDetail, DiagramSummary} from '@/types/entities.ts'
+import {useApiFeedback} from "@/composables/useApiFeedback.ts"
+import diagramServices from "@/api/DiagramServices.ts";
+
+/* ---------------- route & id ---------------- */
+const route = useRoute()
+const router = useRouter()
+const collectionId = computed(() => String(route.params.id ?? ''))
+
+/* ---------------- state ---------------- */
+const collection = ref<DiagramCollection | null>(null)
+const isLoadingCollection = ref(false)
+
+const diagrams = ref<DiagramSummary[]>([])
+const isLoadingDiagrams = ref(false)
+
+const selectedId = ref<string>('')                 // combobox v-model
+const searchText = ref<string>('')                 // combobox v-model
+const selectedDiagram = ref<DiagramDetail | null>(null)
+const isSavingDiagram = ref(false)
+
+const apiError = ref<string | null>(null)
+
+/* combobox search term (prevents UUID showing in the input) */
+const comboSearch = ref('')
+
+function onComboOpenChange(open: boolean) {
+  if (open) comboSearch.value = ''
+}
+
+/* ---------------- mermaid + monaco ---------------- */
+mermaid.initialize({startOnLoad: false, securityLevel: 'loose', theme: 'default'})
+const source = ref<string>('') // editor text
+const svgMarkup = ref<string>('') // rendered svg
+const error = ref<string | null>(null)
+const isRendering = ref(false)
+const previewRef = ref<HTMLDivElement | null>(null)
+
+let pz: PanZoom | null = null
+let debounceTimer: number | undefined
+
+const editorEl = ref<HTMLDivElement | null>(null)
+let editor: import('monaco-editor').editor.IStandaloneCodeEditor | null = null
+
+/* fullscreen */
+const isFullScreen = ref(false)
+const fsPreviewRef = ref<HTMLDivElement | null>(null)
+let fsPz: PanZoom | null = null
+
+/* computed helpers */
+const isDirty = computed(() => !!selectedDiagram.value && source.value !== (selectedDiagram.value.syntax ?? ''))
+const lastUpdatedText = computed(() => {
+  const iso = (selectedDiagram.value as any)?.latestUpdated
+  return iso ? `Last updated ${new Date(iso).toLocaleString()}` : ''
+})
+
+/* ---------------- sharing ---------------- */
+// sharing refs & constants
+const showShare = ref(false)
+/** Hardcoded host base as requested */
+const SHARE_BASE = diagramServices.getBaseURL()
+const shareUrl = ref<string>('')
+
+// small helper to make base64 URL-safe (base64url)
+function toBase64Url(s: string) {
+  const b64 = btoa(s)
+  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+}
+
+function openShare(): void {
+  if (!selectedDiagram.value) {
+    toast.warning('Select a diagram first.')
+    return
+  }
+
+  const id = String(selectedDiagram.value.id || '')
+  if (!id) {
+    toast.error('Missing diagram id.')
+    return
+  }
+
+  try {
+    // encode the UUID and make it URL-safe
+    const b64url = toBase64Url(id)
+    shareUrl.value = `${SHARE_BASE}/share/diagram/${b64url}`
+  } catch {
+    // fallback: still produce a valid URL
+    shareUrl.value = `${SHARE_BASE}/share/diagram/${encodeURIComponent(id)}`
+  }
+
+  showShare.value = true
+}
+
+async function copyShareUrl(): Promise<void> {
+  if (!shareUrl.value) {
+    toast.error('No share URL available.')
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(shareUrl.value)
+    toast.success('Link copied to clipboard')
+  } catch {
+    // fallback for older browsers
+    const ta = document.createElement('textarea')
+    ta.value = shareUrl.value
+    document.body.appendChild(ta)
+    ta.select()
+    try {
+      document.execCommand('copy')
+      toast.success('Link copied to clipboard')
+    } catch {
+      toast.error('Failed to copy link')
+    } finally {
+      document.body.removeChild(ta)
+    }
+  }
+}
+
+
+/* ---------------- helpers ---------------- */
+function disposePanzoom(i: PanZoom | null) {
+  try {
+    (i as any)?.dispose?.()
+  } catch {}
+}
+
+function attachPanZoom(containerRef: typeof previewRef, fullscreen: boolean) {
+  if (fullscreen) {
+    disposePanzoom(fsPz);
+    fsPz = null
+  } else {
+    disposePanzoom(pz);
+    pz = null
+  }
+  const container = containerRef.value
+  if (!container) return
+  const svgEl = container.querySelector('svg') as SVGSVGElement | null
+  if (!svgEl) return
+  svgEl.removeAttribute('width')
+  svgEl.removeAttribute('height')
+  svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet')
+  svgEl.style.width = '100%'
+  svgEl.style.height = '100%'
+  const instance = panzoom(svgEl, {smoothScroll: true, zoomSpeed: 0.065, maxZoom: 8, minZoom: 0.25, bounds: false})
+  if (fullscreen) fsPz = instance; else pz = instance
+}
+
+async function validateSyntax(text: string) {
+  const trimmed = (text ?? '').trim()
+  if (!trimmed) {
+    error.value = null;
+    return false
+  }
+  try {
+    await (mermaid as any).parse(trimmed)
+    error.value = null
+    return true
+  } catch (e: any) {
+    error.value = e?.message || 'Mermaid syntax error.'
+    return false
+  }
+}
+
+async function renderDiagram() {
+  const ok = await validateSyntax(source.value)
+  if (!ok) {
+    svgMarkup.value = '';
+    return
+  }
+  isRendering.value = true
+  try {
+    const id = 'mmd-' + Math.random().toString(36).slice(2)
+    const {svg} = await mermaid.render(id, source.value)
+    svgMarkup.value = svg
+    await nextTick()
+    attachPanZoom(previewRef, false)
+    if (isFullScreen.value) attachPanZoom(fsPreviewRef, true)
+  } catch (e: any) {
+    error.value = e?.message || 'Failed to render diagram.'
+  } finally {
+    isRendering.value = false
+  }
+}
+
+function onEditorChange() {
+  if (debounceTimer) window.clearTimeout(debounceTimer)
+  if (editor) source.value = editor.getValue()
+  debounceTimer = window.setTimeout(() => {
+    void renderDiagram()
+  }, 300)
+}
+
+function createEditor() {
+  if (!editorEl.value) return
+  loader.init().then((m) => {
+    try {
+      m.languages.register({id: 'mermaid'})
+      m.languages.setMonarchTokensProvider('mermaid', {
+        tokenizer: {
+          root: [
+            [/\b(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram-v2|erDiagram|journey|gantt|pie)\b/, 'keyword'],
+            [/\b(subgraph|end|click|style|linkStyle|accTitle|accDescr)\b/, 'keyword.control'],
+            [/-->|==>|===|\+\+|--|==/, 'operator'],
+            [/\[[^\]]*\]|\([^\)]*\)|\{[^}]*\}/, 'string'],
+            [/"[^"]*"|'[^']*'/, 'string'],
+            [/%%.*/, 'comment'],
+          ],
+        },
+      })
+    } catch {}
+    editor = m.editor.create(editorEl.value!, {
+      value: source.value,
+      language: 'mermaid',
+      automaticLayout: true,
+      fontSize: 12,
+      wordWrap: 'on',
+      minimap: {enabled: false},
+      scrollBeyondLastLine: false,
+      theme: 'vs',
+    })
+    editor.onDidChangeModelContent(onEditorChange)
+  })
+}
+
+/* ---------------- API glue ---------------- */
+async function loadCollection() {
+  if (!collectionId.value) return
+  isLoadingCollection.value = true;
+  apiError.value = null
+  try {
+    const res: DiagramCollection = await diagramCollectionAPI.getDetail(collectionId.value);
+    collection.value = res
+  } catch (e: any) {
+    apiError.value = e?.message || 'Failed to load collection.'
+  } finally {
+    isLoadingCollection.value = false
+  }
+}
+
+const {withApiFeedback} = useApiFeedback();
+
+/** list diagrams; first selection uses list payload (no extra API call) */
+async function loadDiagramList() {
+  if (!collectionId.value) return
+  isLoadingDiagrams.value = true;
+  apiError.value = null
+  try {
+    const data = await withApiFeedback(
+        diagramCollectionAPI.getDiagram(collectionId.value),
+        {errorMessage: "Failed to load diagrams."}
+    )
+    const list: DiagramSummary[] = data.data?.list ?? []
+    diagrams.value = list.map(d => ({...d, id: String(d.id)}))
+    if (diagrams.value.length) {
+      selectedId.value = ""   // watcher will render from list
+    } else {
+      selectedId.value = ''
+      selectedDiagram.value = null
+      source.value = ''
+      svgMarkup.value = ''
+      error.value = null
+    }
+  } catch (e: any) {
+    apiError.value = e?.message || 'Failed to load diagrams.'
+  } finally {
+    isLoadingDiagrams.value = false
+  }
+}
+
+/** prefer list payload for detail; fallback to API detail call if needed */
+function fromListAsDetail(id: string): DiagramDetail | null {
+  const hit = diagrams.value.find(d => String(d.id) === String(id))
+  if (!hit) return null
+  return {
+    id: String(hit.id),
+    title: hit.title,
+    description: (hit as any).description ?? '',
+    syntax: (hit as any).syntax ?? '',
+    latestUpdated: (hit as any).latestUpdated
+  } as DiagramDetail
+}
+
+async function fetchDetail(id: string) {
+  const svc: any = diagramCollectionAPI as any
+  const d: DiagramDetail =
+      (svc.getDiagramDetail ? await svc.getDiagramDetail(collectionId.value, id)
+          : await svc.getDiagram(collectionId.value, id))
+  return d
+}
+
+async function saveDiagram() {
+  if (!selectedDiagram.value) {
+    toast.warning("need to select diagram, before update")
+    return
+  }
+
+  isSavingDiagram.value = true
+  try {
+    const payload = {
+      syntax: source.value,
+      title: selectedDiagram.value.title,
+    }
+
+    const svc = await withApiFeedback(
+        diagramServices.actUpdate(selectedDiagram.value.id, payload),
+        { successMessage: 'Diagram saved' }
+    )
+
+    if (svc.error || Object.keys(svc.fieldErrors || {}).length > 0) {
+      const fe = svc.fieldErrors
+      const details = Object.entries(fe).map(([k,v]) => `${k}: ${v}`).join(', ')
+      toast.error(details || 'Failed to save diagram.')
+      return
+    }
+
+    selectedDiagram.value.syntax = source.value
+    const idx = diagrams.value.findIndex(d => String(d.id) === String(selectedDiagram.value!.id))
+    if (idx >= 0) (diagrams.value[idx] as any).syntax = source.value
+    toast.success("Successfully updated diagram.")
+    await renderDiagram()
+  } catch (e: any) {
+    toast.error(e?.message || 'Failed to save diagram.')
+  } finally {
+    isSavingDiagram.value = false
+  }
+}
+
+/** update collection */
+async function submitEditCollection() {
+  try {
+    await (diagramCollectionAPI as any).actUpdate(collectionId.value, {
+      name: editForm.value.name.trim(),
+      description: editForm.value.description,
+    })
+    toast.success('Collection updated')
+    showEditCollection.value = false
+    await loadCollection()
+  } catch (e: any) {
+    toast.error(e?.message || 'Failed to update collection.')
+  }
+}
+
+/** remove collection */
+async function removeCollection() {
+  try {
+    await (diagramCollectionAPI as any).remove?.(collectionId.value)
+    toast('Collection removed')
+    router.replace({name: 'MermaidDiagramTools-ProjectList'})
+  } catch (e: any) {
+    toast.error(e?.message || 'Failed to remove collection.')
+  }
+}
+
+/** create new diagram */
+const showCreate = ref(false)
+const createForm = ref({title: '', syntax: 'flowchart TD\n  A[Start] --> B[End]\n'})
+
+async function submitCreateDiagram() {
+  if (!createForm.value.title.trim()) return
+  try {
+    const created = await diagramServices.actCreate({
+      collection_id: collectionId.value,
+      title: createForm.value.title.trim(),
+      syntax: createForm.value.syntax,
+      syntax_type: "mermaid",
+    })
+    toast.success('Diagram created')
+    showCreate.value = false
+    createForm.value = {title: '', syntax: 'flowchart TD\n  A[Start] --> B[End]\n'}
+    await loadDiagramList()
+    if (created?.id) selectedId.value = String(created.id)
+  } catch (e: any) {
+    toast.error('Failed to create diagram.')
+  }
+}
+
+/* ---------------- edit collection modal ---------------- */
+const showEditCollection = ref(false)
+const editForm = ref({name: '', description: ''})
+
+function openEditCollection() {
+  editForm.value.name = collection.value?.name ?? ''
+  editForm.value.description = collection.value?.description ?? ''
+  showEditCollection.value = true
+}
+
+/* ---------------- edit diagram modal ---------------- */
+const showEditDiagram = ref(false)
+const editDiagramForm = ref({ title: '', description: '' })
+
+function openEditDiagram() {
+  if (!selectedDiagram.value) {
+    toast.warning('Select a diagram first.')
+    return
+  }
+  editDiagramForm.value.title = selectedDiagram.value.title || ''
+  editDiagramForm.value.description = selectedDiagram.value.description || ''
+  showEditDiagram.value = true
+}
+
+async function submitEditDiagram() {
+  if (!selectedDiagram.value) return
+  try {
+    const payload: any = {
+      title: editDiagramForm.value.title.trim(),
+      description: editDiagramForm.value.description,
+    }
+
+    const svc = await withApiFeedback(
+        diagramServices.actUpdate(selectedDiagram.value.id, payload),
+        { successMessage: 'Diagram updated' }
+    )
+
+    if (svc?.error || Object.keys(svc?.fieldErrors || {}).length > 0) {
+      const fe = svc.fieldErrors || {}
+      const details = Object.entries(fe).map(([k, v]) => `${k}: ${v}`).join(', ')
+      toast.error(details || 'Failed to update diagram.')
+      return
+    }
+
+    // sync local state
+    selectedDiagram.value.title = payload.title
+    selectedDiagram.value.description = payload.description
+
+    const idx = diagrams.value.findIndex(d => String(d.id) === String(selectedDiagram.value!.id))
+    if (idx >= 0) {
+      diagrams.value[idx].title = payload.title
+      ;(diagrams.value[idx] as any).description = payload.description
+    }
+
+    showEditDiagram.value = false
+  } catch (e: any) {
+    toast.error(e?.message || 'Failed to update diagram.')
+  }
+}
+
+/** remove diagram (from Edit Diagram modal) */
+async function removeDiagram() {
+  if (!selectedDiagram.value) return
+  try {
+    await diagramServices.actRemove(selectedDiagram.value.id)
+    toast.success('Diagram removed')
+    showEditDiagram.value = false
+
+    // reload list + clear current selection and preview
+    await loadDiagramList()
+    selectedId.value = ''
+    selectedDiagram.value = null
+    source.value = ''
+    svgMarkup.value = ''
+    error.value = null
+  } catch (e: any) {
+    toast.error(e?.message || 'Failed to remove diagram.')
+  }
+}
+
+/* ---------------- downloads & fullscreen ---------------- */
+function downloadSVG() {
+  if (!svgMarkup.value) {
+    toast.error('No SVG to download.');
+    return
+  }
+  const blob = new Blob([svgMarkup.value], {type: 'image/svg+xml'})
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = (selectedDiagram.value?.title || 'diagram') + '.svg'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function openFullScreen() {
+  isFullScreen.value = true
+  nextTick(() => attachPanZoom(fsPreviewRef, true))
+}
+
+function closeFullScreen() {
+  isFullScreen.value = false
+  disposePanzoom(fsPz);
+  fsPz = null
+}
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && isFullScreen.value) {
+    e.stopPropagation();
+    closeFullScreen()
+  }
+}
+
+function zoomIn(target: 'fs' | 'normal' = 'normal') {
+  const inst = target === 'fs' ? fsPz : pz;
+  inst?.smoothZoom?.(0, 0, 1.25)
+}
+
+function zoomOut(target: 'fs' | 'normal' = 'normal') {
+  const inst = target === 'fs' ? fsPz : pz;
+  inst?.smoothZoom?.(0, 0, 0.8)
+}
+
+function resetView(target: 'fs' | 'normal' = 'normal') {
+  const inst = target === 'fs' ? fsPz : pz
+  if (inst) {
+    inst.moveTo?.(0, 0);
+    inst.zoomAbs?.(0, 0, 1)
+  }
+}
+
+/* ---------------- lifecycle ---------------- */
+onMounted(async () => {
+  createEditor()
+  await loadCollection()
+  await loadDiagramList()
+  window.addEventListener('keydown', onKeydown)
+})
+onBeforeUnmount(() => {
+  editor?.dispose();
+  disposePanzoom(pz)
+})
+
+/* ---------------- Combobox behavior ---------------- */
+function onComboChange(val: string) {
+  if (val === '__create__') {
+    showCreate.value = true;
+    return;
+  }
+  // accept only known IDs
+  const exists = diagrams.value.some(d => String(d.id) === String(val))
+  if (!exists) return
+  selectedId.value = String(val)
+}
+
+/* When selectedId changes: use list payload first; if absent, fetch detail */
+watch(selectedId, async (id) => {
+  if (!id || id === '__create__') return
+  const fromList = fromListAsDetail(id)
+  if (fromList) {
+    selectedDiagram.value = fromList
+    source.value = fromList.syntax ?? ''
+    editor?.setValue(source.value)
+    await renderDiagram()
+  } else {
+    try {
+      const d = await fetchDetail(id)
+      selectedDiagram.value = d
+      source.value = d?.syntax ?? ''
+      editor?.setValue(source.value)
+      await renderDiagram()
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to load diagram.')
+    }
+  }
+})
+</script>
