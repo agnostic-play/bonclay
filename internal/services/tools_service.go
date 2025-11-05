@@ -1,117 +1,521 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
+	"crypto/md5"
 	"crypto/rand"
+	"crypto/sha1"
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
-	`strings`
+	"log"
+	"regexp"
+	"strings"
 )
 
-var (
-	key = []byte("Random1234567890")
-	iv  = []byte("RandomInitVector")
-)
+// ============================
+// Request / Response
+// ============================
 
-type EncryptionToolsEntity struct {
-	Type string `json:"type"`
-	Key  string `json:"key"`
-	Data string `json:"data"`
+type EncryptionReq struct {
+	EncryptionType  string `json:"encryptionType"`  // "AES GCM", "AES CBC", "AES CBC IV", or "AES Imeg"
+	Key             string `json:"key"`             // hex, base64, or raw
+	KeyDeriveMethod string `json:"keyDeriveMethod"` // "No SUM", "sha256", "sha512", "md5", "sha1", "hmac-sha256"
+	RawValue        string `json:"rawValue"`        // plaintext (enc) or ciphertext (dec) - base64/hex/raw
+	OutputFormat    string `json:"outputFormat"`    // "hex" or "base64" (encrypt output format)
+	IV              string `json:"iv,omitempty"`    // REQUIRED for "AES CBC IV"/"AES Imeg" (hex/base64/raw)
 }
+
+type EncryptionResp struct {
+	Output string `json:"output"` // encrypted (hex/base64) or decrypted plaintext (base64)
+}
+
+// ============================
+// Service interface + container
+// ============================
 
 type ToolsService interface {
-	EncryptConfig(ctx context.Context, req EncryptionToolsEntity) (string, error)
-	DecryptConfig(ctx context.Context, req EncryptionToolsEntity) (string, error)
+	EncryptConfig(ctx context.Context, req EncryptionReq) (EncryptionResp, error)
+	DecryptConfig(ctx context.Context, req EncryptionReq) (EncryptionResp, error)
 }
 
-func (cont serviceContainer) EncryptConfig(ctx context.Context, req EncryptionToolsEntity) (string, error) {
-	decodeString, err := base64.StdEncoding.DecodeString(req.Data)
+// Basic container (replace with yours if you already have one)
+
+// ============================
+// Public methods
+// ============================
+
+func (cont serviceContainer) EncryptConfig(ctx context.Context, req EncryptionReq) (EncryptionResp, error) {
+	// Decode plaintext (try base64; fallback to raw string)
+	plain, err := base64.StdEncoding.DecodeString(req.RawValue)
 	if err != nil {
-		return "", err
+		plain = []byte(req.RawValue)
 	}
 
-	if strings.ToLower(req.Type) == "imeg" {
-		return EncryptImeg(decodeString, key, iv)
-	}
-
-	key := sha256.Sum256([]byte(req.Key))
-	encryptedConf, err := encrypt(key[:], decodeString)
+	key, err := buildAESKeyFromInput(req.Key, req.KeyDeriveMethod)
 	if err != nil {
-		return "", err
+		return EncryptionResp{}, err
 	}
 
-	return encryptedConf, nil
-}
+	mode := normalizeEncType(req.EncryptionType)
+	var out []byte
 
-func (cont serviceContainer) DecryptConfig(ctx context.Context, req EncryptionToolsEntity) (string, error) {
-	if strings.ToLower(req.Type) == "imeg" {
-		result, err := DecryptImeg(req.Data, key, iv)
-		if err != nil {
-			return "", err
+	switch mode {
+	case "aesGCM":
+		out, err = encryptAESGCM(key, plain)
+
+	case "aesCBC":
+		// Legacy: random IV generated and prefixed to ciphertext
+		out, err = encryptAESCBC(key, plain)
+
+	case "aesCBCIV":
+		// Explicit IV CBC (no IV prefix in output)
+		if strings.TrimSpace(req.IV) == "" {
+			return EncryptionResp{}, errors.New("iv is required for AES CBC IV")
 		}
-		return base64.StdEncoding.EncodeToString(result), nil
+
+		iv, derr := parseKeyInput(req.IV)
+		if derr != nil {
+			return EncryptionResp{}, fmt.Errorf("invalid iv: %w", derr)
+		}
+		out, err = encryptAESCBCWithIV(key, plain, iv)
+
+	case "aesImeg":
+		// EXACT Imeg encryption: returns base64-encoded ciphertext (no IV prefix)
+		if strings.TrimSpace(req.IV) == "" {
+			return EncryptionResp{}, errors.New("iv is required for AES Imeg")
+		}
+
+		if lenIV := len(req.IV); lenIV != 16 {
+			return EncryptionResp{}, errors.New("iv is need more than 16 bytes")
+		}
+
+		if lenKey := len(req.Key); lenKey != 16 {
+			return EncryptionResp{}, errors.New("iv is need more than 16 bytes")
+		}
+
+		// call EncryptImeg EXACTLY as given
+		val, err2 := EncryptImeg(plain, key, []byte(req.IV))
+		if err2 != nil {
+			return EncryptionResp{}, err2
+		}
+
+		out = val
+
+	default:
+		err = fmt.Errorf("unsupported encryptionType: %s", req.EncryptionType)
 	}
 
-	key := sha256.Sum256([]byte(req.Key))
-	conf, err := decrypt(key[:], req.Data)
-	if err != nil || conf == nil {
-		return "", err
+	if err != nil {
+		return EncryptionResp{}, err
 	}
 
-	return base64.StdEncoding.EncodeToString(conf), nil
+	return EncryptionResp{Output: encodeOutput(out, req.OutputFormat)}, nil
 }
 
-func encrypt(key, plaintext []byte) (string, error) {
+func (cont serviceContainer) DecryptConfig(ctx context.Context, req EncryptionReq) (resp EncryptionResp, err error) {
+	// 1) Key derivation
+	key, err := buildAESKeyFromInput(req.Key, req.KeyDeriveMethod)
+	if err != nil {
+		return EncryptionResp{}, err
+	}
+
+	// 2) Panic safety at the boundary
+	defer func() {
+		if r := recover(); r != nil {
+			// can't "return" from a defer; set named returns instead
+			err = fmt.Errorf("decrypt panic: %v", r)
+			resp = EncryptionResp{}
+		}
+	}()
+
+	// 3) Parse input ciphertext
+	var ciphertext []byte
+	ciphertext, err = decodeInputFlexible(req.RawValue)
+	if err != nil {
+		return EncryptionResp{}, fmt.Errorf("invalid rawValue: %w", err)
+	}
+
+	mode := normalizeEncType(req.EncryptionType)
+	var plain []byte
+
+	switch strings.ToLower(mode) {
+	case "aesgcm":
+		plain, err = decryptAESGCM(key, ciphertext)
+
+	case "aescbc":
+		// Legacy: IV prefixed to ciphertext
+		plain, err = decryptAESCBC(key, ciphertext)
+
+	case "aescbciv":
+		// Explicit IV CBC (no IV in ciphertext)
+		if strings.TrimSpace(req.IV) == "" {
+			return EncryptionResp{}, errors.New("iv is required for AES CBC IV")
+		}
+		var iv []byte
+		iv, err = parseKeyInput(req.IV)
+		if err != nil {
+			return EncryptionResp{}, fmt.Errorf("invalid iv: %w", err)
+		}
+		plain, err = decryptAESCBCWithIV(key, ciphertext, iv)
+
+	case "aesimeg":
+		// Imeg variant needs IV supplied separately
+		if strings.TrimSpace(req.IV) == "" {
+			return EncryptionResp{}, errors.New("iv is required for AES Imeg")
+		}
+		plain, err = DecryptImeg(ciphertext, key, []byte(req.IV))
+
+	default:
+		err = fmt.Errorf("unsupported encryptionType: %s", req.EncryptionType)
+	}
+
+	if err != nil {
+		return EncryptionResp{}, err
+	}
+
+	// 4) Return plaintext as base64 (safe for arbitrary binary)
+	resp = EncryptionResp{Output: base64.StdEncoding.EncodeToString(plain)}
+	return
+}
+
+// ============================
+// Key derivation and sizing
+// ============================
+
+// Build AES key from input key + method. Supports arbitrary input length by sizing to 16/24/32.
+func buildAESKeyFromInput(keyStr, method string) ([]byte, error) {
+	material, err := parseKeyInput(keyStr) // hex/base64/raw -> []byte
+	if err != nil {
+		return nil, fmt.Errorf("invalid key: %w", err)
+	}
+
+	switch strings.ToLower(strings.TrimSpace(method)) {
+	case "no sum", "nosum", "raw", "":
+		return normalizeKey(material), nil
+	case "sha256":
+		sum := sha256.Sum256(material)
+		return normalizeKey(sum[:]), nil
+	case "sha512":
+		sum := sha512.Sum512(material)
+		return normalizeKey(sum[:]), nil
+	case "md5":
+		sum := md5.Sum(material)
+		return normalizeKey(sum[:]), nil
+	case "sha1":
+		sum := sha1.Sum(material)
+		return normalizeKey(sum[:]), nil
+	case "hmac-sha256":
+		// Static salt for compatibility; replace with your own secret management.
+		mac := hmac.New(sha256.New, []byte("secret-hmac-salt"))
+		mac.Write(material)
+		return normalizeKey(mac.Sum(nil)), nil
+	default:
+		return nil, fmt.Errorf("unsupported key_derive_method: %s", method)
+	}
+}
+
+// parseKeyInput auto-detects hex, then base64, else treats as raw bytes.
+func parseKeyInput(s string) ([]byte, error) {
+	// Try hex (even length only)
+	if m, _ := regexp.MatchString(`(?i)^[0-9a-f]+$`, s); m && len(s)%2 == 0 {
+		if b, err := hex.DecodeString(s); err == nil {
+			return b, nil
+		}
+	}
+	// Try base64 (std)
+	if b, err := base64.StdEncoding.DecodeString(s); err == nil {
+		return b, nil
+	}
+	// Fallback: raw bytes of the string
+	return []byte(s), nil
+}
+
+// normalizeKey resizes to 16/24/32 bytes (pad with zeros or truncate).
+func normalizeKey(k []byte) []byte {
+	switch {
+	case len(k) >= 32:
+		return k[:32]
+	case len(k) > 24: // (24,31]
+		out := make([]byte, 32)
+		copy(out, k)
+		return out
+	case len(k) == 24:
+		return k
+	case len(k) > 16: // (16,23]
+		out := make([]byte, 24)
+		copy(out, k)
+		return out
+	case len(k) == 16:
+		return k
+	default: // < 16
+		out := make([]byte, 16)
+		copy(out, k)
+		return out
+	}
+}
+
+// ============================
+// AES-GCM
+// ============================
+
+func encryptAESGCM(key, plaintext []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-
-	aesGCM, err := cipher.NewGCM(block)
+	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-
-	nonce := make([]byte, aesGCM.NonceSize())
+	nonce := make([]byte, gcm.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return "", err
+		return nil, err
 	}
-
-	ciphertext := aesGCM.Seal(nonce, nonce, plaintext, nil)
-	return base64.StdEncoding.EncodeToString(ciphertext), nil
+	// Prefix nonce
+	return gcm.Seal(nonce, nonce, plaintext, nil), nil
 }
 
-// Decrypt decrypts ciphertext using AES-GCM.
-func decrypt(key []byte, cipherTextBase64 string) ([]byte, error) {
-	ciphertext, err := base64.StdEncoding.DecodeString(cipherTextBase64)
+func decryptAESGCM(key, ciphertext []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
 	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+	ns := gcm.NonceSize()
+	if len(ciphertext) < ns {
+		return nil, errors.New("ciphertext too short")
+	}
+	nonce, data := ciphertext[:ns], ciphertext[ns:]
+	return gcm.Open(nil, nonce, data, nil)
+}
 
+// ============================
+// AES-CBC (PKCS7)
+// ============================
+
+// Legacy behavior: random IV generated and prefixed to ciphertext.
+func encryptAESCBC(key, plaintext []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
 	}
 
-	aesGCM, err := cipher.NewGCM(block)
-	if err != nil {
+	bs := block.BlockSize()
+	plaintext = pkcs7Pad(plaintext, bs)
+
+	iv := make([]byte, bs)
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		return nil, err
 	}
 
-	nonceSize := aesGCM.NonceSize()
-	if len(ciphertext) < nonceSize {
-		return nil, fmt.Errorf("ciphertext too short")
-	}
+	mode := cipher.NewCBCEncrypter(block, iv)
+	ct := make([]byte, len(plaintext))
+	mode.CryptBlocks(ct, plaintext)
 
-	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
-	plaintext, err := aesGCM.Open(nil, nonce, ciphertext, nil)
+	return append(iv, ct...), nil
+}
+
+// Legacy behavior: IV is read from the prefix of the ciphertext.
+func decryptAESCBC(key, ciphertext []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
 	}
+	bs := block.BlockSize()
+	if len(ciphertext) < bs {
+		return nil, errors.New("ciphertext too short")
+	}
+	iv, data := ciphertext[:bs], ciphertext[bs:]
+	if len(data)%bs != 0 {
+		return nil, errors.New("ciphertext length must be a multiple of block size")
+	}
+	mode := cipher.NewCBCDecrypter(block, iv)
+	pt := make([]byte, len(data))
+	mode.CryptBlocks(pt, data)
+	return pkcs7Unpad(pt)
+}
 
-	return plaintext, nil
+// Explicit-IV CBC (no IV prefix). These are NOT the Imeg functions;
+// keeping them in case you want non-Imeg explicit-IV helpers too.
+func encryptAESCBCWithIV(key, plaintext, iv []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+	bs := block.BlockSize()
+	if len(iv) != bs {
+		return nil, fmt.Errorf("iv must be %d bytes", bs)
+	}
+	plaintext = pkcs7Pad(plaintext, bs)
+
+	mode := cipher.NewCBCEncrypter(block, iv)
+	ct := make([]byte, len(plaintext))
+	mode.CryptBlocks(ct, plaintext)
+	return ct, nil
+}
+
+func decryptAESCBCWithIV(key, ciphertext, iv []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+	bs := block.BlockSize()
+	if len(iv) != bs {
+		return nil, fmt.Errorf("iv must be %d bytes", bs)
+	}
+	if len(ciphertext)%bs != 0 {
+		return nil, errors.New("ciphertext length must be a multiple of block size")
+	}
+
+	mode := cipher.NewCBCDecrypter(block, iv)
+	pt := make([]byte, len(ciphertext))
+	mode.CryptBlocks(pt, ciphertext)
+	return pkcs7Unpad(pt)
+}
+
+// ============================
+// EXACT Imeg block (UNMODIFIED)
+// ============================
+
+func EncryptImeg(plaintext []byte, key, iv []byte) (encoded []byte, err error) {
+	bPlaintext := pkcs5Padding(plaintext, aes.BlockSize, len(string(plaintext)))
+
+	cipherData, err := aes.NewCipher(key)
+	if err != nil {
+		return
+	}
+	log.Println(iv)
+	if len(iv) != cipherData.BlockSize() {
+		return nil, errors.New(fmt.Sprintf("%v %v", len(iv), cipherData.BlockSize()))
+	}
+
+	cipherText := make([]byte, len(bPlaintext))
+	stream := cipher.NewCBCEncrypter(cipherData, iv)
+	stream.CryptBlocks(cipherText, bPlaintext)
+
+	return cipherText, err
+}
+
+func DecryptImeg(cipherText []byte, key, iv []byte) (result []byte, err error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return
+	}
+
+	if len(iv) != block.BlockSize() {
+		return nil, errors.New(fmt.Sprintf("%v %v", len(iv), cipherText))
+	}
+
+	// IF the length of the cipherText is less than 16 Bytes:
+	if len(cipherText) < aes.BlockSize {
+		err = errors.New("ciphertext block size is too short")
+		return
+	}
+
+	// Decrypt the message
+	stream := cipher.NewCBCDecrypter(block, iv)
+	decrypted := make([]byte, len(cipherText))
+	stream.CryptBlocks(decrypted, cipherText)
+
+	result = pkcs5Trimming(decrypted)
+
+	return
+}
+
+func pkcs5Padding(ciphertext []byte, blockSize int, after int) []byte {
+	padding := (blockSize - len(ciphertext)%blockSize)
+	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
+	return append(ciphertext, padtext...)
+}
+
+func pkcs7Pad(b []byte, blocksize int) []byte {
+	if blocksize <= 0 {
+		return nil
+	}
+	if b == nil || len(b) == 0 {
+		return nil
+	}
+	n := blocksize - (len(b) % blocksize)
+	pb := make([]byte, len(b)+n)
+	copy(pb, b)
+	copy(pb[len(b):], bytes.Repeat([]byte{byte(n)}, n))
+	return pb
+}
+
+func pkcs5Trimming(encrypt []byte) []byte {
+	padding := encrypt[len(encrypt)-1]
+	return encrypt[:len(encrypt)-int(padding)]
+}
+
+// ============================
+// Helpers
+// ============================
+
+func normalizeEncType(s string) string {
+	compact := strings.ToLower(strings.ReplaceAll(s, " ", ""))
+	switch compact {
+	case "aesgcm":
+		return "aesGCM"
+	case "aescbc":
+		return "aesCBC" // legacy (IV prefixed)
+	case "aescbciv":
+		return "aesCBCIV" // explicit IV, no prefix
+	case "aesimeg", "aescbcimeg", "imeg":
+		return "aesImeg" // explicit IV, Imeg functions
+	default:
+		return ""
+	}
+}
+
+func pkcs7Unpad(data []byte) ([]byte, error) {
+	l := len(data)
+	if l == 0 {
+		return nil, errors.New("invalid padding size")
+	}
+	pad := int(data[l-1])
+	if pad == 0 || pad > l {
+		return nil, errors.New("invalid padding bytes")
+	}
+	// Verify all padding bytes
+	for i := l - pad; i < l; i++ {
+		if int(data[i]) != pad {
+			return nil, errors.New("invalid padding bytes")
+		}
+	}
+	return data[:l-pad], nil
+}
+
+// decodeInputFlexible: try base64, then hex, else raw bytes
+func decodeInputFlexible(s string) ([]byte, error) {
+	if b, err := base64.StdEncoding.DecodeString(s); err == nil {
+		return b, nil
+	}
+
+	if b, err := hex.DecodeString(s); err == nil {
+		return b, nil
+	}
+	// As a last resort, treat as raw bytes
+	return []byte(s), nil
+}
+
+// encodeOutput: "hex" or "base64" (default base64)
+func encodeOutput(b []byte, fmtOpt string) string {
+	switch strings.ToLower(strings.TrimSpace(fmtOpt)) {
+	case "hex":
+		return hex.EncodeToString(b)
+	default:
+		return base64.StdEncoding.EncodeToString(b)
+	}
 }

@@ -30,16 +30,12 @@ func NewSetupHandlers(server *echo.Echo, baseURL string, container services.Serv
 }
 
 func (h handlers) Routes() {
-
 	h.server.GET("/", func(ctx echo.Context) error {
 		return h.render(ctx, "squadIndex", nil)
 	})
-
 	h.server.GET("/ping", func(c echo.Context) error {
 		return c.JSON(200, "hello :)")
 	}).Name = "ping"
-
 	h.routesViews()
 	h.routesApi()
-
 }

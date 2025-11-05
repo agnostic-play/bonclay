@@ -1,0 +1,105 @@
+<script setup lang="ts">
+import { type SidebarProps} from '@/components/ui/sidebar'
+
+
+import {
+  Clover, FileKey2,
+  SquareTerminal, WorkflowIcon,
+} from "lucide-vue-next"
+import NavMain from '@/components/NavMain.vue'
+import NavUser from '@/components/NavUser.vue'
+
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarRail,
+} from '@/components/ui/sidebar'
+import {useRoute} from "vue-router";
+import {type Component, computed} from "vue";
+import TeamSwitcher from "@/components/TeamSwitcher.vue";
+
+
+const props = withDefaults(defineProps<SidebarProps>(), {
+  collapsible: "icon",
+})
+
+
+const route = useRoute()
+const data = computed(() => ({
+  user: {
+    name: "shadcn",
+    email: "m@example.com",
+    avatar: "/avatars/shadcn.jpg",
+  },
+  teams: [
+    {
+      name: "Acme Inc",
+      logo: Clover,
+      plan: "Enterprise",
+    }
+  ],
+  navMain: [
+    {
+      title: "Mock API",
+      url: "#",
+      icon: SquareTerminal,
+      isActive: route.path.startsWith("/tools/mock-api"),
+      items: [
+        {
+          title: "API Collection",
+          routeName: "MockApiTools-Index",
+        },
+        {
+          title: "Histories",
+          routeName: "MockApiTools-Index",
+        },
+      ],
+    },
+    {
+      title: "Encryption Tools",
+      url: "#",
+      icon: FileKey2,
+      isActive: route.path.startsWith("/tools/encryption"),
+      items: [
+        {
+          title: "Encryption Tools",
+          routeName: "EncryptionTools-Index",
+        }
+      ],
+    },
+    {
+      title: "Mermaid Diagram",
+      url: "#",
+      icon: WorkflowIcon,
+      isActive: route.path.startsWith("/tools/mermaid-diagram"),
+      items: [
+        {
+          title: "Projects",
+          routeName: "MermaidDiagramTools-Index",
+        },
+        // {
+        //   title: "Show",
+        //   routeName: "MermaidDiagramTools-ProjectShow",
+        // }
+      ],
+    },
+  ],
+}))
+</script>
+
+<template>
+  <Sidebar v-bind="props">
+    <SidebarHeader>
+      <TeamSwitcher :teams="data.teams" />
+    </SidebarHeader>
+    <SidebarContent>
+      <NavMain :items="data.navMain"/>
+    </SidebarContent>
+    <SidebarFooter>
+      <NavUser :user="data.user"/>
+    </SidebarFooter>
+    <SidebarRail/>
+  </Sidebar>
+</template>

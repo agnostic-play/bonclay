@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	`time`
+	"time"
 
+	"github.com/agnostic-play/ditoo/internal/services"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
 
-	"github.com/agnostic-play/ditoo/internal/services"
 )
 
 func (h handlers) routesApi() {
@@ -37,11 +37,18 @@ func (h handlers) routesApi() {
 
 	h.server.POST("/api/remove_active_scenario/:id", h.actRemoveActiveScenario)
 	h.server.POST("/api/set/active_scenario", h.actSetActiveScenario)
-	h.server.POST("/api/v2/tools/config-encryption/encrypt", h.actEncryptConfig)
-	h.server.POST("/api/v2/tools/config-encryption/decrypt", h.actDecryptConfig)
+
+	v2 := h.server.Group("/api/v2")
+	v2.POST("/tools/config-encryption/encrypt", h.actEncryptConfig)
+	v2.POST("/tools/config-encryption/decrypt", h.actDecryptConfig)
+
+	diagramCollectionRoutes := NewDiagramCollectionRoutes(h.serviceContainer.GetCRUDServices().DiagramCollectionServices, h.serviceContainer.GetCRUDServices().DiagramServices)
+	diagramCollectionRoutes.RegisterRoutes(v2)
+
+	diagramRoutes := NewBaseCRUDRoutes(h.serviceContainer.GetCRUDServices().DiagramServices)
+	diagramRoutes.RegisterRoutes(v2)
 
 	h.server.Any("/mock/:collection/:path", h.actMock)
-
 }
 
 func (h handlers) actMock(ctx echo.Context) error {
@@ -100,59 +107,59 @@ func (h handlers) getListSquad(ctx echo.Context) error {
 
 	resp, err := h.serviceContainer.GetListSquad(context.Background(), name)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusInternalServerError, err)
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}
 
-	return h.json(ctx, 200, resp)
+	return respJSON(ctx, 200, resp)
 }
 
 func (h handlers) actCreateSquad(ctx echo.Context) error {
 	var req services.SquadEntityReq
 
-	if err := h.validateRequest(ctx, &req); err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+	if err := validateRequest(ctx, &req); err != nil {
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
 	resp, err := h.serviceContainer.CreateOrUpdateSquad(context.Background(), "", req)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusInternalServerError, err)
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}
 
-	return h.json(ctx, 200, resp)
+	return respJSON(ctx, 200, resp)
 }
 
 func (h handlers) actUpdateSquad(ctx echo.Context) error {
 	var req services.SquadEntityReq
 
-	id, err := h.validateUUID(ctx)
+	id, err := validateUUID(ctx)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
-	if err := h.validateRequest(ctx, &req); err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+	if err := validateRequest(ctx, &req); err != nil {
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
 	resp, err := h.serviceContainer.CreateOrUpdateSquad(context.Background(), id, req)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusInternalServerError, err)
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}
 
-	return h.json(ctx, 200, resp)
+	return respJSON(ctx, 200, resp)
 }
 
 func (h handlers) actDeleteSquad(ctx echo.Context) error {
 
-	id, err := h.validateUUID(ctx)
+	id, err := validateUUID(ctx)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
 	resp, err := h.serviceContainer.DeleteSquad(context.Background(), id)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusInternalServerError, err)
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}
-	return h.json(ctx, 200, resp)
+	return respJSON(ctx, 200, resp)
 
 }
 
@@ -160,58 +167,59 @@ func (h handlers) actGetEndpoint(ctx echo.Context) error {
 
 	resp, err := h.serviceContainer.GetEndpointScenario(context.Background(), ctx.Param("slug"))
 	if err != nil {
-		return h.errorJson(ctx, http.StatusInternalServerError, err)
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}
 
-	return h.json(ctx, 200, resp)
+	return respJSON(ctx, 200, resp)
 }
 
 func (h handlers) actCreateCollection(ctx echo.Context) error {
 	var req services.CollectionEntityReq
 
-	if err := h.validateRequest(ctx, &req); err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+	if err := validateRequest(ctx, &req); err != nil {
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
 	resp, err := h.serviceContainer.CreateOrUpdateCollection(context.Background(), "", req)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusInternalServerError, err)
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}
 
-	return h.json(ctx, 200, resp)
+	return respJSON(ctx, 200, resp)
 }
 
 func (h handlers) actUpdateCollection(ctx echo.Context) error {
 	var req services.CollectionEntityReq
 
-	id, err := h.validateUUID(ctx)
+	id, err := validateUUID(ctx)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
-	if err := h.validateRequest(ctx, &req); err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+	if err := validateRequest(ctx, &req); err != nil {
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
 	resp, err := h.serviceContainer.CreateOrUpdateCollection(context.Background(), id, req)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusInternalServerError, err)
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}
 
-	return h.json(ctx, 200, resp)
+	return respJSON(ctx, 200, resp)
 }
 
 func (h handlers) actDeleteCollection(ctx echo.Context) error {
-	id, err := h.validateUUID(ctx)
+
+	id, err := validateUUID(ctx)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
 	resp, err := h.serviceContainer.DeleteCollection(context.Background(), id)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusInternalServerError, err)
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}
-	return h.json(ctx, 200, resp)
+	return respJSON(ctx, 200, resp)
 }
 
 func (h handlers) getCollectionEndpoint(ctx echo.Context) error {
@@ -219,10 +227,10 @@ func (h handlers) getCollectionEndpoint(ctx echo.Context) error {
 
 	endpointScenario, err := h.serviceContainer.GetEndpointScenario(c, ctx.Param("collectionSlug"))
 	if err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
-	return h.json(ctx, 200, endpointScenario)
+	return respJSON(ctx, 200, endpointScenario)
 }
 
 func (h handlers) getCustomVariable(ctx echo.Context) error {
@@ -254,114 +262,114 @@ func (h handlers) actCreateCustomVariable(ctx echo.Context) error {
 func (h handlers) actCreateEndpoint(ctx echo.Context) error {
 	var req services.EndpointEntityReq
 
-	if err := h.validateRequest(ctx, &req); err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+	if err := validateRequest(ctx, &req); err != nil {
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
 	resp, err := h.serviceContainer.CreateOrUpdateEndpoint(context.Background(), "", req)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusInternalServerError, err)
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}
 
-	return h.json(ctx, 200, resp)
+	return respJSON(ctx, 200, resp)
 }
 
 func (h handlers) actUpdateEndpoint(ctx echo.Context) error {
 	var req services.EndpointEntityReq
 
-	id, err := h.validateUUID(ctx)
+	id, err := validateUUID(ctx)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
-	if err := h.validateRequest(ctx, &req); err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+	if err := validateRequest(ctx, &req); err != nil {
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
 	resp, err := h.serviceContainer.CreateOrUpdateEndpoint(context.Background(), id, req)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusInternalServerError, err)
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}
 
-	return h.json(ctx, 200, resp)
+	return respJSON(ctx, 200, resp)
 }
 
 func (h handlers) actDeleteEndpoint(ctx echo.Context) error {
 
-	id, err := h.validateUUID(ctx)
+	id, err := validateUUID(ctx)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
 	err = h.serviceContainer.DeleteEndpoint(context.Background(), id)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusInternalServerError, err)
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}
-	return h.json(ctx, 200, nil)
+	return respJSON(ctx, 200, nil)
 }
 
 func (h handlers) actCreateScenario(ctx echo.Context) error {
 	var req services.ScenarioEntityReq
 
-	if err := h.validateRequest(ctx, &req); err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+	if err := validateRequest(ctx, &req); err != nil {
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
 	resp, err := h.serviceContainer.CreateOrUpdateScenario(context.Background(), "", req)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusInternalServerError, err)
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}
 
-	return h.json(ctx, 200, resp)
+	return respJSON(ctx, 200, resp)
 }
 
 func (h handlers) actUpdateScenario(ctx echo.Context) error {
 	var req services.ScenarioEntityReq
 
-	id, err := h.validateUUID(ctx)
+	id, err := validateUUID(ctx)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
-	if err := h.validateRequest(ctx, &req); err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+	if err := validateRequest(ctx, &req); err != nil {
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
 	resp, err := h.serviceContainer.CreateOrUpdateScenario(context.Background(), id, req)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusInternalServerError, err)
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}
 
-	return h.json(ctx, 200, resp)
+	return respJSON(ctx, 200, resp)
 }
 
 func (h handlers) actDeleteScenario(ctx echo.Context) error {
 
-	id, err := h.validateUUID(ctx)
+	id, err := validateUUID(ctx)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
 	err = h.serviceContainer.DeleteScenario(context.Background(), id)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusInternalServerError, err)
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}
-	return h.json(ctx, 200, nil)
+	return respJSON(ctx, 200, nil)
 }
 
 func (h handlers) actSetActiveScenario(ctx echo.Context) error {
 	var req services.SetActiveScenarioEntityReq
 
-	if err := h.validateRequest(ctx, &req); err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+	if err := validateRequest(ctx, &req); err != nil {
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
 	err := h.serviceContainer.SetActiveResponse(context.Background(), req)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusInternalServerError, err)
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}
 
-	return h.json(ctx, 200, req)
+	return respJSON(ctx, 200, req)
 }
 
 func (h handlers) actRemoveActiveScenario(ctx echo.Context) error {
@@ -369,38 +377,38 @@ func (h handlers) actRemoveActiveScenario(ctx echo.Context) error {
 	req.EndpointID = ctx.Param("id")
 	err := h.serviceContainer.RemoveScenario(context.Background(), req)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusInternalServerError, err)
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}
 
-	return h.json(ctx, 200, req)
+	return respJSON(ctx, 200, req)
 }
 
 func (h handlers) actEncryptConfig(ctx echo.Context) error {
-	var req services.EncryptionToolsEntity
+	var req services.EncryptionReq
 
-	if err := h.validateRequest(ctx, &req); err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+	if err := validateRequest(ctx, &req); err != nil {
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
 	resp, err := h.serviceContainer.EncryptConfig(context.Background(), req)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusInternalServerError, err)
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}
 
-	return h.json(ctx, 200, resp)
+	return respJSON(ctx, 200, resp)
 }
 
 func (h handlers) actDecryptConfig(ctx echo.Context) error {
-	var req services.EncryptionToolsEntity
+	var req services.EncryptionReq
 
-	if err := h.validateRequest(ctx, &req); err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+	if err := validateRequest(ctx, &req); err != nil {
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
 	resp, err := h.serviceContainer.DecryptConfig(context.Background(), req)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusInternalServerError, err)
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}
 
-	return h.json(ctx, 200, resp)
+	return respJSON(ctx, 200, resp)
 }

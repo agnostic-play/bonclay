@@ -1,0 +1,430 @@
+{{define "shared_mermaid_diagram"}}
+    <!doctype html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>{{with .Data}}{{.Title}}{{else}}Shared Diagram{{end}}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <script src="{{ .BaseURL}}/static/js/mermaid.min.js"></script>
+        <script src="{{ .BaseURL}}/static/js/panzoom.min.js"></script>
+
+        <style>
+            * { box-sizing: border-box; }
+
+            :root {
+                --bg: #fafafa;
+                --surface: #ffffff;
+                --border: #e0e0e0;
+                --text: #212121;
+                --text-secondary: #757575;
+                --accent: #1976d2;
+                --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+                --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+            }
+
+            html, body {
+                margin: 0;
+                height: 100%;
+                background: var(--bg);
+                color: var(--text);
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                -webkit-font-smoothing: antialiased;
+            }
+
+            /* Header */
+            .header {
+                background: var(--surface);
+                border-bottom: 1px solid var(--border);
+                padding: 20px 24px;
+            }
+
+            .title {
+                font-size: 20px;
+                font-weight: 500;
+                letter-spacing: -0.01em;
+                margin: 0;
+            }
+
+            /* Toolbar */
+            .toolbar {
+                background: var(--surface);
+                border-bottom: 1px solid var(--border);
+                padding: 16px 24px;
+                display: flex;
+                gap: 16px;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+
+            .control-group {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+
+            .control-group label {
+                font-size: 13px;
+                color: var(--text-secondary);
+                font-weight: 500;
+                margin-right: 4px;
+            }
+
+            .spacer {
+                flex: 1;
+                min-width: 16px;
+            }
+
+            /* Select */
+            select {
+                font-size: 13px;
+                padding: 8px 32px 8px 12px;
+                border: 1px solid var(--border);
+                background: var(--surface);
+                border-radius: 6px;
+                cursor: pointer;
+                font-family: inherit;
+                color: var(--text);
+                appearance: none;
+                background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23757575' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: right 12px center;
+            }
+
+            select:hover {
+                border-color: #bdbdbd;
+            }
+
+            select:focus {
+                outline: none;
+                border-color: var(--accent);
+                box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+            }
+
+            /* Buttons */
+            button {
+                font-size: 13px;
+                padding: 8px 16px;
+                border: 1px solid var(--border);
+                background: var(--surface);
+                border-radius: 6px;
+                cursor: pointer;
+                font-family: inherit;
+                color: var(--text);
+                font-weight: 500;
+                transition: all 0.15s ease;
+            }
+
+            button:hover {
+                background: var(--bg);
+                border-color: #bdbdbd;
+            }
+
+            button:active {
+                transform: translateY(1px);
+            }
+
+            button:focus {
+                outline: none;
+                box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+            }
+
+            .btn-icon {
+                padding: 8px 12px;
+                font-size: 16px;
+                line-height: 1;
+            }
+
+            /* Divider */
+            .divider {
+                width: 1px;
+                height: 24px;
+                background: var(--border);
+            }
+
+            /* Viewport */
+            .viewport {
+                position: fixed;
+                left: 0;
+                right: 0;
+                top: calc(60px + 57px);
+                bottom: 0;
+                background: var(--surface);
+            }
+
+            #canvas {
+                position: absolute;
+                inset: 0;
+                overflow: hidden;
+            }
+
+            /* Message */
+            .msg {
+                padding: 32px 24px;
+                color: var(--text-secondary);
+                font-size: 14px;
+                text-align: center;
+            }
+
+            .msg.error {
+                color: #d32f2f;
+            }
+
+            /* Responsive */
+            @media (max-width: 640px) {
+                .header {
+                    padding: 16px 20px;
+                }
+
+                .title {
+                    font-size: 18px;
+                }
+
+                .toolbar {
+                    padding: 12px 20px;
+                    gap: 12px;
+                }
+
+                .spacer {
+                    display: none;
+                }
+
+                .viewport {
+                    top: calc(52px + 110px);
+                }
+            }
+        </style>
+    </head>
+    <body>
+
+    <div class="header">
+        <h1 class="title">{{with .Data}}{{or .Title "Shared Diagram"}}{{else}}Shared Diagram{{end}}</h1>
+    </div>
+
+    <div class="toolbar">
+        <div class="control-group">
+            <label for="theme">Theme</label>
+            <select id="theme">
+                <option value="default">Default</option>
+                <option value="neutral">Neutral</option>
+                <option value="dark">Dark</option>
+                <option value="forest">Forest</option>
+                <option value="base">Base</option>
+            </select>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="control-group">
+            <button class="btn-icon" onclick="zoomOut()" title="Zoom out">−</button>
+            <button onclick="resetView()">Reset</button>
+            <button class="btn-icon" onclick="zoomIn()" title="Zoom in">+</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="control-group">
+            <button onclick="fitToScreen()">Fit</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="control-group">
+            <button onclick="downloadSVG()">SVG</button>
+            <button onclick="downloadPNG()">PNG</button>
+        </div>
+    </div>
+
+    <div class="viewport">
+        <div id="canvas"></div>
+    </div>
+
+    <textarea id="mmd-source" hidden>{{with .Data}}{{.Syntax}}{{end}}</textarea>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const themeSel = document.getElementById('theme');
+        const srcEl = document.getElementById('mmd-source');
+
+        let syntax = (srcEl?.value ?? '').trim();
+        if (syntax.includes('\\n')) syntax = syntax.replace(/\\n/g, '\n');
+
+        const THEME_KEY = 'mermaid_theme_pref';
+        const savedTheme = localStorage.getItem(THEME_KEY) || 'default';
+        themeSel.value = savedTheme;
+
+        let svgMarkup = '';
+        let pz = null;
+
+        async function renderDiagram() {
+            if (!syntax) {
+                canvas.innerHTML = '<div class="msg">No diagram to display</div>';
+                return;
+            }
+
+            mermaid.initialize({
+                startOnLoad: false,
+                securityLevel: 'loose',
+                theme: themeSel.value
+            });
+
+            try {
+                await mermaid.parse(syntax);
+            } catch (e) {
+                canvas.innerHTML = '<div class="msg error">Invalid diagram syntax: ' +
+                    (e?.message || 'Please check your Mermaid code') + '</div>';
+                return;
+            }
+
+            const { svg } = await mermaid.render('diagram-' + Date.now(), syntax);
+            svgMarkup = svg;
+            canvas.innerHTML = svg;
+
+            const svgEl = canvas.querySelector('svg');
+            if (!svgEl) return;
+
+            svgEl.removeAttribute('width');
+            svgEl.removeAttribute('height');
+            svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+            svgEl.style.width = '100%';
+            svgEl.style.height = '100%';
+
+            if (pz) try { pz.dispose(); } catch {}
+            pz = panzoom(svgEl, {
+                smoothScroll: true,
+                zoomSpeed: 0.065,
+                maxZoom: 8,
+                minZoom: 0.25,
+                bounds: false
+            });
+
+            requestAnimationFrame(() => fitToScreen());
+        }
+
+        function zoomIn() {
+            pz && pz.smoothZoom(0, 0, 1.25);
+        }
+
+        function zoomOut() {
+            pz && pz.smoothZoom(0, 0, 0.8);
+        }
+
+        function resetView() {
+            if (pz) {
+                pz.moveTo(0, 0);
+                pz.zoomAbs(0, 0, 1);
+            }
+        }
+
+        function fitToScreen() {
+            const svg = canvas.querySelector('svg');
+            if (!svg || !pz) return;
+
+            const vb = (svg.getAttribute('viewBox') || '').split(/\s+/).map(Number);
+            const rect = canvas.getBoundingClientRect();
+
+            if (vb.length === 4 && vb[2] > 0 && vb[3] > 0 && rect.width > 0 && rect.height > 0) {
+                const svgWidth = vb[2];
+                const svgHeight = vb[3];
+                const containerWidth = rect.width;
+                const containerHeight = rect.height;
+
+                // Calculate scale to fit with padding
+                const scaleX = containerWidth / svgWidth;
+                const scaleY = containerHeight / svgHeight;
+                const scale = Math.min(scaleX, scaleY) * 0.9;
+
+                // Calculate center position
+                const scaledWidth = svgWidth * scale;
+                const scaledHeight = svgHeight * scale;
+                const centerX = (containerWidth - scaledWidth) / 2;
+                const centerY = (containerHeight - scaledHeight) / 2;
+
+                // Apply zoom and center
+                pz.zoomAbs(0, 0, scale);
+                pz.moveTo(centerX, centerY);
+            } else {
+                resetView();
+            }
+        }
+
+        function downloadSVG() {
+            if (!svgMarkup) return;
+            const blob = new Blob([svgMarkup], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'diagram.svg';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadPNG() {
+            if (!svgMarkup) return;
+            const blob = new Blob([svgMarkup], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+
+            img.onload = () => {
+                const probe = document.createElement('div');
+                probe.style.position = 'absolute';
+                probe.style.left = '-9999px';
+                probe.innerHTML = svgMarkup;
+                document.body.appendChild(probe);
+
+                const s = probe.querySelector('svg');
+                let w = 1600, h = 900;
+
+                try {
+                    const vb = (s.getAttribute('viewBox') || '').split(/\s+/).map(Number);
+                    if (vb.length === 4 && vb[2] > 0 && vb[3] > 0) {
+                        w = Math.min(4000, Math.max(800, vb[2]));
+                        h = Math.min(4000, Math.max(600, vb[3]));
+                    }
+                } catch {}
+
+                document.body.removeChild(probe);
+
+                const canvasOut = document.createElement('canvas');
+                canvasOut.width = w;
+                canvasOut.height = h;
+                const ctx = canvasOut.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, w, h);
+                ctx.drawImage(img, 0, 0, w, h);
+
+                canvasOut.toBlob((b) => {
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(b);
+                    a.download = 'diagram.png';
+                    a.click();
+                }, 'image/png', 1);
+
+                URL.revokeObjectURL(url);
+            };
+
+            img.onerror = () => URL.revokeObjectURL(url);
+            img.src = url;
+        }
+
+        themeSel.addEventListener('change', () => {
+            localStorage.setItem(THEME_KEY, themeSel.value);
+            renderDiagram();
+        });
+
+        window.addEventListener('resize', () => {
+            requestAnimationFrame(() => fitToScreen());
+        });
+
+        window.zoomIn = zoomIn;
+        window.zoomOut = zoomOut;
+        window.resetView = resetView;
+        window.fitToScreen = fitToScreen;
+        window.downloadSVG = downloadSVG;
+        window.downloadPNG = downloadPNG;
+
+        renderDiagram();
+    </script>
+    </body>
+    </html>
+{{end}}

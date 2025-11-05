@@ -1,17 +1,25 @@
 package handler
 
 import (
-	"github.com/agnostic-play/ditoo/internal/errs"
-	"github.com/labstack/echo/v4"
 	"net/http"
+	"strconv"
 	"strings"
+
+	"github.com/agnostic-play/ditoo/internal/common/errs"
+	validator "github.com/agnostic-play/ditoo/pkg/validator"
+	"github.com/labstack/echo/v4"
 )
 
+type responseBody struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+	Data    any    `json:"data"`
+}
 type validateID struct {
 	ID string `validate:"required,uuid"`
 }
 
-func (h handlers) render(ctx echo.Context, page string, data interface{}) error {
+func (h handlers) render(ctx echo.Context, page string, data any) error {
 	return ctx.Render(http.StatusOK, page, responseRender{
 		BaseURL: h.baseURL,
 		Error:   nil,
@@ -19,7 +27,7 @@ func (h handlers) render(ctx echo.Context, page string, data interface{}) error 
 	})
 }
 
-func (h handlers) json(ctx echo.Context, status int, data interface{}) error {
+func respJSON(ctx echo.Context, status int, data interface{}) error {
 	return ctx.JSON(status, map[string]interface{}{
 		"status":  status,
 		"message": "success",
@@ -27,13 +35,12 @@ func (h handlers) json(ctx echo.Context, status int, data interface{}) error {
 	})
 }
 
-func (h handlers) errorJson(ctx echo.Context, status int, err error) error {
+func respErrJSON(ctx echo.Context, status int, err error) error {
 	msg := err.Error()
 
 	if strings.Contains(err.Error(), "not found") {
 		msg = "data not found"
 		status = http.StatusNotFound
-
 	}
 
 	if getError, ok := err.(errs.CustomError); ok {
@@ -49,7 +56,39 @@ func (h handlers) errorJson(ctx echo.Context, status int, err error) error {
 	})
 }
 
-func (h handlers) validateRequest(ctx echo.Context, payload interface{}) (err error) {
+func respErr(ctx echo.Context, status int, err error) error {
+	msg := err.Error()
+
+	if strings.Contains(err.Error(), "not found") {
+		msg = "data not found"
+		status = http.StatusNotFound
+
+	}
+
+	if getError, ok := err.(validator.BadRequestErrors); ok {
+		return ctx.JSON(status, responseBody{
+			Status:  strconv.Itoa(http.StatusBadRequest),
+			Message: getError.Error(),
+			Data:    getError.GetBadRequestPayload(),
+		})
+	}
+
+	if getError, ok := err.(errs.CustomError); ok {
+		return ctx.JSON(status, responseBody{
+			Status:  strconv.Itoa(getError.HttpCode),
+			Message: getError.Error(),
+			Data:    struct{}{},
+		})
+	}
+
+	return ctx.JSON(status, map[string]interface{}{
+		"status":  status,
+		"message": msg,
+		"data":    struct{}{},
+	})
+}
+
+func validateRequest(ctx echo.Context, payload interface{}) (err error) {
 	if err = ctx.Bind(&payload); err != nil {
 		return
 	}
@@ -59,7 +98,7 @@ func (h handlers) validateRequest(ctx echo.Context, payload interface{}) (err er
 	return nil
 }
 
-func (h handlers) validateUUID(ctx echo.Context) (string, error) {
+func validateUUID(ctx echo.Context) (string, error) {
 
 	var uuid validateID
 

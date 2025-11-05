@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/agnostic-play/ditoo/internal/cmd"
-	"github.com/agnostic-play/ditoo/internal/config"
 	"os"
 	"os/signal"
 	"runtime"
+
+	"github.com/agnostic-play/ditoo/cmd"
+	"github.com/agnostic-play/ditoo/internal/config"
 )
 
 const banner = `
