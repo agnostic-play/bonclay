@@ -11,18 +11,18 @@ services:
       - "3306:3306"
     networks:
       - backend
-
-  app:
-     build:
-       context: .
-       dockerfile: Dockerfile
-     container_name: app
-     restart: unless-stopped
-     tty: true
-     ports:
-       - "8000:80"
-     networks:
-       - backend
+#
+#  app:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     container_name: app
+#     restart: unless-stopped
+#     tty: true
+#     ports:
+#       - "8000:80"
+#     networks:
+#       - backend
 
 networks:
   backend:
