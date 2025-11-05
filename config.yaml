@@ -8,7 +8,7 @@ app:
   templatePath: ["./resources/views/layout/*.gohtml","./resources/views/modal/*.gohtml","./resources/views/pages/*.gohtml"]
   staticPath: "./resources/public/assets"
 database:
-  host: localhost
+  host: ditto-mariadb-1
   port: 3306
   user: root
   pass: root
