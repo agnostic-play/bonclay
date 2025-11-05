@@ -8,6 +8,8 @@ import (
 
 	"github.com/agnostic-play/ditoo/internal/services"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/gommon/log"
+
 )
 
 func (h handlers) routesApi() {
@@ -22,6 +24,9 @@ func (h handlers) routesApi() {
 	h.server.GET("/api/collection/:slug/endpoint", h.actGetEndpoint)
 	h.server.GET("/api/collection/endpoint_scenario/:collectionSlug", h.getCollectionEndpoint)
 
+	h.server.GET("/api/collection/custom_variable/list/:collectionSlug", h.getCustomVariable)
+	h.server.POST("/api/collection/custom_variable/create", h.actCreateCustomVariable)
+
 	h.server.POST("/api/endpoint/create", h.actCreateEndpoint)
 	h.server.PUT("/api/endpoint/update/:id", h.actUpdateEndpoint)
 	h.server.DELETE("/api/endpoint/delete/:id", h.actDeleteEndpoint)
@@ -30,6 +35,7 @@ func (h handlers) routesApi() {
 	h.server.PUT("/api/scenario/update/:id", h.actUpdateScenario)
 	h.server.DELETE("/api/scenario/delete/:id", h.actDeleteScenario)
 
+	h.server.POST("/api/remove_active_scenario/:id", h.actRemoveActiveScenario)
 	h.server.POST("/api/set/active_scenario", h.actSetActiveScenario)
 
 	v2 := h.server.Group("/api/v2")
@@ -50,15 +56,31 @@ func (h handlers) actMock(ctx echo.Context) error {
 	path := ctx.Param("path")
 	collectionSlug := ctx.Param("collection")
 
-	scenario, err := h.serviceContainer.MockApi(context.Background(), collectionSlug, method, path)
+	scenario, err := h.serviceContainer.MockAPI(ctx, collectionSlug, method, path)
 	if err != nil {
 		return ctx.String(404, err.Error())
 	}
 
+	if scenario.ProxyIsEnabled {
+		log.Info("proxy run")
+		for key, values := range scenario.ProxyResponseHeader {
+			for _, value := range values {
+				ctx.Response().Header().Add(key, value)
+			}
+		}
+
+		ctx.Response().WriteHeader(scenario.StatusHeader)
+		_, err = ctx.Response().Write(scenario.ProxyResponseBody)
+		if err != nil {
+			return ctx.String(500, err.Error())
+		}
+
+		return nil
+	}
+
 	var header map[string]string
 
-	err = json.Unmarshal([]byte(scenario.Header), &header)
-	if err != nil {
+	if err = json.Unmarshal([]byte(scenario.Header), &header); err != nil {
 		return ctx.String(500, err.Error())
 	}
 
@@ -211,6 +233,32 @@ func (h handlers) getCollectionEndpoint(ctx echo.Context) error {
 	return respJSON(ctx, 200, endpointScenario)
 }
 
+func (h handlers) getCustomVariable(ctx echo.Context) error {
+	c := context.Background()
+
+	customVariable, err := h.serviceContainer.GetCustomVariable(c, ctx.Param("collectionSlug"))
+	if err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	return h.json(ctx, 200, customVariable)
+}
+
+func (h handlers) actCreateCustomVariable(ctx echo.Context) error {
+	var req services.CustomVariableReq
+
+	if err := h.validateRequest(ctx, &req); err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	resp, err := h.serviceContainer.CreateOrUpdateCustomVariable(context.Background(), "", req)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, resp)
+}
+
 func (h handlers) actCreateEndpoint(ctx echo.Context) error {
 	var req services.EndpointEntityReq
 
@@ -317,6 +365,17 @@ func (h handlers) actSetActiveScenario(ctx echo.Context) error {
 	}
 
 	err := h.serviceContainer.SetActiveResponse(context.Background(), req)
+	if err != nil {
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
+	}
+
+	return respJSON(ctx, 200, req)
+}
+
+func (h handlers) actRemoveActiveScenario(ctx echo.Context) error {
+	var req services.SetActiveScenarioEntityReq
+	req.EndpointID = ctx.Param("id")
+	err := h.serviceContainer.RemoveScenario(context.Background(), req)
 	if err != nil {
 		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}

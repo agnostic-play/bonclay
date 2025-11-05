@@ -1,6 +1,8 @@
 module github.com/agnostic-play/ditoo
 
-go 1.23
+go 1.23.1
+
+toolchain go1.24.6
 
 require (
 	github.com/go-playground/locales v0.14.1
@@ -16,6 +18,7 @@ require (
 )
 
 require (
+	berlin.allobank.local/common/laughtale v1.0.0-dev // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
@@ -35,6 +38,8 @@ require (
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/net v0.5.0 // indirect
 	golang.org/x/sys v0.4.0 // indirect

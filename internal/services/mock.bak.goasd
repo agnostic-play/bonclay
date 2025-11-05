@@ -1,0 +1,161 @@
+package services
+
+import (
+	"context"
+	"fmt"
+	`io`
+	`net/http`
+	"reflect"
+	"regexp"
+	"strings"
+	`time`
+
+	`github.com/labstack/echo/v4`
+
+	"github.com/agnostic-play/ditoo/internal/repository"
+)
+
+type MockEntityRes struct {
+	EndpointId          string      `json:"endpoint_id" gorm:"column:endpoint_id"`
+	Desc                string      `json:"desc" gorm:"column:desc"`
+	Header              string      `json:"header" gorm:"column:header"`
+	Body                string      `json:"body" gorm:"column:body"`
+	StatusHeader        int         `json:"status_header" gorm:"column:status_header"`
+	Delay               *int        `json:"delay" gorm:"column:delay"`
+	ProxyResponseHeader http.Header `json:"proxy_response_header" gorm:"-"`
+}
+
+type MockServiceInterface interface {
+	MockApi(echoCtx echo.Context, collectionSlug, method string, path string) (MockEntityRes, error)
+}
+
+func (cont serviceContainer) MockApi(echoCtx echo.Context, collectionSlug, method string, apiPath string) (MockEntityRes, error) {
+	var (
+		ctx  = context.Background()
+		path = fmt.Sprintf("/%s", apiPath)
+	)
+
+	collection, err := cont.repoContainer.GetCollectionBySlug(ctx, collectionSlug)
+	if err != nil {
+		err = fmt.Errorf("collection not found")
+		return MockEntityRes{}, err
+	}
+
+	endpoint, err := cont.repoContainer.GetEndpointMock(ctx, collection.ID.String(), method, path)
+	if err != nil {
+		return MockEntityRes{}, err
+	}
+
+	if strings.TrimSpace(endpoint.ActiveScenario) == "" {
+		err = fmt.Errorf("scenario not found")
+		return MockEntityRes{}, err
+	}
+
+	var mockScenario MockEntityRes
+	if collection.IsProxyEnable && collection.ForwardProxyURL != "" {
+		targetProxyURL := fmt.Sprintf("%s%s", collection.ForwardProxyURL, path)
+		client := &http.Client{
+			Timeout: 30 * time.Second,
+		}
+
+		// Create new request
+		req, err := http.NewRequest(echoCtx.Request().Method, targetProxyURL, echoCtx.Request().Body)
+		if err != nil {
+			return MockEntityRes{}, fmt.Errorf("create request error: %v", err)
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return MockEntityRes{}, fmt.Errorf("failed to forward request %w", err)
+		}
+		defer resp.Body.Close()
+
+		mockScenario
+		// Copy response headers (excluding hop-by-hop headers)
+		copyHeaders(resp.Header, mockScenario.ProxyResponseHeader)
+
+		// Set response status
+		c.Response().WriteHeader(resp.StatusCode)
+
+		// Copy response body
+		_, err = io.Copy(c.Response().Writer, resp.Body)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to copy response")
+		}
+	}
+
+	scenario, err := cont.repoContainer.GetScenario(ctx, endpoint.ActiveScenario)
+	if err != nil {
+		return MockEntityRes{}, err
+	}
+	ConvertStruct(scenario, &mockScenario)
+
+	customVar, err := cont.repoContainer.GetListCustomVariableByCollectionId(ctx, collection.ID.String())
+	if err != nil {
+		return MockEntityRes{}, err
+	}
+	mockScenario.ApplyEnv(envSliceToMap(customVar))
+
+	return mockScenario, nil
+}
+
+func (scenario *MockEntityRes) ApplyEnv(env map[string]string) {
+	// Match {{varName}}
+	re := regexp.MustCompile(`\{\{(.+?)\}\}`)
+
+	// Replace each match with env value
+	result := re.ReplaceAllStringFunc(scenario.Body, func(m string) string {
+		// Extract key name without {{ }}
+		key := re.FindStringSubmatch(m)[1]
+		if val, ok := env[key]; ok {
+			return val
+		}
+		// If not found, keep original placeholder
+		return m
+	})
+
+	scenario.Body = result
+
+	return
+}
+
+func envSliceToMap(envs []repository.CustomVariableEntity) map[string]string {
+	result := make(map[string]string)
+	for _, e := range envs {
+		result[e.Key] = e.Value
+	}
+	return result
+}
+
+func ConvertStruct(src, dst interface{}) {
+	sv := reflect.ValueOf(src)
+	dv := reflect.ValueOf(dst).Elem()
+
+	for i := 0; i < sv.NumField(); i++ {
+		field := sv.Type().Field(i).Name
+		if f := dv.FieldByName(field); f.IsValid() && f.CanSet() {
+			f.Set(sv.Field(i))
+		}
+	}
+}
+
+func copyHeaders(src, dst http.Header) {
+	hopByHopHeaders := map[string]bool{
+		"Connection":          true,
+		"Keep-Alive":          true,
+		"Proxy-Authenticate":  true,
+		"Proxy-Authorization": true,
+		"Te":                  true,
+		"Trailers":            true,
+		"Transfer-Encoding":   true,
+		"Upgrade":             true,
+	}
+
+	for key, values := range src {
+		if !hopByHopHeaders[key] {
+			for _, value := range values {
+				dst
+			}
+		}
+	}
+}

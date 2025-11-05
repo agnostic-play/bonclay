@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"gorm.io/gorm"
 )
 
@@ -11,12 +12,15 @@ const endpoints = "endpoints"
 
 type EndpointEntity struct {
 	BaseEntityWithID
+
 	Path           string `json:"path" gorm:"column:path"`
 	Method         string `json:"method" gorm:"column:method"`
 	CollectionID   string `json:"collection_id" gorm:"column:collection_id"`
 	Category       string `json:"category" gorm:"column:category"`
 	ActiveScenario string `json:"active_scenario" gorm:"column:active_scenario"`
 	Desc           string `json:"desc" gorm:"column:desc"`
+
+	EnableResponseIntercept bool `json:"enable_response_intercept" gorm:"column:enable_response_intercept"`
 }
 
 func (EndpointEntity) TableName() string {
