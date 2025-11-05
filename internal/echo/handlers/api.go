@@ -9,7 +9,6 @@ import (
 	"github.com/agnostic-play/ditoo/internal/services"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
-
 )
 
 func (h handlers) routesApi() {
@@ -238,25 +237,25 @@ func (h handlers) getCustomVariable(ctx echo.Context) error {
 
 	customVariable, err := h.serviceContainer.GetCustomVariable(c, ctx.Param("collectionSlug"))
 	if err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
-	return h.json(ctx, 200, customVariable)
+	return respJSON(ctx, 200, customVariable)
 }
 
 func (h handlers) actCreateCustomVariable(ctx echo.Context) error {
 	var req services.CustomVariableReq
 
-	if err := h.validateRequest(ctx, &req); err != nil {
-		return h.errorJson(ctx, http.StatusBadRequest, err)
+	if err := validateRequest(ctx, &req); err != nil {
+		return respErrJSON(ctx, http.StatusBadRequest, err)
 	}
 
 	resp, err := h.serviceContainer.CreateOrUpdateCustomVariable(context.Background(), "", req)
 	if err != nil {
-		return h.errorJson(ctx, http.StatusInternalServerError, err)
+		return respErrJSON(ctx, http.StatusInternalServerError, err)
 	}
 
-	return h.json(ctx, 200, resp)
+	return respJSON(ctx, 200, resp)
 }
 
 func (h handlers) actCreateEndpoint(ctx echo.Context) error {
