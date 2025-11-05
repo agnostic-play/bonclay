@@ -33,7 +33,8 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
 # ============================================
 # Stage 2: Final runtime image (distroless)
 # ============================================
-FROM california.allobank.local:9004/distroless/static:nonroot
+FROM honolulu.allobank.local/allodevops/alpine:3.20
+
 
 ARG APP_PORT=6106
 ENV APP_PORT=${APP_PORT}
