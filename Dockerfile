@@ -10,7 +10,6 @@ ENV GOPROXY=http://california.allobank.local:8081/repository/golang-proxy
 
 WORKDIR /app
 COPY . .
-RUN cp config.server.yaml config.yaml
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -ldflags="-s -w" -o /app/bin/runner main.go
