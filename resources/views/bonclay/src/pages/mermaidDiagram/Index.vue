@@ -1,4 +1,3 @@
-
 <template>
   <div class="min-h-[90vh] w-full flex justify-center rounded-lg bg-muted/10">
     <!-- Responsive main container -->
@@ -7,8 +6,18 @@
         <!-- Header -->
         <div class="p-5 space-y-7 flex-shrink-0">
           <div class="w-full space-y-3">
-            <h1 class="text-2xl font-semibold text-gray-900 text-center lg:text-left">Diagram Project</h1>
-            <div class="mx-auto lg:mx-0 w-12 h-0.5 bg-primary"></div>
+            <div class="flex items-center justify-between">
+              <div>
+                <h1 class="text-2xl font-semibold text-gray-900 text-center lg:text-left">Diagram Project</h1>
+                <div class="w-12 h-0.5 bg-primary mx-auto lg:mx-0"></div>
+              </div>
+
+              <!-- Create Collection Button -->
+              <Button class="h-10" @click="openCreate">
+                <FilePlus2 class="mr-2 h-4 w-4" />
+                Create Collection
+              </Button>
+            </div>
           </div>
 
           <!-- Search Input -->
@@ -93,6 +102,36 @@
         </div>
       </div>
     </div>
+
+    <!-- Create Collection Modal -->
+    <Dialog v-model:open="showCreate">
+      <DialogContent class="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Create Collection</DialogTitle>
+          <DialogDescription>Provide a name and an optional description.</DialogDescription>
+        </DialogHeader>
+
+        <div class="grid gap-3 py-2">
+          <div class="grid gap-1.5">
+            <Label for="cc-name">Name</Label>
+            <Input id="cc-name" v-model="createForm.name" placeholder="My Collection" />
+          </div>
+          <div class="grid gap-1.5">
+            <Label for="cc-desc">Description</Label>
+            <Textarea id="cc-desc" v-model="createForm.description" rows="3" placeholder="Optional details…" />
+          </div>
+        </div>
+
+        <DialogFooter class="justify-end gap-2">
+          <Button variant="outline" @click="showCreate = false">Cancel</Button>
+          <Button :disabled="!createForm.name.trim() || isCreating" @click="submitCreate">
+            <FilePlus2 class="mr-2 h-4 w-4" />
+            <span v-if="!isCreating">Create</span>
+            <span v-else>Creating…</span>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
@@ -105,23 +144,33 @@
 }
 </style>
 
-
 <script setup lang="ts">
+import { computed, ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { toast } from "vue-sonner";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { computed, ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { FilePlus2 } from "lucide-vue-next";
 
 import diagramCollectionAPI from "@/api/DiagramCollectionServices.ts";
 import { useApiFeedback } from "@/composables/useApiFeedback";
-import type {DiagramCollection} from "@/types/entities.ts";
+import type { DiagramCollection } from "@/types/entities.ts";
 
 const router = useRouter();
 const searchQuery = ref("");
 
 const diagramCollections = ref<DiagramCollection[]>([]);
 const loading = ref(true);
+
+const showCreate = ref(false);
+const isCreating = ref(false);
+const createForm = ref({ name: "", description: "" });
 
 const { withApiFeedback } = useApiFeedback();
 
@@ -132,10 +181,55 @@ async function loadCollections() {
         diagramCollectionAPI.getList(), // returns { list, ... }
         { errorMessage: "Failed to load collections." }
     );
-
     diagramCollections.value = data.data?.list ?? [];
   } finally {
     loading.value = false;
+  }
+}
+
+function openCreate() {
+  createForm.value = { name: "", description: "" };
+  showCreate.value = true;
+}
+
+async function submitCreate() {
+  if (!createForm.value.name.trim()) return;
+
+  isCreating.value = true;
+  try {
+    const payload = {
+      name: createForm.value.name.trim(),
+      description: createForm.value.description ?? "",
+    };
+
+    // try actCreate first; fallback to create
+    const svc: any =
+        (diagramCollectionAPI as any).actCreate
+            ? await withApiFeedback((diagramCollectionAPI as any).actCreate(payload), {
+              successMessage: "Collection created",
+              errorMessage: "Failed to create collection.",
+            })
+            : await withApiFeedback((diagramCollectionAPI as any).create(payload), {
+              successMessage: "Collection created",
+              errorMessage: "Failed to create collection.",
+            });
+
+    // normalize the created object (id may be in svc.data or svc directly)
+    const created = svc?.data ?? svc;
+    showCreate.value = false;
+    await loadCollections();
+
+    // navigate to detail if id is available
+    const newId = String(created?.id ?? created?.data?.id ?? "");
+    if (newId) {
+      router.push({ name: "MermaidDiagramTools-ProjectShow", params: { id: newId } });
+    } else {
+      toast.success("Collection created");
+    }
+  } catch (e: any) {
+    toast.error(e?.message || "Failed to create collection.");
+  } finally {
+    isCreating.value = false;
   }
 }
 
@@ -144,9 +238,8 @@ onMounted(loadCollections);
 const filteredDiagramCollections = computed(() => {
   if (!searchQuery.value) return diagramCollections.value;
   const q = searchQuery.value.toLowerCase();
-  return diagramCollections.value.filter(c =>
-      c.name?.toLowerCase()?.includes(q) ||
-      c.description?.toLowerCase()?.includes(q)
+  return diagramCollections.value.filter((c) =>
+      c.name?.toLowerCase()?.includes(q) || c.description?.toLowerCase()?.includes(q)
   );
 });
 

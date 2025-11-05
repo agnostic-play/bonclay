@@ -29,24 +29,36 @@ func Sort(q *pagination.ListQuery) func(db *gorm.DB) *gorm.DB {
 
 // SearchScope returns a GORM scope for searching
 // You need to provide the fields to search in
+
 func SearchScope(q *pagination.ListQuery, fields ...string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		if q.Search == "" || len(fields) == 0 {
+		if q == nil {
 			return db
 		}
 
 		query := db
-		for i, field := range fields {
-			searchTerm := "%" + q.Search + "%"
-			if i == 0 {
-				query = query.Where(field+" LIKE ?", searchTerm)
-			} else {
-				query = query.Or(field+" LIKE ?", searchTerm)
-			}
+
+		// (field1 LIKE ? OR field2 LIKE ? OR ...)
+		if q.Search != "" && len(fields) > 0 {
+			term := "%" + q.Search + "%"
+			query = query.Where(func(tx *gorm.DB) *gorm.DB {
+				sub := tx
+				for i, f := range fields {
+					cond := f + " LIKE ?"
+					if i == 0 {
+						sub = sub.Where(cond, term)
+					} else {
+						sub = sub.Or(cond, term)
+					}
+				}
+				return sub
+			})
 		}
 
+		// AND filters...
 		if q.Filters != nil && len(q.Filters) > 0 {
 			for field, val := range q.Filters {
+				// field should include operator placeholders if needed, e.g. "status = ?" / "created_at >= ?"
 				query = query.Where(field, val)
 			}
 		}
