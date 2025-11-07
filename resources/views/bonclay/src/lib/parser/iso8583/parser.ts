@@ -1,8 +1,3 @@
-
-// =========================
-// File: src/lib/iso8583/parser.ts
-// =========================
-
 import type { FieldSpec, MessageSpec } from '@/lib/parser/iso8583/spec'
 
 export interface ParsedField {
@@ -12,6 +7,10 @@ export interface ParsedField {
     declaredLength?: number // for LL/LLL
     actualLength: number
     value: string
+
+    // NEW: absolute value offsets within the original raw string
+    start: number // inclusive
+    end: number   // exclusive
 }
 
 export interface ParsedISOMessage {
@@ -20,6 +19,12 @@ export interface ParsedISOMessage {
     bits: number[]
     fields: ParsedField[]
     map: Record<string, string>
+
+    // Optional meta positions (in case you want to show/hilite these too)
+    pos: {
+        mti: { start: number; end: number }
+        bitmap: { start: number; end: number }  // covers primary (+ secondary if present)
+    }
 }
 
 function hexToBits(hex: string): number[] {
@@ -52,11 +57,14 @@ export function parseISO8583(raw: string, spec: MessageSpec): ParsedISOMessage {
 
     // MTI (ASCII 4)
     let pos = 0
+    const mtiStart = pos
     const mti = s.slice(pos, pos + 4)
     if (mti.length !== 4) throw new Error('Invalid MTI')
     pos += 4
+    const mtiEnd = pos
 
     // Primary bitmap (16 hex ASCII)
+    const bmpStart = pos
     const primaryBitmap = s.slice(pos, pos + 16)
     if (primaryBitmap.length !== 16) throw new Error('Invalid primary bitmap length')
     pos += 16
@@ -70,6 +78,7 @@ export function parseISO8583(raw: string, spec: MessageSpec): ParsedISOMessage {
         pos += 16
         bitmapHex += secondary
     }
+    const bmpEnd = pos
 
     const bits = hexToBits(bitmapHex)
     const present: number[] = []
@@ -81,33 +90,40 @@ export function parseISO8583(raw: string, spec: MessageSpec): ParsedISOMessage {
     for (const id of present) {
         const def: FieldSpec | undefined = spec.fields[id]
         if (!def) {
-            // Skip gracefully: if a field is not defined, stop with error
             throw new Error(`Field ${id} is present in bitmap but not defined in spec`)
         }
 
         let value = ''
         let declaredLength: number | undefined
+        let valueStart = pos
+        let valueEnd = pos
 
         if (def.lenType === 'FIXED') {
-            const { v, pos: p2 } = readFixed(s, pos, def.length)
-            pos = p2
-            value = v
+            valueStart = pos
+            const r = readFixed(s, pos, def.length)
+            value = r.v
+            valueEnd = r.pos
+            pos = r.pos
         } else if (def.lenType === 'LL') {
-            const r = readLen(s, pos, 2)
-            declaredLength = r.len
-            pos = r.pos
+            const L = readLen(s, pos, 2)
+            declaredLength = L.len
+            pos = L.pos
             if (declaredLength > def.length) throw new Error(`Field ${id} length ${declaredLength} exceeds max ${def.length}`)
-            const { v, pos: p2 } = readFixed(s, pos, declaredLength)
-            pos = p2
-            value = v
+            valueStart = pos
+            const r = readFixed(s, pos, declaredLength)
+            value = r.v
+            valueEnd = r.pos
+            pos = r.pos
         } else if (def.lenType === 'LLL') {
-            const r = readLen(s, pos, 3)
-            declaredLength = r.len
-            pos = r.pos
+            const L = readLen(s, pos, 3)
+            declaredLength = L.len
+            pos = L.pos
             if (declaredLength > def.length) throw new Error(`Field ${id} length ${declaredLength} exceeds max ${def.length}`)
-            const { v, pos: p2 } = readFixed(s, pos, declaredLength)
-            pos = p2
-            value = v
+            valueStart = pos
+            const r = readFixed(s, pos, declaredLength)
+            value = r.v
+            valueEnd = r.pos
+            pos = r.pos
         }
 
         fields.push({
@@ -117,9 +133,21 @@ export function parseISO8583(raw: string, spec: MessageSpec): ParsedISOMessage {
             declaredLength,
             actualLength: value.length,
             value,
+            start: valueStart,
+            end: valueEnd,
         })
         map[id.toString().padStart(3, '0')] = value
     }
 
-    return { mti, bitmapHex, bits, fields, map }
+    return {
+        mti,
+        bitmapHex,
+        bits,
+        fields,
+        map,
+        pos: {
+            mti: { start: mtiStart, end: mtiEnd },
+            bitmap: { start: bmpStart, end: bmpEnd },
+        },
+    }
 }

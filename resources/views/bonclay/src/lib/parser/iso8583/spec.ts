@@ -1,4 +1,3 @@
-
 // =========================
 // File: src/lib/iso8583/specs.ts
 // =========================
@@ -27,7 +26,7 @@ function f(
     lenType: LengthType,
     type: FieldSpec['type'] = 'ans'
 ): FieldSpec {
-    return { id, name, length, lenType, type }
+    return {id, name, length, lenType, type}
 }
 
 // --- ISO 8583:1987 ASCII (common subset) ---
@@ -37,14 +36,14 @@ export const ISO87_ASCII: MessageSpec = {
     name: 'ISO 8583 v1987 ASCII',
     bitmap: 'HEX',
     fields: {
-        2:  f(2,  'Primary Account Number', 19, 'LL', 'n'),
-        3:  f(3,  'Processing Code', 6, 'FIXED', 'n'),
-        4:  f(4,  'Transaction Amount', 12, 'FIXED', 'n'),
-        5:  f(5,  'Settlement Amount', 12, 'FIXED', 'n'),
-        6:  f(6,  'Billing Amount', 12, 'FIXED', 'n'),
-        7:  f(7,  'Transmission Date & Time', 10, 'FIXED', 'n'),
-        8:  f(8,  'Billing Fee Amount', 8, 'FIXED', 'n'),
-        9:  f(9,  'Settlement Conversion Rate', 8, 'FIXED', 'n'),
+        2: f(2, 'Primary Account Number', 19, 'LL', 'n'),
+        3: f(3, 'Processing Code', 6, 'FIXED', 'n'),
+        4: f(4, 'Transaction Amount', 12, 'FIXED', 'n'),
+        5: f(5, 'Settlement Amount', 12, 'FIXED', 'n'),
+        6: f(6, 'Billing Amount', 12, 'FIXED', 'n'),
+        7: f(7, 'Transmission Date & Time', 10, 'FIXED', 'n'),
+        8: f(8, 'Billing Fee Amount', 8, 'FIXED', 'n'),
+        9: f(9, 'Settlement Conversion Rate', 8, 'FIXED', 'n'),
         10: f(10, 'Cardholder Billing Conversion Rate', 8, 'FIXED', 'n'),
         11: f(11, 'STAN', 6, 'FIXED', 'n'),
         12: f(12, 'Local Transaction Time', 6, 'FIXED', 'n'),
@@ -125,7 +124,7 @@ function makeFreeSpec(name: string, lenType: LengthType): MessageSpec {
     for (let id = 2; id <= 128; id++) {
         fields[id] = f(id, `DE ${id}`, maxLen, lenType, 'ans')
     }
-    return { name, bitmap: 'HEX', fields }
+    return {name, bitmap: 'HEX', fields}
 }
 
 export const FREE_LL: MessageSpec = makeFreeSpec('Free (LL everywhere, max 99)', 'LL')
