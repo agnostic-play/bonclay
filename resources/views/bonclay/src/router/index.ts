@@ -3,6 +3,8 @@ import type { RouteRecordRaw } from 'vue-router'
 import MermaidDiagramToolsIndex from "@/pages/mermaidDiagram/Index.vue";
 import MermaidDiagramToolsShow from "@/pages/mermaidDiagram/Show.vue";
 import EncryptionToolsIndex from "@/pages/encryptionTools/Index.vue";
+import EmvcoParser from "@/pages/parserTools/Emvco.vue";
+import IsoParser from "@/pages/parserTools/IsoParser.vue";
 import MockAPIToolsIndex from "@/pages/mockApi/Index.vue";
 import MockAPIToolsIndexShowCollection from "@/pages/mockApi/ShowCollection.vue";
 
@@ -52,11 +54,22 @@ const routes: RouteRecordRaw[] = [
                         name: 'MermaidDiagramTools-ProjectShow',
                         component: MermaidDiagramToolsShow,
                     }
-                    // {
-                    //     path: 'projects/:id',
-                    //     name: 'MermaidDiagramTools-CollectionShow',
-                    //     component: ShowCollection,
-                    // }
+                ]
+            },
+            {
+                path: 'parser',
+                name: 'ParserTools',
+                children: [
+                    {
+                        path: 'emvco',
+                        name: 'ParserTools-Emvco',
+                        component: EmvcoParser,
+                    },
+                    {
+                        path: 'iso',
+                        name: 'ParserTools-ISO',
+                        component: IsoParser,
+                    },
                 ]
             },
             // You can add more children here
