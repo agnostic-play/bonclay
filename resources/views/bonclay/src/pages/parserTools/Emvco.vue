@@ -78,8 +78,10 @@
                 <Label for="qr-raw" class="text-base font-semibold">QR String</Label>
               </div>
               <div class="flex gap-2">
+                <Button size="sm" @click="generateQrFromInput">Generate QR</Button>
                 <Button size="sm" variant="outline" @click="loadSample">Sample QR</Button>
                 <Button size="sm" variant="outline" @click="clearQr"><Trash2/></Button>
+                <!-- NEW: Generate QR -->
               </div>
             </div>
 
@@ -142,7 +144,6 @@
                 </thead>
                 <tbody>
                 <tr v-for="[k, v] in kvRows" :key="k" class="odd:bg-white even:bg-slate-50/40">
-
                   <!-- NEW: index column (0-based start of the VALUE) -->
                   <td class="px-3 py-2 border-b text-center font-mono text-[12px]" :title="posOf(k).title">
                     {{ posOf(k).label }}
@@ -209,6 +210,51 @@
       </Card>
     </div>
   </div>
+
+  <!-- NEW: QR Preview Modal -->
+  <div
+      v-if="showQrModal"
+      class="fixed inset-0 z-50"
+      @keydown.esc.prevent="closeQrModal"
+  >
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-black/40" @click="closeQrModal"></div>
+
+    <!-- Dialog -->
+    <div
+        class="absolute inset-0 flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+    >
+      <div class="w-full max-w-sm rounded-xl bg-white shadow-lg border">
+        <div class="px-5 py-3 border-b flex items-center justify-between">
+          <h3 class="text-sm font-semibold">Generated QR</h3>
+          <button
+              class="text-slate-500 hover:text-slate-700 text-sm"
+              @click="closeQrModal"
+              aria-label="Close"
+          >✕</button>
+        </div>
+
+        <div class="px-5 py-6">
+          <div v-if="qrGeneratedUrl" class="flex flex-col items-center gap-3">
+            <img :src="qrGeneratedUrl" alt="Generated QR" class="w-56 h-56 object-contain" />
+            <p class="text-[11px] text-slate-600 text-center break-all">
+              From input ({{ qrLength }} chars)
+            </p>
+          </div>
+          <p v-else class="text-xs text-red-600 text-center">Failed to generate QR.</p>
+        </div>
+
+        <div class="px-5 pb-4 flex items-center justify-end gap-2">
+          <Button size="sm" variant="outline" @click="downloadGeneratedQr" :disabled="!qrGeneratedUrl">
+            Download
+          </Button>
+          <Button size="sm" @click="closeQrModal">Close</Button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -221,7 +267,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 
-import { emvTags, parseTag, parseTagWithPos } from '@/lib/parser/emvcoParser.ts'
+import { emvTags, parseTagWithPos } from '@/lib/parser/emvcoParser.ts'
 
 /* ---------- Monaco (default import) ---------- */
 import MonacoEditor from '@guolao/vue-monaco-editor'
@@ -580,6 +626,45 @@ watch(qrInput, (v) => {
     else { qrParsed.value = {}; qrPositions.value = {}; qrError.value = null }
   }, 250)
 })
+
+/* ---------- NEW: Generate QR modal state + logic ---------- */
+const showQrModal = ref(false)
+const qrGeneratedUrl = ref<string | null>(null)
+
+async function generateQrFromInput() {
+  const text = (qrInput.value || '').trim()
+  if (!text) {
+    toast.error('Enter a QR string first')
+    return
+  }
+  try {
+    // Dynamic import keeps your main bundle lighter.
+    // Be sure to install: npm i qrcode
+    const QR = await import(/* @vite-ignore */ 'qrcode')
+    const url = await (QR as any).toDataURL(text, {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      width: 256,
+    })
+    qrGeneratedUrl.value = url
+    showQrModal.value = true
+  } catch (e: any) {
+    qrGeneratedUrl.value = null
+    toast.error(e?.message ?? 'Failed to generate QR')
+  }
+}
+
+function closeQrModal() {
+  showQrModal.value = false
+}
+
+function downloadGeneratedQr() {
+  if (!qrGeneratedUrl.value) return
+  const a = document.createElement('a')
+  a.href = qrGeneratedUrl.value
+  a.download = 'qr-from-input.png'
+  a.click()
+}
 </script>
 
 <style scoped>
