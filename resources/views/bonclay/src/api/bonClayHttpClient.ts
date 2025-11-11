@@ -8,7 +8,7 @@ export abstract class BonclayHttpClient extends BaseHttpClient {
     protected constructor(resource: string) {
         // http://api-mockup.alexandria.allobank.local
         // http://localhost:6106
-        super("https://api-mockup.alexandria.allobank.local","api/v2", {
+        super("http://localhost:6106","api/v2", {
             timeout: 10_000,
             headers: { 'Content-Type': 'application/json' },
         })

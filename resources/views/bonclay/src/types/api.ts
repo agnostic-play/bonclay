@@ -6,6 +6,7 @@ export interface EncryptionToolReq  {
     type: string;
     key: string;
     outputFormat: string;
+    inputFormat: string;
     keyDeriveMethod: string;
     rawValue: string;
     iv: string;
