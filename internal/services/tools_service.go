@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"regexp"
 	"strings"
 )
 
@@ -35,7 +34,7 @@ type EncryptionReq struct {
 }
 
 type EncryptionResp struct {
-	Output string `json:"output"` // encrypted (hex/base64) or decrypted plaintext (base64)
+	Output any `json:"output"` // encrypted (hex/base64) or decrypted plaintext (base64)
 }
 
 // ============================
@@ -81,12 +80,7 @@ func (cont serviceContainer) EncryptConfig(ctx context.Context, req EncryptionRe
 		if strings.TrimSpace(req.IV) == "" {
 			return EncryptionResp{}, errors.New("iv is required for AES CBC IV")
 		}
-
-		iv, derr := parseKeyInput(req.IV)
-		if derr != nil {
-			return EncryptionResp{}, fmt.Errorf("invalid iv: %w", derr)
-		}
-		out, err = encryptAESCBCWithIV(key, plain, iv)
+		out, err = encryptAESCBCWithIV(key, plain, []byte(req.IV))
 
 	case "aesImeg":
 		// EXACT Imeg encryption: returns base64-encoded ciphertext (no IV prefix)
@@ -160,12 +154,7 @@ func (cont serviceContainer) DecryptConfig(ctx context.Context, req EncryptionRe
 		if strings.TrimSpace(req.IV) == "" {
 			return EncryptionResp{}, errors.New("iv is required for AES CBC IV")
 		}
-		var iv []byte
-		iv, err = parseKeyInput(req.IV)
-		if err != nil {
-			return EncryptionResp{}, fmt.Errorf("invalid iv: %w", err)
-		}
-		plain, err = decryptAESCBCWithIV(key, ciphertext, iv)
+		plain, err = decryptAESCBCWithIV(key, ciphertext, []byte(req.IV))
 
 	case "aesimeg":
 		// Imeg variant needs IV supplied separately
@@ -193,50 +182,30 @@ func (cont serviceContainer) DecryptConfig(ctx context.Context, req EncryptionRe
 
 // Build AES key from input key + method. Supports arbitrary input length by sizing to 16/24/32.
 func buildAESKeyFromInput(keyStr, method string) ([]byte, error) {
-	material, err := parseKeyInput(keyStr) // hex/base64/raw -> []byte
-	if err != nil {
-		return nil, fmt.Errorf("invalid key: %w", err)
-	}
-
+	material := []byte(keyStr)
 	switch strings.ToLower(strings.TrimSpace(method)) {
 	case "no sum", "nosum", "raw", "":
-		return normalizeKey(material), nil
+		return []byte(material), nil
 	case "sha256":
 		sum := sha256.Sum256(material)
-		return normalizeKey(sum[:]), nil
+		return sum[:], nil
 	case "sha512":
 		sum := sha512.Sum512(material)
-		return normalizeKey(sum[:]), nil
+		return sum[:], nil
 	case "md5":
 		sum := md5.Sum(material)
-		return normalizeKey(sum[:]), nil
+		return sum[:], nil
 	case "sha1":
 		sum := sha1.Sum(material)
-		return normalizeKey(sum[:]), nil
+		return sum[:], nil
 	case "hmac-sha256":
 		// Static salt for compatibility; replace with your own secret management.
 		mac := hmac.New(sha256.New, []byte("secret-hmac-salt"))
 		mac.Write(material)
-		return normalizeKey(mac.Sum(nil)), nil
+		return mac.Sum(nil), nil
 	default:
 		return nil, fmt.Errorf("unsupported key_derive_method: %s", method)
 	}
-}
-
-// parseKeyInput auto-detects hex, then base64, else treats as raw bytes.
-func parseKeyInput(s string) ([]byte, error) {
-	// Try hex (even length only)
-	if m, _ := regexp.MatchString(`(?i)^[0-9a-f]+$`, s); m && len(s)%2 == 0 {
-		if b, err := hex.DecodeString(s); err == nil {
-			return b, nil
-		}
-	}
-	// Try base64 (std)
-	if b, err := base64.StdEncoding.DecodeString(s); err == nil {
-		return b, nil
-	}
-	// Fallback: raw bytes of the string
-	return []byte(s), nil
 }
 
 // normalizeKey resizes to 16/24/32 bytes (pad with zeros or truncate).
@@ -511,11 +480,13 @@ func decodeInputFlexible(s string) ([]byte, error) {
 }
 
 // encodeOutput: "hex" or "base64" (default base64)
-func encodeOutput(b []byte, fmtOpt string) string {
+func encodeOutput(outputBody []byte, fmtOpt string) string {
 	switch strings.ToLower(strings.TrimSpace(fmtOpt)) {
 	case "hex":
-		return hex.EncodeToString(b)
+		return hex.EncodeToString(outputBody)
+	case "base64":
+		return base64.StdEncoding.EncodeToString(outputBody)
 	default:
-		return base64.StdEncoding.EncodeToString(b)
+		return string(outputBody)
 	}
 }
