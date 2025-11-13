@@ -6,15 +6,16 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/gommon/log"
+
 	"github.com/agnostic-play/ditoo/internal/common/constant"
 	"github.com/agnostic-play/ditoo/internal/config"
 	handler "github.com/agnostic-play/ditoo/internal/echo/handlers"
 	httpUtils "github.com/agnostic-play/ditoo/internal/echo/utils"
 	"github.com/agnostic-play/ditoo/internal/services"
 	"github.com/agnostic-play/ditoo/pkg/validator"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"github.com/labstack/gommon/log"
 )
 
 func RunHttpServer(config *config.Config, container services.ServiceContainer) chan bool {
@@ -39,7 +40,12 @@ func RunHttpServer(config *config.Config, container services.ServiceContainer) c
 		}
 	})
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"*", "http://localhost:*", "http://localhost:5173/*"},
+		AllowOrigins: []string{"*",
+			"http://localhost:*",
+			"http://localhost:5173/*",
+			"https://api-mockup.alexandria.allobank.local/*",
+			"http://api-mockup.alexandria.allobank.local/*",
+		},
 	}))
 
 	handler.NewSetupHandlers(e, config.App.BaseURL, container).Routes()
