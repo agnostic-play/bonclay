@@ -270,7 +270,7 @@ async function callAPI(action: 'encrypt' | 'decrypt') {
         }),
         { errorMessage: `Failed to ${action}` }
     )
-    if (action === 'decrypt') form.value.output = atob(res.data?.output || '') || ''
+    if (action === 'decrypt') form.value.output = res.data?.output
     else form.value.output = res.data?.output || ''
   } catch (err: any) { toast.error(err.message || 'API call failed.') }
 }
