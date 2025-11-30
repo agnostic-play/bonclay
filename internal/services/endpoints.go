@@ -18,6 +18,10 @@ type EndpointEntityReq struct {
 	Script       string `json:"script"`
 }
 
+type EndpointScriptEntityReq struct {
+	Script string `json:"script"`
+}
+
 type EndpointCreateReq struct {
 	EndpointEntityReq
 	CollectionID string `json:"collection_id" validate:"required,uuid"`
@@ -55,6 +59,7 @@ func (req EndpointEntityReq) translate() repository.EndpointEntity {
 
 type EndpointServiceInterface interface {
 	CreateOrUpdateEndpoint(ctx context.Context, id string, req EndpointEntityReq) (repository.EndpointEntity, error)
+	UpdateScriptEndpoint(ctx context.Context, id string, req EndpointScriptEntityReq) (repository.EndpointEntity, error)
 	DeleteEndpoint(ctx context.Context, id string) error
 }
 
@@ -68,6 +73,20 @@ func (cont serviceContainer) CreateOrUpdateEndpoint(ctx context.Context, id stri
 	}
 
 	resp, err := cont.repoContainer.CreateOrUpdateEndpoint(ctx, id, req.translate())
+	if err != nil {
+		return repository.EndpointEntity{}, err
+	}
+	return resp, nil
+}
+
+func (cont serviceContainer) UpdateScriptEndpoint(ctx context.Context, id string, req EndpointScriptEntityReq) (repository.EndpointEntity, error) {
+	endpoint, err := cont.repoContainer.GetEndpoint(ctx, id)
+	if err != nil {
+		return repository.EndpointEntity{}, err
+	}
+
+	endpoint.Script = req.Script
+	resp, err := cont.repoContainer.CreateOrUpdateEndpoint(ctx, id, endpoint)
 	if err != nil {
 		return repository.EndpointEntity{}, err
 	}

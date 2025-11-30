@@ -18,7 +18,7 @@ type EndpointEntity struct {
 	Category       string `json:"category" gorm:"column:category"`
 	ActiveScenario string `json:"active_scenario" gorm:"column:active_scenario"`
 	Desc           string `json:"desc" gorm:"column:desc"`
-	Script         string `json:"-" gorm:"script"`
+	Script         string `json:"script" gorm:"script"`
 }
 
 func (EndpointEntity) TableName() string {

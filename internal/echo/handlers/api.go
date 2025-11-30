@@ -26,6 +26,7 @@ func (h handlers) routesApi() {
 	h.server.POST("/api/collection/custom_variable/create", h.actCreateCustomVariable)
 
 	h.server.POST("/api/endpoint/create", h.actCreateEndpoint)
+	h.server.PUT("/api/endpoint/script/update/:id", h.actUpdateScriptEndpoint)
 	h.server.PUT("/api/endpoint/update/:id", h.actUpdateEndpoint)
 	h.server.DELETE("/api/endpoint/delete/:id", h.actDeleteEndpoint)
 
@@ -241,6 +242,26 @@ func (h handlers) actCreateEndpoint(ctx echo.Context) error {
 	}
 
 	resp, err := h.serviceContainer.CreateOrUpdateEndpoint(context.Background(), "", req)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, resp)
+}
+
+func (h handlers) actUpdateScriptEndpoint(ctx echo.Context) error {
+	var req services.EndpointScriptEntityReq
+
+	id, err := h.validateUUID(ctx)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	if err := h.validateRequest(ctx, &req); err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	resp, err := h.serviceContainer.UpdateScriptEndpoint(context.Background(), id, req)
 	if err != nil {
 		return h.errorJson(ctx, http.StatusInternalServerError, err)
 	}
