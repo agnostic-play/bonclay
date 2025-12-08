@@ -4,11 +4,10 @@ import {BaseHttpClient} from "@/lib/httpClient/http.ts";
 export abstract class BonclayHttpClient extends BaseHttpClient {
     protected readonly resource: string
 
-
     protected constructor(resource: string) {
         // http://api-mockup.alexandria.allobank.local
         // http://localhost:6106
-        super("http://alexandria.allobank.local:18089","api/v2", {
+        super("http://localhost:6106","api/v2", {
             timeout: 10_000,
             headers: { 'Content-Type': 'application/json' },
         })
