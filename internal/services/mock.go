@@ -66,11 +66,6 @@ func (cont serviceContainer) MockApi(ctx context.Context, collectionSlug, method
 	}
 	ConvertStruct(scenario, &mockScenario)
 
-	customVar, err := cont.repoContainer.GetListCustomVariableByCollectionId(ctx, collection.ID.String())
-	if err != nil {
-		return MockEntityRes{}, err
-	}
-
 	scriptedCustomVar, err := RunScript(envSliceToMap(customVar), endpoint.Script)
 	if err != nil {
 		return MockEntityRes{}, err

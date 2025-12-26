@@ -97,8 +97,6 @@ func (cont repoContainerGorm) GetListCustomVariableByCollectionId(ctx context.Co
 
 	return entity, nil
 }
-<<<<<<< HEAD
-=======
 
 func (cont repoContainerGorm) CreateOrUpdateMultipleCustomVariable(ctx context.Context, collectionId string, entities map[string]string) (affectedRow int, err error) {
 	if len(entities) == 0 {
@@ -152,4 +150,3 @@ func (cont repoContainerGorm) CreateOrUpdateMultipleCustomVariable(ctx context.C
 
 	return affectedRow, nil
 }
->>>>>>> eb217274ee23c3dcbc4313ff2c688448fba8c620
