@@ -20,6 +20,7 @@ func SetupMiddlewares(server *echo.Echo) {
 			return h(ctx)
 		}
 	})
+	server.Use(middleware.CORS())
 
 	//server.Use(middleware.Recover())
 }

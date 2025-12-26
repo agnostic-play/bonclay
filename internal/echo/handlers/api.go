@@ -15,6 +15,7 @@ func (h handlers) routesApi() {
 	h.server.PUT("/api/squad/update/:id", h.actUpdateSquad)
 	h.server.DELETE("/api/squad/delete/:id", h.actDeleteSquad)
 	h.server.GET("/api/squad", h.getListSquad)
+	h.server.GET("/api/squad/detail/:slug", h.getSquadDetail)
 
 	h.server.POST("/api/collection/create", h.actCreateCollection)
 	h.server.PUT("/api/collection/update/:id", h.actUpdateCollection)
@@ -81,6 +82,17 @@ func (h handlers) getListSquad(ctx echo.Context) error {
 	name := ctx.QueryParam("name")
 
 	resp, err := h.serviceContainer.GetListSquad(context.Background(), name)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, resp)
+}
+
+func (h handlers) getSquadDetail(ctx echo.Context) error {
+	slug := ctx.Param("slug")
+
+	resp, err := h.serviceContainer.GetSquad(ctx.Request().Context(), slug)
 	if err != nil {
 		return h.errorJson(ctx, http.StatusInternalServerError, err)
 	}
