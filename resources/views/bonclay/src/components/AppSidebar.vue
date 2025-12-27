@@ -17,7 +17,8 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar'
 import {useRoute} from "vue-router";
-import {type Component, computed} from "vue";
+import {type Component, computed, ref, onMounted} from "vue";
+import client from "@/api/bonClayHttpClient";
 import TeamSwitcher from "@/components/TeamSwitcher.vue";
 
 
@@ -27,50 +28,74 @@ const props = withDefaults(defineProps<SidebarProps>(), {
 
 
 const route = useRoute()
-const data = computed(() => ({
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+const user = {
+  name: "shadcn",
+  email: "m@example.com",
+  avatar: "/avatars/shadcn.jpg",
+}
+
+const teams = ref<{
+  name: string
+  logo: Component
+  plan: string
+  slug?: string
+}[]>([
+  {
+    name: "Acme Inc",
+    logo: Clover,
+    plan: "Enterprise",
+  }
+])
+
+const navMain = computed(() => [
+  {
+    title: "Mock API",
+    url: "#",
+    icon: SquareTerminal,
+    isActive: route.path.startsWith("/tools/mock-api"),
+    items: [
+      {
+        title: "API Collection",
+        routeName: "MockApiTools-Index",
+      },
+      {
+        title: "Histories",
+        routeName: "MockApiTools-Index",
+      },
+    ],
   },
-  teams: [
-    {
-      name: "Acme Inc",
+])
+
+const getSquads = async () => {
+  try {
+    const res = await client.get<any[]>('/api/squad')
+    // client.get unwraps the API response and returns the inner data array
+    teams.value = (res || []).map((s: any) => ({
+      name: s.name,
       logo: Clover,
-      plan: "Enterprise",
-    }
-  ],
-  navMain: [
-    {
-      title: "Mock API",
-      url: "#",
-      icon: SquareTerminal,
-      isActive: route.path.startsWith("/tools/mock-api"),
-      items: [
-        {
-          title: "API Collection",
-          routeName: "MockApiTools-Index",
-        },
-        {
-          title: "Histories",
-          routeName: "MockApiTools-Index",
-        },
-      ],
-    },
-  ],
-}))
+      plan: s.desc || '',
+      slug: s.slug || '',
+    }))
+  } catch (err) {
+    console.error('Failed to fetch squads for sidebar', err)
+  }
+}
+
+onMounted(() => {
+  void getSquads()
+})
 </script>
 
 <template>
   <Sidebar v-bind="props">
     <SidebarHeader>
-      <TeamSwitcher :teams="data.teams" />
+      <TeamSwitcher :teams="teams" />
     </SidebarHeader>
     <SidebarContent>
-      <NavMain :items="data.navMain"/>
+      <NavMain :items="navMain"/>
     </SidebarContent>
     <SidebarFooter>
-      <NavUser :user="data.user"/>
+      <NavUser :user="user"/>
     </SidebarFooter>
     <SidebarRail/>
   </Sidebar>
