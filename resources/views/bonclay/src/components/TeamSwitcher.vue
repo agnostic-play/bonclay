@@ -48,7 +48,7 @@ watch(
 const selectTeam = (team: any) => {
   activeTeam.value = team
   if (team.slug) {
-    router.push({ name: 'MockApiTools-Index', query: { slug: team.slug } })
+    router.push({ name: 'MockApiTools-Index', params: { slug: team.slug } })
   }
 }
 </script>

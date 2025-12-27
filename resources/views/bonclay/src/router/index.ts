@@ -13,15 +13,16 @@ const routes: RouteRecordRaw[] = [
                 name: 'MockApiTools',
                 children: [
                     {
-                        path: '',
+                        // Collection show as a sibling route (full page)
+                        path: ':slug/collection/:collectionSlug',
+                        name: 'MockApiTools-CollectionShow',
+                        component: ShowCollection,
+                    },
+                    {
+                        path: ':slug?',
                         name: 'MockApiTools-Index',
                         component: Index,
                     },
-                    {
-                        path: 'collection/:id',
-                        name: 'MockApiTools-CollectionShow',
-                        component: ShowCollection,
-                    }
                 ]
             },
             // You can add more children here

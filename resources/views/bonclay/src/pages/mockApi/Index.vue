@@ -2,7 +2,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, watch } from 'vue'
 import client from "@/api/bonClayHttpClient";
 
 interface Squad {
@@ -26,8 +26,9 @@ const searchQuery = ref('')
 import { useRouter, useRoute } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
-const go = (id: string | number) => {
-  router.push({ name: 'MockApiTools-CollectionShow', params: { id } })
+const go = (collectionSlug: string) => {
+  const parentSlug = String(route.params.slug || '')
+  router.push({ name: 'MockApiTools-CollectionShow', params: { slug: parentSlug, collectionSlug } })
 }
 
 const getSquadDetail = async (slug: string): Promise<Squad> => {
@@ -39,27 +40,29 @@ const squads = ref<Squad | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
-onMounted(async () => {
-  loading.value = true;
-  try {
-    let slug: string | undefined = undefined
-
-    if (route.query.slug) slug = String(route.query.slug)
-    // if no slug provided (selected from sidebar), do nothing
+watch(
+  () => route.params.slug,
+  async (newSlug) => {
+    const slug = newSlug ? String(newSlug) : undefined
     if (!slug) {
       squads.value = null
       return
     }
 
-    const detail = await getSquadDetail(slug)
-    squads.value = detail
-  } catch (err) {
-    error.value = "Failed to fetch squad detail";
-    console.error(err);
-  } finally {
-    loading.value = false;
-  }
-});
+    loading.value = true
+    try {
+      const detail = await getSquadDetail(slug)
+      squads.value = detail
+      error.value = null
+    } catch (err) {
+      error.value = 'Failed to fetch squad detail'
+      console.error(err)
+    } finally {
+      loading.value = false
+    }
+  },
+  { immediate: true }
+)
 
 const filteredCollections = computed(() => {
   if (!searchQuery.value) return squads.value?.collections || []
@@ -97,9 +100,9 @@ const filteredCollections = computed(() => {
         <div class="flex-1 min-h-0 p-5 pt-0">
           <ScrollArea class="h-full">
             <div class="space-y-5 pr-2">
-              <Card v-for="collection in filteredCollections" :key="collection.id" role="button" tabindex="0" @click="go(collection.id)"
+              <Card v-for="collection in filteredCollections" :key="collection.id" role="button" tabindex="0" @click="go(collection.slug)"
                 @keyup.enter="go(collection.id)" :aria-label="`Open ${collection.name}`"
-                class="group border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 bg-white rounded-lg cursor-pointer">
+                  class="group border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 bg-white rounded-lg cursor-pointer">
                 <CardHeader class="p-5 py-0">
                   <div class="flex items-start justify-between">
                     <div class="flex-1 space-y-2">
