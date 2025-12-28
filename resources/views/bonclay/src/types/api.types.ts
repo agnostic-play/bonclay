@@ -37,3 +37,27 @@ export interface Scenario {
     createdAt: string
     response?: any
 }
+
+export interface ScenarioResponse {
+    id: string
+    endpoint_id: string
+    desc: string
+    header: string          // JSON string
+    body: string            // JSON string
+    status_header: number
+    delay: number
+}
+
+export interface CollectionEndpoint {
+    id: string
+    path: string
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | string
+    collection_id: string
+    category: string
+    active_scenario: string
+    desc: string
+    script: string
+    scenario_response: ScenarioResponse[]
+}
+
+export type EndpointByCategory = Record<string, CollectionEndpoint[]>

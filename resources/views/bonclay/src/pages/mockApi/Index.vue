@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { computed, ref, watch } from 'vue'
 import client from "@/api/bonClayHttpClient";
+import { useRouter, useRoute } from 'vue-router'
 
 interface Squad {
   id: string
@@ -23,7 +24,6 @@ interface Collection {
 
 const searchQuery = ref('')
 
-import { useRouter, useRoute } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
 const go = (collectionSlug: string) => {
@@ -100,9 +100,9 @@ const filteredCollections = computed(() => {
         <div class="flex-1 min-h-0 p-5 pt-0">
           <ScrollArea class="h-full">
             <div class="space-y-5 pr-2">
-              <Card v-for="collection in filteredCollections" :key="collection.id" role="button" tabindex="0" @click="go(collection.slug)"
-                @keyup.enter="go(collection.id)" :aria-label="`Open ${collection.name}`"
-                  class="group border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 bg-white rounded-lg cursor-pointer">
+              <Card v-for="collection in filteredCollections" :key="collection.id" role="button" tabindex="0"
+                @click="go(collection.slug)" @keyup.enter="go(collection.id)" :aria-label="`Open ${collection.name}`"
+                class="group border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 bg-white rounded-lg cursor-pointer">
                 <CardHeader class="p-5 py-0">
                   <div class="flex items-start justify-between">
                     <div class="flex-1 space-y-2">

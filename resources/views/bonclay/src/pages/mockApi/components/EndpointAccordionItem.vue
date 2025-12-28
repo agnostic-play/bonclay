@@ -8,11 +8,12 @@ import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import ScenariosTable from './ScenariosTable.vue'
 import { useEndpointUtils } from '../composables/useEndpointUtils'
-import type { Endpoint, Scenario } from '../types/api.types'
+import type { CollectionEndpoint, Scenario } from '../types/api.types'
 import MonacoEditor from "monaco-editor-vue3"
+import type { ScenarioResponse } from '@/types/api.types'
 
 interface Props {
-  endpoint: Endpoint
+  endpoint: CollectionEndpoint
   categoryId: string
   scenarios: Scenario[]
   isOpen: boolean
@@ -29,9 +30,7 @@ const baseUrl = 'https://mock.com/test123123123123213'
 
 const { getMethodColor, getMethodBgColor } = useEndpointUtils()
 
-const endpointScenarios = computed(() =>
-  props.scenarios.filter(s => s.endpointPath === props.endpoint.path)
-)
+const endpointScenarios: ScenarioResponse[] = props.endpoint?.scenario_response || []
 
 const copyToClipboard = async (text: string, itemId: string = 'default'): Promise<void> => {
   try {
@@ -97,7 +96,7 @@ const handleScenariosUpdate = (updatedScenarios: Scenario[]) => {
 
         <!-- Endpoint Description -->
         <span class="ml-auto font-medium text-gray-800">
-          {{ endpoint.description }}
+          {{ endpoint.description ?? endpoint.desc }}
         </span>
       </div>
     </AccordionTrigger>
@@ -131,7 +130,8 @@ const handleScenariosUpdate = (updatedScenarios: Scenario[]) => {
               </div>
 
               <div class="bg-gray-50/60 rounded-xl border border-gray-100 overflow-hidden">
-                <ScenariosTable :scenarios="endpointScenarios" :endpoint-path="endpoint.path" :all-scenarios="scenarios"
+                <ScenariosTable :scenarios="endpointScenarios" :active-scenarios="endpoint.active_scenario"
+                  :endpoint-path="endpoint.path" :all-scenarios="scenarios"
                   @scenarios-updated="handleScenariosUpdate" />
               </div>
             </div>
