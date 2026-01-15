@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/agnostic-play/ditoo/internal/services"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
+
+	"github.com/agnostic-play/ditoo/internal/services"
 )
 
 func (h handlers) routesApi() {
@@ -74,6 +75,10 @@ func (h handlers) actMock(ctx echo.Context) error {
 			return ctx.String(500, err.Error())
 		}
 
+		if scenario.Delay != nil && *scenario.Delay > 0 {
+			time.Sleep(time.Duration(*scenario.Delay) * time.Second)
+		}
+
 		return nil
 	}
 
@@ -97,8 +102,8 @@ func (h handlers) actMock(ctx echo.Context) error {
 	if err != nil {
 		return ctx.String(500, err.Error())
 	}
-	return nil
 
+	return nil
 }
 
 func (h handlers) getListSquad(ctx echo.Context) error {

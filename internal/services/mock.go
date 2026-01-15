@@ -75,17 +75,16 @@ func (cont serviceContainer) MockAPI(echoCtx echo.Context, collectionSlug, metho
 
 	// Validate active scenario
 
-	var mockScenario MockEntityRes
+	var (
+		mockScenario  MockEntityRes
+		proxyResponse MockEntityRes
+	)
 
 	// Handle proxy forwarding if enabled
-	if collection.IsProxyEnable && collection.ForwardProxyURL != "" && endpoint.ActiveScenario == "" {
-		proxyResponse, err := cont.forwardToProxy(echoCtx, collection.ForwardProxyURL, path)
+	if collection.IsProxyEnable && collection.ForwardProxyURL != "" {
+		proxyResponse, err = cont.forwardToProxy(echoCtx, collection.ForwardProxyURL, path)
 		if err != nil {
 			return MockEntityRes{}, fmt.Errorf("proxy forwarding failed: %w", err)
-		}
-
-		if endpoint.ActiveScenario == "" {
-			return proxyResponse, nil
 		}
 	}
 
@@ -98,6 +97,12 @@ func (cont serviceContainer) MockAPI(echoCtx echo.Context, collectionSlug, metho
 	// Convert scenario to mock response structure
 	if err := convertStruct(scenario, &mockScenario); err != nil {
 		return MockEntityRes{}, fmt.Errorf("failed to convert scenario: %w", err)
+	}
+
+	if mockScenario.Body == "" {
+		mockScenario.ProxyIsEnabled = true
+		mockScenario.ProxyResponseHeader = proxyResponse.ProxyResponseHeader
+		mockScenario.Body = proxyResponse.Body
 	}
 
 	// Apply custom variables
