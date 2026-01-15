@@ -102,7 +102,7 @@ func (cont serviceContainer) MockAPI(echoCtx echo.Context, collectionSlug, metho
 	if mockScenario.Body == "" {
 		mockScenario.ProxyIsEnabled = true
 		mockScenario.ProxyResponseHeader = proxyResponse.ProxyResponseHeader
-		mockScenario.Body = proxyResponse.Body
+		mockScenario.ProxyResponseBody = proxyResponse.ProxyResponseBody
 	}
 
 	// Apply custom variables
