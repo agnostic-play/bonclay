@@ -1,5 +1,5 @@
 
-ARG GO_VERSION=1.23.20-alpine3.20
+ARG GO_VERSION=1.23.9-alpine3.20
 
 # ============================================
 # Stage 1: Go builder
