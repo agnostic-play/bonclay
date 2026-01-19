@@ -36,7 +36,7 @@ type MockServiceInterface interface {
 }
 
 const (
-	requestTimeout = 30 * time.Second
+	requestTimeout = 65 * time.Second
 )
 
 var (
@@ -79,15 +79,6 @@ func (cont serviceContainer) MockAPI(echoCtx echo.Context, collectionSlug, metho
 		mockScenario  MockEntityRes
 		proxyResponse MockEntityRes
 	)
-
-	// Handle proxy forwarding if enabled
-	if collection.IsProxyEnable && collection.ForwardProxyURL != "" {
-		proxyResponse, err = cont.forwardToProxy(echoCtx, collection.ForwardProxyURL, path)
-		if err != nil {
-			return MockEntityRes{}, fmt.Errorf("proxy forwarding failed: %w", err)
-		}
-	}
-
 	// Get scenario configuration
 	scenario, err := cont.repoContainer.GetScenario(ctx, endpoint.ActiveScenario)
 	if err != nil {
@@ -100,6 +91,14 @@ func (cont serviceContainer) MockAPI(echoCtx echo.Context, collectionSlug, metho
 	}
 
 	if mockScenario.Body == "" {
+		// Handle proxy forwarding if enabled
+		if collection.IsProxyEnable && collection.ForwardProxyURL != "" {
+			proxyResponse, err = cont.forwardToProxy(echoCtx, collection.ForwardProxyURL, path)
+			if err != nil {
+				return MockEntityRes{}, fmt.Errorf("proxy forwarding failed: %w", err)
+			}
+		}
+
 		mockScenario.ProxyIsEnabled = true
 		mockScenario.ProxyResponseHeader = proxyResponse.ProxyResponseHeader
 		mockScenario.ProxyResponseBody = proxyResponse.ProxyResponseBody
