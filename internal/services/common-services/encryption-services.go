@@ -1,4 +1,4 @@
-package services
+package common_services
 
 import (
 	"bytes"
@@ -20,40 +20,18 @@ import (
 	"strings"
 )
 
-// ============================
-// Request / Response
-// ============================
-
-type EncryptionReq struct {
-	EncryptionType  string `json:"encryptionType"`  // "AES GCM", "AES CBC", "AES CBC IV", or "AES Imeg"
-	Key             string `json:"key"`             // hex, base64, or raw
-	KeyDeriveMethod string `json:"keyDeriveMethod"` // "No SUM", "sha256", "sha512", "md5", "sha1", "hmac-sha256"
-	RawValue        string `json:"rawValue"`        // plaintext (enc) or ciphertext (dec) - base64/hex/raw
-	OutputFormat    string `json:"outputFormat"`    // "hex" or "base64" (encrypt output format)
-	InputFormat     string `json:"inputFormat"`     // "hex" or "base64" (encrypt output format)
-	IV              string `json:"iv,omitempty"`    // REQUIRED for "AES CBC IV"/"AES Imeg" (hex/base64/raw)
-}
-
-type EncryptionResp struct {
-	Output any `json:"output"` // encrypted (hex/base64) or decrypted plaintext (base64)
-}
-
-// ============================
-// Service interface + container
-// ============================
-
-type ToolsService interface {
+type EncryptionService interface {
 	EncryptConfig(ctx context.Context, req EncryptionReq) (EncryptionResp, error)
 	DecryptConfig(ctx context.Context, req EncryptionReq) (EncryptionResp, error)
 }
 
-// Basic container (replace with yours if you already have one)
+type encryptionService struct{}
 
-// ============================
-// Public methods
-// ============================
+func NewEncryptionService() EncryptionService {
+	return &encryptionService{}
+}
 
-func (cont serviceContainer) EncryptConfig(ctx context.Context, req EncryptionReq) (EncryptionResp, error) {
+func (s *encryptionService) EncryptConfig(ctx context.Context, req EncryptionReq) (EncryptionResp, error) {
 	// Decode plaintext (try base64; fallback to raw string)
 	plain, err := base64.StdEncoding.DecodeString(req.RawValue)
 	if err != nil {
@@ -116,7 +94,7 @@ func (cont serviceContainer) EncryptConfig(ctx context.Context, req EncryptionRe
 	return EncryptionResp{Output: encodeOutput(out, req.OutputFormat)}, nil
 }
 
-func (cont serviceContainer) DecryptConfig(ctx context.Context, req EncryptionReq) (resp EncryptionResp, err error) {
+func (s *encryptionService) DecryptConfig(ctx context.Context, req EncryptionReq) (resp EncryptionResp, err error) {
 	key, err := buildAESKeyFromInput(req.Key, req.KeyDeriveMethod)
 	if err != nil {
 		return EncryptionResp{}, err
@@ -124,13 +102,12 @@ func (cont serviceContainer) DecryptConfig(ctx context.Context, req EncryptionRe
 
 	defer func() {
 		if r := recover(); r != nil {
-			// can't "return" from a defer; set named returns instead
 			err = fmt.Errorf("decrypt panic: %v", r)
 			resp = EncryptionResp{}
 		}
 	}()
 
-	// 3) Parse input ciphertext
+	// Parse input ciphertext
 	var ciphertext []byte
 	ciphertext, err = decodeInputDecrypter(req.RawValue, req.InputFormat)
 	if err != nil {
@@ -169,14 +146,10 @@ func (cont serviceContainer) DecryptConfig(ctx context.Context, req EncryptionRe
 		return EncryptionResp{}, err
 	}
 
-	// 4) Return plaintext as base64 (safe for arbitrary binary)
+	// Return plaintext as base64 (safe for arbitrary binary)
 	resp = EncryptionResp{Output: base64.StdEncoding.EncodeToString(plain)}
 	return
 }
-
-// ============================
-// Key derivation and sizing
-// ============================
 
 // Build AES key from input key + method. Supports arbitrary input length by sizing to 16/24/32.
 func buildAESKeyFromInput(keyStr, method string) ([]byte, error) {
@@ -205,34 +178,6 @@ func buildAESKeyFromInput(keyStr, method string) ([]byte, error) {
 		return nil, fmt.Errorf("unsupported key_derive_method: %s", method)
 	}
 }
-
-// normalizeKey resizes to 16/24/32 bytes (pad with zeros or truncate).
-func normalizeKey(k []byte) []byte {
-	switch {
-	case len(k) >= 32:
-		return k[:32]
-	case len(k) > 24: // (24,31]
-		out := make([]byte, 32)
-		copy(out, k)
-		return out
-	case len(k) == 24:
-		return k
-	case len(k) > 16: // (16,23]
-		out := make([]byte, 24)
-		copy(out, k)
-		return out
-	case len(k) == 16:
-		return k
-	default: // < 16
-		out := make([]byte, 16)
-		copy(out, k)
-		return out
-	}
-}
-
-// ============================
-// AES-GCM
-// ============================
 
 func encryptAESGCM(key, plaintext []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
@@ -316,8 +261,7 @@ func decryptAESCBC(key, ciphertext []byte) ([]byte, error) {
 	return pkcs7Unpad(pt)
 }
 
-// Explicit-IV CBC (no IV prefix). These are NOT the Imeg functions;
-// keeping them in case you want non-Imeg explicit-IV helpers too.
+// Explicit-IV CBC (no IV prefix).
 func encryptAESCBCWithIV(key, plaintext, iv []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -367,7 +311,7 @@ func EncryptImeg(plaintext []byte, key, iv []byte) (encoded []byte, err error) {
 	}
 	log.Println(iv)
 	if len(iv) != cipherData.BlockSize() {
-		return nil, errors.New(fmt.Sprintf("%v %v", len(iv), cipherData.BlockSize()))
+		return nil, fmt.Errorf("%v %v", len(iv), cipherData.BlockSize())
 	}
 
 	cipherText := make([]byte, len(bPlaintext))
@@ -384,7 +328,7 @@ func DecryptImeg(cipherText []byte, key, iv []byte) (result []byte, err error) {
 	}
 
 	if len(iv) != block.BlockSize() {
-		return nil, errors.New(fmt.Sprintf("%v %v", len(iv), cipherText))
+		return nil, fmt.Errorf("%v %v", len(iv), cipherText)
 	}
 
 	// IF the length of the cipherText is less than 16 Bytes:
@@ -413,7 +357,7 @@ func pkcs7Pad(b []byte, blocksize int) []byte {
 	if blocksize <= 0 {
 		return nil
 	}
-	if b == nil || len(b) == 0 {
+	if len(b) == 0 {
 		return nil
 	}
 	n := blocksize - (len(b) % blocksize)
@@ -426,26 +370,6 @@ func pkcs7Pad(b []byte, blocksize int) []byte {
 func pkcs5Trimming(encrypt []byte) []byte {
 	padding := encrypt[len(encrypt)-1]
 	return encrypt[:len(encrypt)-int(padding)]
-}
-
-// ============================
-// Helpers
-// ============================
-
-func normalizeEncType(s string) string {
-	compact := strings.ToLower(strings.ReplaceAll(s, " ", ""))
-	switch compact {
-	case "aesgcm":
-		return "aesGCM"
-	case "aescbc":
-		return "aesCBC" // legacy (IV prefixed)
-	case "aescbciv":
-		return "aesCBCIV" // explicit IV, no prefix
-	case "aesimeg", "aescbcimeg", "imeg":
-		return "aesImeg" // explicit IV, Imeg functions
-	default:
-		return ""
-	}
 }
 
 func pkcs7Unpad(data []byte) ([]byte, error) {

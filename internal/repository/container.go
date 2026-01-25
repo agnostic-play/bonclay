@@ -1,37 +1,41 @@
 package repository
 
 import (
-	"context"
-
 	"github.com/agnostic-play/ditoo/internal/config"
 	"gorm.io/gorm"
 )
 
+// RepoContainer - aggregates all repository interfaces
 type RepoContainer interface {
-	SquadRepoInterface
-	CollectionRepoInterface
-	EndpointRepoInterface
-	ScenarioRepoInterface
-	EndpointScenarioRepoInterface
-	CustomVariableRepoInterface
+	GetEndpointRepo() EndpointRepoInterface
+	GetEndpointScenarioRepo() EndpointScenarioRepoInterface
+	GetCustomVariableRepo() CustomVariableRepoInterface
 }
 
-func NewRepoContainerGorm(db *gorm.DB, config *config.Config) RepoContainer {
-	return &repoContainerGorm{
-		db:     db,
-		config: config,
+type repoContainer struct {
+	endpointRepo         EndpointRepoInterface
+	endpointScenarioRepo EndpointScenarioRepoInterface
+	customVariableRepo   CustomVariableRepoInterface
+}
+
+func NewRepoContainer(db *gorm.DB, config *config.Config) RepoContainer {
+	dbClient := NewDBClient(db)
+
+	return &repoContainer{
+		endpointRepo:         NewEndpointRepo(dbClient),
+		endpointScenarioRepo: NewEndpointScenarioRepo(dbClient),
+		customVariableRepo:   NewCustomVariableRepo(dbClient),
 	}
 }
 
-type repoContainerGorm struct {
-	db      *gorm.DB
-	transDB *gorm.DB
-	config  *config.Config
+func (c *repoContainer) GetEndpointRepo() EndpointRepoInterface {
+	return c.endpointRepo
 }
 
-func (cont repoContainerGorm) write(ctx context.Context) *gorm.DB {
-	if cont.transDB != nil {
-		return cont.transDB.WithContext(ctx)
-	}
-	return cont.db.WithContext(ctx)
+func (c *repoContainer) GetEndpointScenarioRepo() EndpointScenarioRepoInterface {
+	return c.endpointScenarioRepo
+}
+
+func (c *repoContainer) GetCustomVariableRepo() CustomVariableRepoInterface {
+	return c.customVariableRepo
 }

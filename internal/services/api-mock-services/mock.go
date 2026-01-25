@@ -1,85 +1,70 @@
-package services
+package api_mock_services
 
 import (
 	"context"
-	`encoding/json`
+	"encoding/json"
 	"fmt"
 	"io"
-	`log`
+	"log"
 	"net/http"
 	"reflect"
-	"regexp"
 	"strings"
-	"time"
 
 	"github.com/labstack/echo/v4"
 
-	repository2 `github.com/agnostic-play/ditoo/internal/repository`
+	"github.com/agnostic-play/ditoo/internal/common/pagination"
+	"github.com/agnostic-play/ditoo/internal/entities"
+	"github.com/agnostic-play/ditoo/internal/repository"
+	crud_services "github.com/agnostic-play/ditoo/internal/services/crud-services"
 )
 
-// MockEntityRes represents a mock API response entity
-type MockEntityRes struct {
-	EndpointID          string      `json:"endpoint_id" gorm:"column:endpoint_id"`
-	Desc                string      `json:"desc" gorm:"column:desc"`
-	Header              string      `json:"header" gorm:"column:header"`
-	Body                string      `json:"body" gorm:"column:body"`
-	StatusHeader        int         `json:"status_header" gorm:"column:status_header"`
-	Delay               *int        `json:"delay" gorm:"column:delay"`
-	ProxyIsEnabled      bool        `json:"proxy_is_enabled" gorm:"column:proxy_is_enabled"`
-	ProxyResponseHeader http.Header `json:"proxy_response_header" gorm:"-"`
-	ProxyResponseBody   []byte      `json:"proxy_response_body" gorm:"-"`
-}
-
-// MockServiceInterface defines the interface for mock API operations
-type MockServiceInterface interface {
+// MockService defines the interface for mock API operations
+type MockService interface {
 	MockAPI(ctx echo.Context, collectionSlug, method, path string) (MockEntityRes, error)
 }
 
-const (
-	requestTimeout = 30 * time.Second
-)
+type mockService struct {
+	collectionService crud_services.BaseCRUDService[entities.CollectionEntity]
+	scenarioService   crud_services.BaseCRUDService[entities.ScenarioEntity]
+	repoContainer     repository.RepoContainer
+}
 
-var (
-	// hopByHopHeaders are headers that should not be forwarded in proxy requests
-	hopByHopHeaders = map[string]bool{
-		"Connection":          true,
-		"Keep-Alive":          true,
-		"Proxy-Authenticate":  true,
-		"Proxy-Authorization": true,
-		"Te":                  true,
-		"Trailers":            true,
-		"Transfer-Encoding":   true,
-		"Upgrade":             true,
+func NewMockService(
+	collectionService crud_services.BaseCRUDService[entities.CollectionEntity],
+	scenarioService crud_services.BaseCRUDService[entities.ScenarioEntity],
+	repoContainer repository.RepoContainer,
+) MockService {
+	return &mockService{
+		collectionService: collectionService,
+		scenarioService:   scenarioService,
+		repoContainer:     repoContainer,
 	}
-
-	// variableRegex matches template variables in format {{varName}}
-	variableRegex = regexp.MustCompile(`\{\{(.+?)\}\}`)
-)
+}
 
 // MockAPI handles mock API requests with optional proxy forwarding
-func (cont serviceContainer) MockAPI(echoCtx echo.Context, collectionSlug, method, apiPath string) (MockEntityRes, error) {
+func (s *mockService) MockAPI(echoCtx echo.Context, collectionSlug, method, apiPath string) (MockEntityRes, error) {
 	ctx := context.Background()
 	path := fmt.Sprintf("/%s", apiPath)
 
-	// Get collection by slug
-	collection, err := cont.repoContainer.GetCollectionBySlug(ctx, collectionSlug)
-	if err != nil {
-		return MockEntityRes{}, fmt.Errorf("collection not found: %w", err)
+	// Get collection by slug using CRUD service
+	collQuery := &pagination.ListQuery{ShowAll: true, Filters: map[string]interface{}{"slug = ?": collectionSlug}}
+	collResult, err := s.collectionService.GetList(ctx, collQuery)
+	if err != nil || len(collResult.List) == 0 {
+		return MockEntityRes{}, fmt.Errorf("collection not found")
 	}
+	collection := collResult.List[0]
 
-	// Get endpoint mock configuration
-	endpoint, err := cont.repoContainer.GetEndpointMock(ctx, collection.ID.String(), method, path)
+	// Get endpoint mock configuration using repository
+	endpoint, err := s.repoContainer.GetEndpointRepo().GetEndpointMock(ctx, collection.ID.String(), method, path)
 	if err != nil {
 		return MockEntityRes{}, fmt.Errorf("failed to get endpoint mock: %w", err)
 	}
-
-	// Validate active scenario
 
 	var mockScenario MockEntityRes
 
 	// Handle proxy forwarding if enabled
 	if collection.IsProxyEnable && collection.ForwardProxyURL != "" && endpoint.ActiveScenario == "" {
-		proxyResponse, err := cont.forwardToProxy(echoCtx, collection.ForwardProxyURL, path)
+		proxyResponse, err := s.forwardToProxy(echoCtx, collection.ForwardProxyURL, path)
 		if err != nil {
 			return MockEntityRes{}, fmt.Errorf("proxy forwarding failed: %w", err)
 		}
@@ -89,8 +74,8 @@ func (cont serviceContainer) MockAPI(echoCtx echo.Context, collectionSlug, metho
 		}
 	}
 
-	// Get scenario configuration
-	scenario, err := cont.repoContainer.GetScenario(ctx, endpoint.ActiveScenario)
+	// Get scenario using CRUD service
+	scenario, err := s.scenarioService.Get(ctx, endpoint.ActiveScenario)
 	if err != nil {
 		return MockEntityRes{}, fmt.Errorf("failed to get scenario: %w", err)
 	}
@@ -100,8 +85,8 @@ func (cont serviceContainer) MockAPI(echoCtx echo.Context, collectionSlug, metho
 		return MockEntityRes{}, fmt.Errorf("failed to convert scenario: %w", err)
 	}
 
-	// Apply custom variables
-	customVars, err := cont.repoContainer.GetListCustomVariableByCollectionId(ctx, collection.ID.String())
+	// Apply custom variables using repository
+	customVars, err := s.repoContainer.GetCustomVariableRepo().GetListCustomVariableByCollectionId(ctx, collection.ID.String())
 	if err != nil {
 		return MockEntityRes{}, fmt.Errorf("failed to get custom variables: %w", err)
 	}
@@ -112,7 +97,7 @@ func (cont serviceContainer) MockAPI(echoCtx echo.Context, collectionSlug, metho
 }
 
 // forwardToProxy forwards the request to a proxy server
-func (cont serviceContainer) forwardToProxy(echoCtx echo.Context, proxyURL, path string) (MockEntityRes, error) {
+func (s *mockService) forwardToProxy(echoCtx echo.Context, proxyURL, path string) (MockEntityRes, error) {
 	targetURL := fmt.Sprintf("%s%s", proxyURL, path)
 
 	client := &http.Client{
@@ -192,7 +177,7 @@ func (res *MockEntityRes) applyEnvironmentVariables(env map[string]string) {
 }
 
 // customVarsToMap converts a slice of custom variables to a map
-func customVarsToMap(customVars []repository2.CustomVariableEntity) map[string]string {
+func customVarsToMap(customVars []repository.CustomVariableEntity) map[string]string {
 	result := make(map[string]string, len(customVars))
 	for _, variable := range customVars {
 		result[variable.Key] = variable.Value

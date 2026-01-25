@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/agnostic-play/ditoo/internal/common/pagination"
 	"github.com/labstack/echo/v4"
 )
 
@@ -32,19 +33,25 @@ func (h handlers) viewShowCollection(ctx echo.Context) error {
 
 	c := context.Background()
 
-	squad, err := h.serviceContainer.GetSquad(c, ctx.Param("slug"))
-	if err != nil {
+	// Get squad by slug
+	squadQuery := &pagination.ListQuery{ShowAll: true, Filters: map[string]interface{}{"slug = ?": ctx.Param("slug")}}
+	squadResult, err := h.serviceContainer.GetCRUDServices().SquadServices.GetList(c, squadQuery)
+	if err != nil || len(squadResult.List) == 0 {
 		ctx.Redirect(http.StatusTemporaryRedirect, h.baseURL)
 		return nil
 	}
+	squad := squadResult.List[0]
 
-	collection, err = h.serviceContainer.GetCollection(c, ctx.Param("collectionSlug"))
-	if err != nil {
+	// Get collection by slug
+	collQuery := &pagination.ListQuery{ShowAll: true, Filters: map[string]interface{}{"slug = ?": ctx.Param("collectionSlug")}}
+	collResult, err := h.serviceContainer.GetCRUDServices().CollectionServices.GetList(c, collQuery)
+	if err != nil || len(collResult.List) == 0 {
 		ctx.Redirect(http.StatusTemporaryRedirect, h.baseURL+"/squad/"+squad.Slug)
 		return nil
 	}
+	collection = collResult.List[0]
 
-	endpointScenario, _ := h.serviceContainer.GetEndpointScenario(c, ctx.Param("collectionSlug"))
+	endpointScenario, _ := h.serviceContainer.GetEndpointScenarioService().GetEndpointScenario(c, ctx.Param("collectionSlug"))
 	if len(endpointScenario) > 0 {
 		endpoints = endpointScenario
 	}
@@ -61,18 +68,25 @@ func (h handlers) viewShowSquad(ctx echo.Context) error {
 	collection = nil
 	c := context.Background()
 
-	resp, err := h.serviceContainer.GetSquad(c, ctx.Param("slug"))
-	if err != nil {
+	// Get squad by slug
+	squadQuery := &pagination.ListQuery{ShowAll: true, Filters: map[string]interface{}{"slug = ?": ctx.Param("slug")}}
+	result, err := h.serviceContainer.GetCRUDServices().SquadServices.GetList(c, squadQuery)
+	if err != nil || len(result.List) == 0 {
 		ctx.Redirect(http.StatusTemporaryRedirect, h.baseURL)
 		return nil
 	}
+	squad := result.List[0]
 
 	if collectionSlug := ctx.Param("collectionSlug"); collectionSlug != "" {
-		collection, _ = h.serviceContainer.GetCollection(c, collectionSlug)
+		collQuery := &pagination.ListQuery{ShowAll: true, Filters: map[string]interface{}{"slug = ?": collectionSlug}}
+		collResult, _ := h.serviceContainer.GetCRUDServices().CollectionServices.GetList(c, collQuery)
+		if len(collResult.List) > 0 {
+			collection = collResult.List[0]
+		}
 	}
 
 	return h.render(ctx, "squad_show", map[string]interface{}{
-		"squad":      resp,
+		"squad":      squad,
 		"collection": collection,
 	})
 }

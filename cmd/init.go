@@ -27,7 +27,7 @@ func Init(conf *config.Config) (chan bool, chan bool) {
 	)
 
 	dbClient := repository.NewDBClient(db)
-	repoContainer := repository.NewRepoContainerGorm(db, conf)
+	repoContainer := repository.NewRepoContainer(db, conf)
 	serviceContainer := services.NewServiceContainer(conf, repoContainer, dbClient)
 
 	serverExitSignal := echo.RunHttpServer(conf, serviceContainer)
