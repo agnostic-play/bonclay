@@ -15,6 +15,7 @@ func (h handlers) routesApi() {
 	h.server.PUT("/api/squad/update/:id", h.actUpdateSquad)
 	h.server.DELETE("/api/squad/delete/:id", h.actDeleteSquad)
 	h.server.GET("/api/squad", h.getListSquad)
+	h.server.GET("/api/squad/detail/:slug", h.getSquadDetail)
 
 	h.server.POST("/api/collection/create", h.actCreateCollection)
 	h.server.PUT("/api/collection/update/:id", h.actUpdateCollection)
@@ -26,6 +27,7 @@ func (h handlers) routesApi() {
 	h.server.POST("/api/collection/custom_variable/create", h.actCreateCustomVariable)
 
 	h.server.POST("/api/endpoint/create", h.actCreateEndpoint)
+	h.server.PUT("/api/endpoint/script/update/:id", h.actUpdateScriptEndpoint)
 	h.server.PUT("/api/endpoint/update/:id", h.actUpdateEndpoint)
 	h.server.DELETE("/api/endpoint/delete/:id", h.actDeleteEndpoint)
 
@@ -80,6 +82,17 @@ func (h handlers) getListSquad(ctx echo.Context) error {
 	name := ctx.QueryParam("name")
 
 	resp, err := h.serviceContainer.GetListSquad(context.Background(), name)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, resp)
+}
+
+func (h handlers) getSquadDetail(ctx echo.Context) error {
+	slug := ctx.Param("slug")
+
+	resp, err := h.serviceContainer.GetSquad(ctx.Request().Context(), slug)
 	if err != nil {
 		return h.errorJson(ctx, http.StatusInternalServerError, err)
 	}
@@ -241,6 +254,26 @@ func (h handlers) actCreateEndpoint(ctx echo.Context) error {
 	}
 
 	resp, err := h.serviceContainer.CreateOrUpdateEndpoint(context.Background(), "", req)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusInternalServerError, err)
+	}
+
+	return h.json(ctx, 200, resp)
+}
+
+func (h handlers) actUpdateScriptEndpoint(ctx echo.Context) error {
+	var req services.EndpointScriptEntityReq
+
+	id, err := h.validateUUID(ctx)
+	if err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	if err := h.validateRequest(ctx, &req); err != nil {
+		return h.errorJson(ctx, http.StatusBadRequest, err)
+	}
+
+	resp, err := h.serviceContainer.UpdateScriptEndpoint(context.Background(), id, req)
 	if err != nil {
 		return h.errorJson(ctx, http.StatusInternalServerError, err)
 	}

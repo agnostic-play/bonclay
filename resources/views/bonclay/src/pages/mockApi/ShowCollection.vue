@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import {ref, computed} from 'vue'
-import {Card, CardContent} from '@/components/ui/card'
+import { ref, computed, watch } from 'vue'
+import { Card, CardContent } from '@/components/ui/card'
 import CollectionHeader from '@/pages/mockApi/components/CollectionHeader.vue'
 import ConfigurationSection from '@/pages/mockApi/components/ConfigurationSection.vue'
 import ApiCategoriesSection from '@/pages/mockApi/components/ApiCategoriesSection.vue'
-import type {ApiCategory, Scenario} from '@/types/api.types'
+import { type EndpointByCategory, type ApiCategory, type Scenario } from '@/types/api.types'
+import client from "@/api/bonClayHttpClient";
+import { useRouter, useRoute } from 'vue-router'
 
 // Mock data
 const apiCategories: ApiCategory[] = [
@@ -18,13 +20,13 @@ const apiCategories: ApiCategory[] = [
         name: 'Login',
         description: 'Authenticate user with email and password',
         parameters: [
-          {name: 'email', type: 'string', required: true, description: 'User email address'},
-          {name: 'password', type: 'string', required: true, description: 'User password'}
+          { name: 'email', type: 'string', required: true, description: 'User email address' },
+          { name: 'password', type: 'string', required: true, description: 'User password' }
         ],
         responses: [
-          {code: '200', description: 'Authentication successful', example: '{ "token": "jwt_token", "user": {...} }'},
-          {code: '401', description: 'Invalid credentials'},
-          {code: '429', description: 'Too many requests'}
+          { code: '200', description: 'Authentication successful', example: '{ "token": "jwt_token", "user": {...} }' },
+          { code: '401', description: 'Invalid credentials' },
+          { code: '429', description: 'Too many requests' }
         ]
       },
       {
@@ -33,7 +35,7 @@ const apiCategories: ApiCategory[] = [
         name: 'Logout',
         description: 'Invalidate user session',
         parameters: [],
-        responses: [{code: '200', description: 'Logout successful'}]
+        responses: [{ code: '200', description: 'Logout successful' }]
       },
       {
         method: 'POST',
@@ -41,11 +43,11 @@ const apiCategories: ApiCategory[] = [
         name: 'Refresh Token',
         description: 'Refresh authentication token',
         parameters: [
-          {name: 'refreshToken', type: 'string', required: true, description: 'Refresh token'}
+          { name: 'refreshToken', type: 'string', required: true, description: 'Refresh token' }
         ],
         responses: [
-          {code: '200', description: 'Token refreshed successfully'},
-          {code: '401', description: 'Invalid refresh token'}
+          { code: '200', description: 'Token refreshed successfully' },
+          { code: '401', description: 'Invalid refresh token' }
         ]
       }
     ]
@@ -60,18 +62,18 @@ const apiCategories: ApiCategory[] = [
         name: 'List Transactions',
         description: 'Retrieve paginated list of transactions with filtering options',
         parameters: [
-          {name: 'page', type: 'number', required: false, description: 'Page number (default: 1)'},
-          {name: 'limit', type: 'number', required: false, description: 'Items per page (default: 20, max: 100)'},
+          { name: 'page', type: 'number', required: false, description: 'Page number (default: 1)' },
+          { name: 'limit', type: 'number', required: false, description: 'Items per page (default: 20, max: 100)' },
           {
             name: 'status',
             type: 'string',
             required: false,
             description: 'Filter by status (pending, completed, failed)'
           },
-          {name: 'dateFrom', type: 'string', required: false, description: 'Start date (ISO 8601 format)'},
-          {name: 'dateTo', type: 'string', required: false, description: 'End date (ISO 8601 format)'}
+          { name: 'dateFrom', type: 'string', required: false, description: 'Start date (ISO 8601 format)' },
+          { name: 'dateTo', type: 'string', required: false, description: 'End date (ISO 8601 format)' }
         ],
-        responses: [{code: '200', description: 'List retrieved successfully'}]
+        responses: [{ code: '200', description: 'List retrieved successfully' }]
       },
       {
         method: 'POST',
@@ -79,14 +81,14 @@ const apiCategories: ApiCategory[] = [
         name: 'Create Transaction',
         description: 'Create a new transaction',
         parameters: [
-          {name: 'amount', type: 'number', required: true, description: 'Transaction amount'},
-          {name: 'currency', type: 'string', required: true, description: 'Currency code (USD, EUR, etc.)'},
-          {name: 'description', type: 'string', required: false, description: 'Transaction description'},
-          {name: 'categoryId', type: 'string', required: false, description: 'Category ID'}
+          { name: 'amount', type: 'number', required: true, description: 'Transaction amount' },
+          { name: 'currency', type: 'string', required: true, description: 'Currency code (USD, EUR, etc.)' },
+          { name: 'description', type: 'string', required: false, description: 'Transaction description' },
+          { name: 'categoryId', type: 'string', required: false, description: 'Category ID' }
         ],
         responses: [
-          {code: '201', description: 'Transaction created successfully'},
-          {code: '400', description: 'Invalid request data'}
+          { code: '201', description: 'Transaction created successfully' },
+          { code: '400', description: 'Invalid request data' }
         ]
       },
       {
@@ -95,11 +97,11 @@ const apiCategories: ApiCategory[] = [
         name: 'Get Transaction',
         description: 'Retrieve a specific transaction by ID',
         parameters: [
-          {name: 'id', type: 'string', required: true, description: 'Transaction ID'}
+          { name: 'id', type: 'string', required: true, description: 'Transaction ID' }
         ],
         responses: [
-          {code: '200', description: 'Transaction retrieved successfully'},
-          {code: '404', description: 'Transaction not found'}
+          { code: '200', description: 'Transaction retrieved successfully' },
+          { code: '404', description: 'Transaction not found' }
         ]
       }
     ]
@@ -114,7 +116,7 @@ const apiCategories: ApiCategory[] = [
         name: 'Get Categories',
         description: 'Retrieve all available categories',
         parameters: [],
-        responses: [{code: '200', description: 'Categories retrieved successfully'}]
+        responses: [{ code: '200', description: 'Categories retrieved successfully' }]
       },
       {
         method: 'GET',
@@ -122,7 +124,7 @@ const apiCategories: ApiCategory[] = [
         name: 'Get Currencies',
         description: 'Retrieve supported currencies',
         parameters: [],
-        responses: [{code: '200', description: 'Currencies retrieved successfully'}]
+        responses: [{ code: '200', description: 'Currencies retrieved successfully' }]
       }
     ]
   }
@@ -138,7 +140,7 @@ const scenarios = ref<Scenario[]>([
     responseDelay: 1,
     isActive: false,
     createdAt: '2024-01-15',
-    response: {token: 'jwt_token', user: {id: 1, name: 'John Doe'}}
+    response: { token: 'jwt_token', user: { id: 1, name: 'John Doe' } }
   },
   {
     id: 'sc2',
@@ -149,7 +151,7 @@ const scenarios = ref<Scenario[]>([
     responseDelay: 0.5,
     isActive: false,
     createdAt: '2024-01-15',
-    response: {error: 'Invalid credentials'}
+    response: { error: 'Invalid credentials' }
   },
   {
     id: 'sc3',
@@ -160,7 +162,7 @@ const scenarios = ref<Scenario[]>([
     responseDelay: 0,
     isActive: false,
     createdAt: '2024-01-16',
-    response: {error: 'Too many requests'}
+    response: { error: 'Too many requests' }
   },
   {
     id: 'sc4',
@@ -171,9 +173,44 @@ const scenarios = ref<Scenario[]>([
     responseDelay: 3,
     isActive: false,
     createdAt: '2024-01-16',
-    response: {error: 'Internal server error'}
+    response: { error: 'Internal server error' }
   }
 ])
+
+const route = useRoute()
+
+const getCollectionDetail = async (slug: string): Promise<EndpointByCategory> => {
+  const res = await client.get<EndpointByCategory>(`/api/collection/${slug}/endpoint`)
+  return res
+}
+
+const collectionDetail = ref<EndpointByCategory | null>(null);
+const loading = ref(false);
+const error = ref<string | null>(null);
+
+watch(
+  () => route.params.collectionSlug,
+  async (newSlug) => {
+    const slug = newSlug ? String(newSlug) : undefined
+    if (!slug) {
+      collectionDetail.value = null
+      return
+    }
+
+    loading.value = true
+    try {
+      const detail = await getCollectionDetail(slug)
+      collectionDetail.value = detail
+      error.value = null
+    } catch (err) {
+      error.value = 'Failed to fetch collection detail'
+      console.error(err)
+    } finally {
+      loading.value = false
+    }
+  },
+  { immediate: true }
+)
 
 // Configuration
 const baseUrl = 'https://mock.com/test123123123123213'
@@ -181,11 +218,11 @@ const documentationUrl = 'https://docs.example.com'
 
 // Computed properties
 const totalEndpoints = computed(() =>
-    apiCategories.reduce((acc, cat) => acc + cat.endpoints.length, 0)
+  apiCategories.reduce((acc, cat) => acc + cat.endpoints.length, 0)
 )
 
 const activeScenarioCount = computed(() =>
-    scenarios.value.filter(s => s.isActive).length
+  scenarios.value.filter(s => s.isActive).length
 )
 
 // Event handlers
@@ -209,26 +246,16 @@ const handleScenarioUpdate = (updatedScenarios: Scenario[]) => {
         <CardContent class="pt-5">
           <div class="p-8 px-4 py-0">
             <div class="space-y-4">
-              <CollectionHeader
-                  :total-endpoints="totalEndpoints"
-                  :active-scenario-count="activeScenarioCount"
-                  :category-count="apiCategories.length"
-                  @edit-collection="handleEditCollection"
-                  @create-new-endpoint="handleCreateNewEndpoint"
-              />
+              <CollectionHeader :total-endpoints="totalEndpoints" :active-scenario-count="activeScenarioCount"
+                :category-count="Object.keys(collectionDetail || {}).length" @edit-collection="handleEditCollection"
+                @create-new-endpoint="handleCreateNewEndpoint" />
 
-              <ConfigurationSection
-                  :base-url="baseUrl"
-                  :documentation-url="documentationUrl"
-              />
+              <ConfigurationSection :base-url="baseUrl" :documentation-url="documentationUrl" />
             </div>
           </div>
 
-          <ApiCategoriesSection
-              :categories="apiCategories"
-              :scenarios="scenarios"
-              @scenarios-updated="handleScenarioUpdate"
-          />
+          <ApiCategoriesSection :categories="collectionDetail" :scenarios="scenarios"
+            @scenarios-updated="handleScenarioUpdate" />
         </CardContent>
       </Card>
     </div>
@@ -237,9 +264,12 @@ const handleScenarioUpdate = (updatedScenarios: Scenario[]) => {
 
 <style scoped>
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }

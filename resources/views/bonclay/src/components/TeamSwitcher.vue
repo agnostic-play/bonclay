@@ -2,7 +2,7 @@
 import type { Component } from "vue"
 
 import { ChevronsUpDown, Plus } from "lucide-vue-next"
-import { ref } from "vue"
+import { ref, watch } from "vue"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +12,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useRouter } from 'vue-router'
 
 import {
   SidebarMenu,
@@ -25,11 +26,31 @@ const props = defineProps<{
     name: string
     logo: Component
     plan: string
+    slug?: string
   }[]
 }>()
 
+const router = useRouter()
 const { isMobile } = useSidebar()
-const activeTeam = ref(props.teams[0])
+const activeTeam = ref(props.teams[0] ?? null)
+
+// when teams are loaded/updated from parent, set activeTeam if not set
+watch(
+  () => props.teams,
+  (newVal) => {
+    if ((!activeTeam.value || activeTeam.value === null) && Array.isArray(newVal) && newVal.length) {
+      activeTeam.value = newVal[0]
+    }
+  },
+  { immediate: true }
+)
+
+const selectTeam = (team: any) => {
+  activeTeam.value = team
+  if (team.slug) {
+    router.push({ name: 'MockApiTools-Index', params: { slug: team.slug } })
+  }
+}
 </script>
 
 <template>
@@ -63,10 +84,10 @@ const activeTeam = ref(props.teams[0])
             Teams
           </DropdownMenuLabel>
           <DropdownMenuItem
-              v-for="(team, index) in teams"
-              :key="team.name"
-              class="gap-2 p-2"
-              @click="activeTeam = team"
+            v-for="(team, index) in teams"
+            :key="team.name"
+            class="gap-2 p-2"
+            @click="selectTeam(team)"
           >
             <div class="flex size-6 items-center justify-center rounded-sm border">
               <component :is="team.logo" class="size-4 shrink-0" />
