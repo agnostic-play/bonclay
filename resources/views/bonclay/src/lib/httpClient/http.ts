@@ -6,21 +6,17 @@ import type {
     InternalAxiosRequestConfig,
     AxiosRequestHeaders,
 } from 'axios';
-import type { ApiError, ApiErrorResponse, ApiResponse, RequestOptions } from './types';
+import type { ApiError, ApiResponse, RequestOptions } from './types';
 
 export class BaseHttpClient {
     protected readonly instance: AxiosInstance;
-    protected readonly host: string;
-    protected readonly pathPrefix: string;
     protected readonly baseURL: string;
 
-    constructor(host: string, pathPrefix: string, config: AxiosRequestConfig = {}) {
-        this.host = host;
-        this.pathPrefix = pathPrefix;
-        this.baseURL = host + "/" + pathPrefix;
+    constructor(baseURL: string, config: AxiosRequestConfig = {}) {
+        this.baseURL = baseURL;
 
         const defaultConfig: AxiosRequestConfig = {
-            baseURL: this.baseURL,
+            baseURL,
             timeout: 10_000,
             headers: { 'Content-Type': 'application/json' },
             ...config,
@@ -30,24 +26,22 @@ export class BaseHttpClient {
         this.setupInterceptors();
     }
 
-    public getHost(): string {
-        return this.host;
-    }
-
-    public getPathPrefix(): string {
-        return this.pathPrefix;
-    }
-
     private setupInterceptors(): void {
-        // --- REQUEST INTERCEPTOR ---
+        // Request interceptor
         this.instance.interceptors.request.use(
             (config: InternalAxiosRequestConfig) => {
                 const headers = (config.headers ?? {}) as AxiosRequestHeaders;
 
+                // Add auth token if available
                 const token = this.getAuthToken();
-                if (token) headers.Authorization = `Bearer ${token}`;
+                if (token) {
+                    headers.Authorization = `Bearer ${token}`;
+                }
 
+                // Add request ID for tracing
                 headers['X-Request-ID'] = this.generateRequestId();
+
+                // Add timestamp
                 headers['X-Request-Time'] = new Date().toISOString();
 
                 config.headers = headers;
@@ -65,58 +59,29 @@ export class BaseHttpClient {
             }
         );
 
-        // --- RESPONSE INTERCEPTOR ---
+        // Response interceptor
         this.instance.interceptors.response.use(
             (response: AxiosResponse) => {
-                console.log(
-                    `✅ ${response.config.method?.toUpperCase()} ${response.config.baseURL ?? ''}${response.config.url}`,
-                    {
-                        status: response.status,
-                        data: response.data,
-                    }
-                );
-
-                // Handle non-200 as structured errors
-                if (response.status !== 200) {
-                    const payload = response.data as ApiErrorResponse | any;
-                    const apiError: ApiError = {
-                        message: payload?.message || `Unexpected response status: ${response.status}`,
-                        status: response.status,
-                        data: payload?.data as Record<string, string> | undefined,
-                    };
-                    throw apiError;
-                }
-
+                console.log(`✅ ${response.config.method?.toUpperCase()} ${response.config.baseURL ?? ''}${response.config.url}`, {
+                    status: response.status,
+                    data: response.data,
+                });
+                // Keep the axios wrapper so downstream methods can standardize unwrapping
                 return response;
             },
             async (error: AxiosError) => {
-                console.error(
-                    `❌ ${error.config?.method?.toUpperCase()} ${error.config?.url}`,
-                    {
-                        status: error.response?.status,
-                        data: error.response?.data,
-                    }
-                );
+                console.error(`❌ ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
+                    status: error.response?.status,
+                    data: error.response?.data,
+                });
 
-                const status = error.response?.status;
-
-                if (status === 401) {
+                // Handle specific error cases
+                if (error.response?.status === 401) {
                     await this.handleUnauthorized();
-                } else if (status === 403) {
+                } else if (error.response?.status === 403) {
                     this.handleForbidden();
-                } else if (status === undefined || status >= 500) {
+                } else if (error.response?.status === undefined || error.response?.status >= 500) {
                     this.handleServerError(error);
-                }
-
-                // --- normalize API error structure ---
-                const payload = error.response?.data as ApiErrorResponse | any;
-                if (payload && typeof payload === 'object') {
-                    const structuredError: ApiError = {
-                        message: payload?.message || `HTTP ${status ?? 'Error'}`,
-                        status: status ?? 0,
-                        data: payload?.data as Record<string, string> | undefined,
-                    };
-                    return Promise.reject(structuredError);
                 }
 
                 return Promise.reject(this.normalizeError(error));
@@ -124,9 +89,9 @@ export class BaseHttpClient {
         );
     }
 
-    // --- Auth / Error Helpers -------------------------------------------------
-
+    // Protected methods for subclasses to override
     protected getAuthToken(): string | null {
+        // Override in subclasses to provide token logic. Safe for SSR.
         try {
             if (typeof window !== 'undefined' && 'localStorage' in window) {
                 return window.localStorage.getItem('auth_token');
@@ -139,6 +104,7 @@ export class BaseHttpClient {
 
     protected async handleUnauthorized(): Promise<void> {
         console.warn('Unauthorized request - consider redirecting to login');
+        // Example: router.push('/login')
     }
 
     protected handleForbidden(): void {
@@ -150,8 +116,11 @@ export class BaseHttpClient {
     }
 
     private generateRequestId(): string {
+        // Prefer crypto.randomUUID if available
         try {
+            // @ts-ignore - node/web crypto
             if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                // @ts-ignore
                 return crypto.randomUUID();
             }
         } catch {
@@ -166,29 +135,45 @@ export class BaseHttpClient {
             message: axErr?.message || 'An unexpected error occurred',
             status: axErr?.response?.status ?? 0,
             code: axErr?.code,
-            data: axErr?.response?.data,
+            details: axErr?.response?.data,
         };
         return apiError;
     }
 
-    // --- Internal Helpers ----------------------------------------------------
+    // ---- Helpers -------------------------------------------------------------
 
     private isEmptyBody(body: unknown): boolean {
-        if (body == null) return true;
+        if (body == null) return true; // null or undefined
+
+        // String payload
         if (typeof body === 'string') return body.trim().length === 0;
 
+        // FormData payload
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore: FormData may not exist in all runtimes
         if (typeof FormData !== 'undefined' && body instanceof FormData) {
-            for (const _ of body.entries()) return false;
+            // FormData doesn't expose size directly; iterate once.
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            for (const _ of body.entries()) {
+                return false;
+            }
             return true;
         }
 
-        if (typeof ArrayBuffer !== 'undefined' && body instanceof ArrayBuffer)
+        // ArrayBuffer / Blob considered non-empty if byteLength/size > 0
+        if (typeof ArrayBuffer !== 'undefined' && body instanceof ArrayBuffer) {
             return body.byteLength === 0;
+        }
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        if (typeof Blob !== 'undefined' && body instanceof Blob)
+        if (typeof Blob !== 'undefined' && body instanceof Blob) {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             return body.size === 0;
+        }
 
+        // Plain object or array
         if (typeof body === 'object') {
             try {
                 if (Array.isArray(body)) return body.length === 0;
@@ -198,22 +183,38 @@ export class BaseHttpClient {
             }
         }
 
+        // Numbers/booleans/etc. are considered "present"
         return false;
     }
 
-    private unwrap<T>(response: AxiosResponse): T {
+    /** Unwraps various response shapes into T:
+     * - AxiosResponse<ApiResponse<T>>
+     * - AxiosResponse<T>
+     * - ApiResponse<T>
+     * - T
+     */
+    private unwrap<T>(response: unknown): T {
+        // AxiosResponse
         if (response && typeof response === 'object' && 'data' in (response as any)) {
             const r = response as AxiosResponse<ApiResponse<T> | T>;
             const payload = r.data as any;
+
+            // ApiResponse<T> shape with data field
             if (payload && typeof payload === 'object' && 'data' in payload) {
                 return (payload as ApiResponse<T>).data as T;
             }
             return payload as T;
         }
-        return (response as any) as T;
+
+        // ApiResponse<T> or T passed directly
+        const payload = response as any;
+        if (payload && typeof payload === 'object' && 'data' in payload) {
+            return (payload as ApiResponse<T>).data as T;
+        }
+        return payload as T;
     }
 
-    // --- Core HTTP methods ---------------------------------------------------
+    // ---- Core HTTP methods with proper typing & error handling ---------------
 
     protected async get<T = unknown>(
         url: string,
@@ -240,10 +241,11 @@ export class BaseHttpClient {
     ): Promise<T> {
         try {
             if (this.isEmptyBody(data)) {
-                throw {
+                const err: ApiError = {
                     message: 'Request body is required and cannot be empty.',
                     status: 0,
-                } as ApiError;
+                };
+                throw err;
             }
 
             const res = await this.instance.post<ApiResponse<T> | T>(url, data, {
@@ -265,10 +267,11 @@ export class BaseHttpClient {
     ): Promise<T> {
         try {
             if (this.isEmptyBody(data)) {
-                throw {
+                const err: ApiError = {
                     message: 'Request body is required and cannot be empty.',
                     status: 0,
-                } as ApiError;
+                };
+                throw err;
             }
 
             const res = await this.instance.put<ApiResponse<T> | T>(url, data, {
@@ -290,10 +293,11 @@ export class BaseHttpClient {
     ): Promise<T> {
         try {
             if (this.isEmptyBody(data)) {
-                throw {
+                const err: ApiError = {
                     message: 'Request body is required and cannot be empty.',
                     status: 0,
-                } as ApiError;
+                };
+                throw err;
             }
 
             const res = await this.instance.patch<ApiResponse<T> | T>(url, data, {
@@ -325,8 +329,7 @@ export class BaseHttpClient {
         }
     }
 
-    // --- Utilities -----------------------------------------------------------
-
+    // Utility methods
     public getBaseURL(): string {
         return this.baseURL;
     }

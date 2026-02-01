@@ -10,11 +10,11 @@ import (
 	"reflect"
 	"strings"
 
+	repository2 `github.com/agnostic-play/ditoo/internal/adapters/repositories`
 	"github.com/labstack/echo/v4"
 
 	"github.com/agnostic-play/ditoo/internal/common/pagination"
 	"github.com/agnostic-play/ditoo/internal/entities"
-	"github.com/agnostic-play/ditoo/internal/repository"
 	crud_services "github.com/agnostic-play/ditoo/internal/services/crud-services"
 )
 
@@ -26,13 +26,13 @@ type MockService interface {
 type mockService struct {
 	collectionService crud_services.BaseCRUDService[entities.CollectionEntity]
 	scenarioService   crud_services.BaseCRUDService[entities.ScenarioEntity]
-	repoContainer     repository.RepoContainer
+	repoContainer     repository2.RepoContainer
 }
 
 func NewMockService(
 	collectionService crud_services.BaseCRUDService[entities.CollectionEntity],
 	scenarioService crud_services.BaseCRUDService[entities.ScenarioEntity],
-	repoContainer repository.RepoContainer,
+	repoContainer repository2.RepoContainer,
 ) MockService {
 	return &mockService{
 		collectionService: collectionService,
@@ -177,7 +177,7 @@ func (res *MockEntityRes) applyEnvironmentVariables(env map[string]string) {
 }
 
 // customVarsToMap converts a slice of custom variables to a map
-func customVarsToMap(customVars []repository.CustomVariableEntity) map[string]string {
+func customVarsToMap(customVars []repository2.CustomVariableEntity) map[string]string {
 	result := make(map[string]string, len(customVars))
 	for _, variable := range customVars {
 		result[variable.Key] = variable.Value

@@ -3,33 +3,34 @@ import { ref, computed } from 'vue'
 import { Copy, Check, Plus, Clock } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import ScenariosTable from './ScenariosTable.vue'
 import { useEndpointUtils } from '../composables/useEndpointUtils'
-import type { Endpoint, Scenario } from '../types/api.types'
+import type { CollectionEndpoint } from '../types/api.types'
+import MonacoEditor from "monaco-editor-vue3"
+import type { ScenarioResponse } from '@/types/api.types'
 
 interface Props {
-  endpoint: Endpoint
+  endpoint: CollectionEndpoint
   categoryId: string
-  scenarios: Scenario[]
   isOpen: boolean
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  scenariosUpdated: [scenarios: Scenario[]]
+  scenariosUpdated: []
 }>()
 
 const copiedItems = ref<Record<string, boolean>>({})
 const baseUrl = 'https://mock.com/test123123123123213'
+const code = ref(props.endpoint?.script || '')
 
 const { getMethodColor, getMethodBgColor } = useEndpointUtils()
 
-const endpointScenarios = computed(() =>
-    props.scenarios.filter(s => s.endpointPath === props.endpoint.path)
-)
+const endpointScenarios: ScenarioResponse[] = props.endpoint?.scenario_response || []
 
 const copyToClipboard = async (text: string, itemId: string = 'default'): Promise<void> => {
   try {
@@ -56,27 +57,23 @@ const createNewScenario = (endpointPath: string): void => {
   console.log('Creating new scenario for:', endpointPath)
 }
 
-const handleScenariosUpdate = (updatedScenarios: Scenario[]) => {
-  emit('scenariosUpdated', updatedScenarios)
+const handleScenariosUpdate = () => {
+  emit('scenariosUpdated')
 }
 </script>
 
 <template>
-  <AccordionItem
-      :value="`${categoryId}-${endpoint.path}`"
-      :class="[
-      'rounded-sm border transition-all duration-200',
-      isOpen
-        ? 'bg-white border-gray-200 shadow-sm'
-        : getMethodBgColor(endpoint.method)
-    ]"
-  >
+  <AccordionItem :value="`${categoryId}-${endpoint.path}`" :class="[
+    'rounded-sm border transition-all duration-200',
+    isOpen
+      ? 'bg-white border-gray-200 shadow-sm'
+      : getMethodBgColor(endpoint.method)
+  ]">
     <AccordionTrigger class="no-underline hover:no-underline px-6 hover:bg-white/50">
       <div class="flex items-center w-full space-x-3">
         <!-- HTTP Method Badge -->
         <Badge
-            :class="`text-white font-bold text-center min-w-[80px] justify-center ${getMethodColor(endpoint.method)}`"
-        >
+          :class="`text-white font-bold text-center min-w-[80px] justify-center ${getMethodColor(endpoint.method)}`">
           {{ endpoint.method }}
         </Badge>
 
@@ -84,12 +81,9 @@ const handleScenariosUpdate = (updatedScenarios: Scenario[]) => {
           <code>{{ endpoint.path }}</code>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                  variant="ghost"
-                  size="sm"
-                  @click="(event) => handleCopyClick(event, baseUrl + endpoint.path, baseUrl + endpoint.path)"
-                  class="h-6 w-6 p-0 hover:bg-slate-200"
-              >
+              <Button variant="ghost" size="sm"
+                @click="(event) => handleCopyClick(event, baseUrl + endpoint.path, baseUrl + endpoint.path)"
+                class="h-6 w-6 p-0 hover:bg-slate-200">
                 <Check v-if="copiedItems[baseUrl + endpoint.path]" class="w-3 h-3 text-green-600" />
                 <Copy v-else class="w-3 h-3 text-slate-600" />
               </Button>
@@ -102,47 +96,60 @@ const handleScenariosUpdate = (updatedScenarios: Scenario[]) => {
 
         <!-- Endpoint Description -->
         <span class="ml-auto font-medium text-gray-800">
-          {{ endpoint.description }}
+          {{ endpoint.description ?? endpoint.desc }}
         </span>
       </div>
     </AccordionTrigger>
 
     <AccordionContent class="px-6 pb-6 bg-white rounded-b-xl">
       <!-- Scenarios Section -->
-      <div class="space-y-4">
-        <div class="flex justify-between items-center">
-          <h4 class="text-sm font-medium text-gray-800 flex items-center gap-3">
-            <Clock class="w-4 h-4 text-gray-500" />
-            Mock Scenarios
-          </h4>
-          <div class="flex gap-3">
-            <Button
-                variant="outline"
-                size="sm"
-                @click="editEndpoint(endpoint.path)"
-                class="h-8 px-3 font-normal text-xs"
-            >
-              Edit Endpoint
-            </Button>
-            <Button
-                size="sm"
-                @click="createNewScenario(endpoint.path)"
-                class="h-8 px-3 bg-gray-900 hover:bg-gray-800 font-normal text-xs"
-            >
-              <Plus class="w-3.5 h-3.5 mr-1.5" />
-              New Scenario
-            </Button>
-          </div>
-        </div>
+      <div>
+        <Tabs defaultValue="endpoint">
+          <TabsList class="w-full flex justify-center items-center">
+            <TabsTrigger class="px-10" value="endpoint">Endpoint</TabsTrigger>
+            <TabsTrigger class="px-10" value="script">Script</TabsTrigger>
+          </TabsList>
+          <TabsContent value="endpoint" class="p-4">
+            <div class="space-y-4">
+              <div class="flex justify-between items-center">
+                <h4 class="text-sm font-medium text-gray-800 flex items-center gap-3">
+                  <Clock class="w-4 h-4 text-gray-500" />
+                  Mock Scenarios
+                </h4>
+                <div class="flex gap-3">
+                  <Button variant="outline" size="sm" @click="editEndpoint(endpoint.path)"
+                    class="h-8 px-3 font-normal text-xs">
+                    Edit Endpoint
+                  </Button>
+                  <Button size="sm" @click="createNewScenario(endpoint.path)"
+                    class="h-8 px-3 bg-gray-900 hover:bg-gray-800 font-normal text-xs">
+                    <Plus class="w-3.5 h-3.5 mr-1.5" />
+                    New Scenario
+                  </Button>
+                </div>
+              </div>
 
-        <div class="bg-gray-50/60 rounded-xl border border-gray-100 overflow-hidden">
-          <ScenariosTable
-              :scenarios="endpointScenarios"
-              :endpoint-path="endpoint.path"
-              :all-scenarios="scenarios"
-              @scenarios-updated="handleScenariosUpdate"
-          />
-        </div>
+              <div class="bg-gray-50/60 rounded-xl border border-gray-100 overflow-hidden">
+                <ScenariosTable :scenarios="endpointScenarios" :active-scenarios="endpoint.active_scenario"
+                  :endpoint-id="endpoint.id"
+                  @scenarios-updated="handleScenariosUpdate" />
+              </div>
+            </div>
+          </TabsContent>
+          <TabsContent value="script" class="p-4">
+            <MonacoEditor v-model:value="code" language="javascript" theme="vs-dark" height="300px"
+              class="border rounded-xl" :options="{
+                padding: { top: 16, bottom: 16 },
+                minimap: { enabled: false }
+              }" />
+            <div class="flex justify-end mt-3">
+              <Button variant="outline" size="sm"
+                class="h-9 px-4 font-normal bg-[#fc7305] text-white hover:bg-[#ffa55c] hover:text-white hover:cursor-pointer">
+                Save Script
+              </Button>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </AccordionContent>
   </AccordionItem>

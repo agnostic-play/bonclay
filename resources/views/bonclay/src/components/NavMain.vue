@@ -30,6 +30,9 @@ defineProps<{
     }[]
   }[]
 }>()
+  import { useRoute } from 'vue-router'
+
+  const route = useRoute()
 </script>
 
 <template>
@@ -55,7 +58,7 @@ defineProps<{
             <SidebarMenuSub>
               <SidebarMenuSubItem v-for="subItem in item.items" :key="subItem.title">
                 <SidebarMenuSubButton as-child >
-                  <RouterLink :to="{ name: subItem.routeName }" >
+                  <RouterLink :to="{ name: subItem.routeName, params: route.params ? { slug: route.params.slug } : {} }" >
                     <span>{{ subItem.title }}</span>
                   </RouterLink>
                 </SidebarMenuSubButton>

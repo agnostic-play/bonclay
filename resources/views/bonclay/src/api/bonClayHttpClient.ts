@@ -1,21 +1,31 @@
-import {BaseHttpClient} from "@/lib/httpClient/http.ts";
+import { BaseHttpClient } from "@/lib/httpClient/http.ts";
 
-
-export abstract class BonclayHttpClient extends BaseHttpClient {
-    protected readonly resource: string
-
-    protected constructor(resource: string) {
-        // http://api-mockup.alexandria.allobank.local
-        // http://localhost:6106
-
-        super("http://alexandria.allobank.local:18089","api/v2", {
-            timeout: 10_000,
-            headers: { 'Content-Type': 'application/json' },
-        })
-        this.resource = resource.replace(/^\/+|\/+$/g, '')
+export class BonClayHttpClient extends BaseHttpClient {
+    constructor() {
+        const base = (import.meta.env as any)?.VITE_API_BASE_URL ?? "";
+        super(base);
     }
 
-    getBaseURL(): string {
-        return super.getHost()
+    public async get<T = unknown>(url: string, options: any = {}): Promise<T> {
+        return super.get<T>(url, options);
+    }
+
+    public async post<T = unknown>(url: string, data?: unknown, options: any = {}): Promise<T> {
+        return super.post<T>(url, data, options);
+    }
+
+    public async put<T = unknown>(url: string, data?: unknown, options: any = {}): Promise<T> {
+        return super.put<T>(url, data, options);
+    }
+
+    public async patch<T = unknown>(url: string, data?: unknown, options: any = {}): Promise<T> {
+        return super.patch<T>(url, data, options);
+    }
+
+    public async delete<T = unknown>(url: string, options: any = {}): Promise<T> {
+        return super.delete<T>(url, options);
     }
 }
+
+const bonClayHttpClient = new BonClayHttpClient();
+export default bonClayHttpClient;

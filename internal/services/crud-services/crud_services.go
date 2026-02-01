@@ -1,8 +1,8 @@
 package crud_services
 
 import (
+	`github.com/agnostic-play/ditoo/internal/adapters/repositories`
 	"github.com/agnostic-play/ditoo/internal/entities"
-	"github.com/agnostic-play/ditoo/internal/repository"
 )
 
 type Services struct {
@@ -16,7 +16,7 @@ type Services struct {
 	ScenarioServices   BaseCRUDService[entities.ScenarioEntity]
 }
 
-func NewCRUDServices(dbClient repository.DBClient) *Services {
+func NewCRUDServices(dbClient repositories.DBClient) *Services {
 	return &Services{
 		DiagramCollectionServices: NewBaseCRUDServices(new(entities.DiagramCollectionEntity), dbClient),
 		DiagramServices:           NewBaseCRUDServices(new(entities.DiagramEntity), dbClient),

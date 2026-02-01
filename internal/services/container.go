@@ -1,8 +1,8 @@
 package services
 
 import (
+	repository2 `github.com/agnostic-play/ditoo/internal/adapters/repositories`
 	"github.com/agnostic-play/ditoo/internal/config"
-	"github.com/agnostic-play/ditoo/internal/repository"
 	api_mock_services "github.com/agnostic-play/ditoo/internal/services/api-mock-services"
 	common_services "github.com/agnostic-play/ditoo/internal/services/common-services"
 	crud_services "github.com/agnostic-play/ditoo/internal/services/crud-services"
@@ -24,8 +24,8 @@ type ServiceContainer interface {
 
 func NewServiceContainer(
 	cfg *config.Config,
-	repoContainer repository.RepoContainer,
-	dbClient repository.DBClient,
+	repoContainer repository2.RepoContainer,
+	dbClient repository2.DBClient,
 ) ServiceContainer {
 	// Create CRUD services first since they're used by api-mock-services
 	crudServices := crud_services.NewCRUDServices(dbClient)

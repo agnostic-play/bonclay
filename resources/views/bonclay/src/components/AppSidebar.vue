@@ -3,8 +3,8 @@ import { type SidebarProps} from '@/components/ui/sidebar'
 
 
 import {
-  Clover, FileKey2,
-  SquareTerminal, WorkflowIcon, ArrowUpDown
+  Clover,
+  SquareTerminal,
 } from "lucide-vue-next"
 import NavMain from '@/components/NavMain.vue'
 import NavUser from '@/components/NavUser.vue'
@@ -17,7 +17,8 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar'
 import {useRoute} from "vue-router";
-import {type Component, computed} from "vue";
+import {type Component, computed, ref, onMounted} from "vue";
+import client from "@/api/bonClayHttpClient";
 import TeamSwitcher from "@/components/TeamSwitcher.vue";
 
 
@@ -27,90 +28,74 @@ const props = withDefaults(defineProps<SidebarProps>(), {
 
 
 const route = useRoute()
-const data = computed(() => ({
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+const user = {
+  name: "shadcn",
+  email: "m@example.com",
+  avatar: "/avatars/shadcn.jpg",
+}
+
+const teams = ref<{
+  name: string
+  logo: Component
+  plan: string
+  slug?: string
+}[]>([
+  {
+    name: "Acme Inc",
+    logo: Clover,
+    plan: "Enterprise",
+  }
+])
+
+const navMain = computed(() => [
+  {
+    title: "Mock API",
+    url: "#",
+    icon: SquareTerminal,
+    isActive: route.path.startsWith("/tools/mock-api"),
+    items: [
+      {
+        title: "API Collection",
+        routeName: "MockApiTools-Index",
+      },
+      {
+        title: "Histories",
+        routeName: "MockApiTools-Index",
+      },
+    ],
   },
-  teams: [
-    {
-      name: "Acme Inc",
+])
+
+const getSquads = async () => {
+  try {
+    const res = await client.get<any[]>('/api/squad')
+    // client.get unwraps the API response and returns the inner data array
+    teams.value = (res || []).map((s: any) => ({
+      name: s.name,
       logo: Clover,
-      plan: "Enterprise",
-    }
-  ],
-  navMain: [
-    {
-      title: "Mock API",
-      url: "#",
-      icon: SquareTerminal,
-      isActive: route.path.startsWith("/tools/mock-api"),
-      items: [
-        {
-          title: "API Collection",
-          routeName: "MockApiTools-Index",
-        },
-        {
-          title: "Histories",
-          routeName: "MockApiTools-Index",
-        },
-      ],
-    },
-    {
-      title: "Encryption Tools",
-      url: "#",
-      icon: FileKey2,
-      isActive: route.path.startsWith("/tools/encryption"),
-      items: [
-        {
-          title: "Encryption Tools",
-          routeName: "EncryptionTools-Index",
-        }
-      ],
-    },
-    {
-      title: "Mermaid Diagram",
-      url: "#",
-      icon: WorkflowIcon,
-      isActive: route.path.startsWith("/tools/mermaid-diagram"),
-      items: [
-        {
-          title: "Projects",
-          routeName: "MermaidDiagramTools-Index",
-        },
-      ],
-    },
-    {
-      title: "Parser",
-      url: "#",
-      icon: ArrowUpDown,
-      isActive: route.path.startsWith("/tools/parser"),
-      items: [
-        {
-          title: "Qr Parser Emvco",
-          routeName: "ParserTools-Emvco",
-        },
-        {
-          title: "ISO Parser",
-          routeName: "ParserTools-ISO",
-        },
-      ],
-    },
-  ],
-}))
+      plan: s.desc || '',
+      slug: s.slug || '',
+    }))
+  } catch (err) {
+    console.error('Failed to fetch squads for sidebar', err)
+  }
+}
+
+onMounted(() => {
+  void getSquads()
+})
 </script>
 
 <template>
   <Sidebar v-bind="props">
     <SidebarHeader>
-      <TeamSwitcher :teams="data.teams" />
+      <TeamSwitcher :teams="teams" />
     </SidebarHeader>
     <SidebarContent>
-      <NavMain :items="data.navMain"/>
+      <NavMain :items="navMain"/>
     </SidebarContent>
     <SidebarFooter>
-      <NavUser :user="data.user"/>
+      <NavUser :user="user"/>
     </SidebarFooter>
     <SidebarRail/>
   </Sidebar>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -11,28 +12,40 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useScenarioUtils } from '@/pages/mockApi/composables/useScenarioUtils'
-import type { Scenario } from '@/types/entities.ts'
+import type { ScenarioResponse } from '@/types/api.types'
+import client from "@/api/bonClayHttpClient"
 
 interface Props {
-  scenarios: Scenario[]
-  endpointPath: string
-  allScenarios: Scenario[]
+  scenarios: ScenarioResponse[]
+  activeScenarios: string
+  endpointId: string
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  scenariosUpdated: [scenarios: Scenario[]]
+  scenariosUpdated: []
 }>()
 
 const { getStatusColor, formatDelay } = useScenarioUtils()
+const isTogglingScenario = ref(false)
 
-const toggleScenario = (scenarioId: string): void => {
-  const updatedScenarios = props.allScenarios.map(s => ({
-    ...s,
-    isActive: s.endpointPath === props.endpointPath ? s.id === scenarioId : s.isActive
-  }))
-  emit('scenariosUpdated', updatedScenarios)
+const toggleScenario = async (scenarioId: string): Promise<void> => {
+  if (isTogglingScenario.value) return
+  
+  isTogglingScenario.value = true
+  try {
+    await client.post('/api/v2/scenario/set_active', {
+      endpoint_id: props.endpointId,
+      scenario_id: scenarioId
+    })
+    emit('scenariosUpdated')
+  } catch (err) {
+    console.error('Failed to toggle scenario:', err)
+    // TODO: Show error toast to user
+  } finally {
+    isTogglingScenario.value = false
+  }
 }
 
 const viewScenario = (scenarioId: string): void => {
@@ -62,43 +75,30 @@ const viewScenario = (scenarioId: string): void => {
       </TableRow>
     </TableHeader>
     <TableBody>
-      <TableRow
-          v-for="scenario in scenarios"
-          :key="scenario.id"
-          :class="scenario.isActive ? 'bg-blue-50/50' : ''"
-      >
+      <TableRow v-for="scenario in scenarios" :key="scenario.id"
+        :class="scenario.id === activeScenarios ? 'bg-blue-50/50' : ''">
         <TableCell class="text-center">
-          <Badge
-              variant="secondary"
-              :class="getStatusColor(scenario.httpStatus)"
-          >
-            {{ scenario.httpStatus }}
+          <Badge variant="secondary" :class="getStatusColor(scenario.status_header)">
+            {{ scenario.status_header }}
           </Badge>
         </TableCell>
         <TableCell>
           <div>
-            <div class="font-medium text-slate-800">{{ scenario.name }}</div>
-            <div class="text-xs text-slate-500 mt-0.5">{{ scenario.description }}</div>
+            <div class="font-medium text-slate-800">{{ scenario.desc }}</div>
+            <div class="text-xs text-slate-500 mt-0.5">{{ scenario.desc }}</div>
           </div>
         </TableCell>
         <TableCell class="text-center">
           <div class="flex items-center justify-center gap-1">
-            <span class="text-sm">{{ formatDelay(scenario.responseDelay) }}</span>
+            <span class="text-sm">{{ formatDelay(scenario.delay) }}</span>
           </div>
         </TableCell>
         <TableCell class="text-center">
-          <Checkbox
-              :checked="scenario.isActive"
-              @update:checked="() => toggleScenario(scenario.id)"
-          />
+          <Checkbox :checked="scenario.id === activeScenarios" :disabled="isTogglingScenario" @update:checked="() => toggleScenario(scenario.id)" />
         </TableCell>
         <TableCell class="text-center">
-          <Button
-              variant="ghost"
-              size="sm"
-              @click="viewScenario(scenario.id)"
-              class="h-8 px-3 font-normal text-xs text-gray-600 hover:text-gray-800"
-          >
+          <Button variant="ghost" size="sm" @click="viewScenario(scenario.id)"
+            class="h-8 px-3 font-normal text-xs text-gray-600 hover:text-gray-800">
             View
           </Button>
         </TableCell>
