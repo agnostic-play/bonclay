@@ -541,7 +541,7 @@ watch(selectedId, async (id) => {
             <!-- Editor Panel -->
             <div class="w-2/5 h-full flex flex-col rounded-lg border bg-white">
               <div class="flex items-center justify-between p-3 border-b">
-                <h2 class="text-sm font-semibold">Mermaid Editor</h2>
+                <h2 class="text-sm font-semibold">Editor</h2>
                 <div class="text-xs text-muted-foreground">Monaco • Live validation</div>
               </div>
 

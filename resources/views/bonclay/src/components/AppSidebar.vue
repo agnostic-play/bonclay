@@ -70,7 +70,7 @@ const data = computed(() => ({
       ],
     },
     {
-      title: "Mermaid Diagram",
+      title: "Diagram",
       url: "#",
       icon: WorkflowIcon,
       isActive: route.path.startsWith("/tools/mermaid-diagram"),

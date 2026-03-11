@@ -81,7 +81,7 @@
             <!-- Editor Panel -->
             <div class="w-2/5 h-full flex flex-col rounded-lg border bg-white">
               <div class="flex items-center justify-between p-3 border-b">
-                <h2 class="text-sm font-semibold">Mermaid Editor</h2>
+                <h2 class="text-sm font-semibold">Editor</h2>
                 <div class="text-xs text-muted-foreground flex items-center gap-2">
                   <span v-if="lastUpdatedText" class="text-xs text-muted-foreground">{{ lastUpdatedText }}</span>
                   <Button size="xs" class="px-2 py-1 border text-xs" @click="saveDiagram">
@@ -129,10 +129,20 @@
               </div>
 
               <div class="relative flex-1 overflow-hidden">
-                <div ref="previewRef" :class="{ 'opacity-50': isRendering }" class="absolute inset-0 select-none"
+                <!-- Mermaid: render inline SVG -->
+                <div v-if="syntaxType === 'mermaid'" ref="previewRef" :class="{ 'opacity-50': isRendering }" class="absolute inset-0 select-none"
                      v-html="svgMarkup"/>
-                <div v-if="!svgMarkup && !error" class="absolute inset-0 grid place-items-center text-sm text-gray-400">
+                <!-- PlantUML: render via server image -->
+                <div v-else-if="syntaxType === 'plantuml'" class="absolute inset-0 overflow-auto flex items-center justify-center" ref="previewRef">
+                  <img v-if="plantUmlUrl" :src="plantUmlUrl" :class="{ 'opacity-50': isRendering }" class="max-w-full max-h-full object-contain select-none" alt="PlantUML Diagram" @error="onPlantUmlImgError" />
+                  <div v-else-if="!error" class="text-sm text-gray-400">Rendered diagram will appear here</div>
+                </div>
+                <div v-if="syntaxType === 'mermaid' && !svgMarkup && !error" class="absolute inset-0 grid place-items-center text-sm text-gray-400">
                   Rendered diagram will appear here
+                </div>
+                <div v-if="error" class="absolute bottom-0 left-0 right-0 m-3 rounded-md border border-red-200 bg-red-50 p-3 text-red-700 text-xs">
+                  <strong class="font-medium">Error:</strong>
+                  <span class="ml-1">{{ error }}</span>
                 </div>
               </div>
             </div>
@@ -156,7 +166,10 @@
                 </div>
               </div>
               <div class="relative h-[calc(100vh-48px)]">
-                <div ref="fsPreviewRef" class="absolute inset-0 select-none" v-html="svgMarkup"/>
+                <div v-if="syntaxType === 'mermaid'" ref="fsPreviewRef" class="absolute inset-0 select-none" v-html="svgMarkup"/>
+                <div v-else-if="syntaxType === 'plantuml'" class="absolute inset-0 overflow-auto flex items-center justify-center" ref="fsPreviewRef">
+                  <img v-if="plantUmlUrl" :src="plantUmlUrl" class="max-w-full max-h-full object-contain select-none" alt="PlantUML Diagram" />
+                </div>
               </div>
             </div>
           </div>
@@ -204,10 +217,22 @@
       <DialogContent class="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Create Diagram</DialogTitle>
-          <DialogDescription>Provide a name and (optional) initial Mermaid syntax.</DialogDescription>
+          <DialogDescription>Provide a name, syntax type and (optional) initial content.</DialogDescription>
         </DialogHeader>
 
         <div class="grid gap-3 py-2">
+           <div class="grid gap-1.5">
+            <Label for="cd-syntax-type">Syntax Type</Label>
+            <Select v-model="createForm.syntaxType" @update:modelValue="onCreateSyntaxTypeChange">
+              <SelectTrigger id="cd-syntax-type">
+                <SelectValue placeholder="Select type"/>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mermaid">Mermaid</SelectItem>
+                <SelectItem value="plantuml">PlantUML</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div class="grid gap-1.5">
             <Label for="cd-title">Title</Label>
             <Input id="cd-title" v-model="createForm.title" placeholder="My Diagram"/>
@@ -237,6 +262,18 @@
         </DialogHeader>
 
         <div class="grid gap-3 py-2">
+             <div class="grid gap-1.5">
+            <Label for="ed-syntax-type">Syntax Type</Label>
+            <Select v-model="editDiagramForm.syntaxType">
+              <SelectTrigger id="ed-syntax-type">
+                <SelectValue placeholder="Select type"/>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mermaid">Mermaid</SelectItem>
+                <SelectItem value="plantuml">PlantUML</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div class="grid gap-1.5">
             <Label for="ed-title">Title</Label>
             <Input id="ed-title" v-model="editDiagramForm.title" placeholder="Diagram title"/>
@@ -316,6 +353,7 @@ import mermaid from 'mermaid'
 import panzoom, {type PanZoom} from 'panzoom'
 import * as monaco from "monaco-editor"
 import {loader} from "@guolao/vue-monaco-editor"
+import plantumlEncoder from 'plantuml-encoder'
 
 loader.config({monaco})
 import {toast} from 'vue-sonner'
@@ -332,6 +370,7 @@ import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Dia
 import {Input} from '@/components/ui/input'
 import {Textarea} from '@/components/ui/textarea'
 import {Label} from '@/components/ui/label'
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select'
 
 /* 🔌 API service */
 import diagramCollectionAPI from '@/api/DiagramCollectionServices.ts'
@@ -368,10 +407,39 @@ function onComboOpenChange(open: boolean) {
 /* ---------------- mermaid + monaco ---------------- */
 mermaid.initialize({startOnLoad: false, securityLevel: 'loose', theme: 'default'})
 const source = ref<string>('') // editor text
-const svgMarkup = ref<string>('') // rendered svg
+const svgMarkup = ref<string>('') // rendered svg (mermaid)
+const plantUmlUrl = ref<string>('') // rendered img url (plantuml)
 const error = ref<string | null>(null)
 const isRendering = ref(false)
 const previewRef = ref<HTMLDivElement | null>(null)
+
+/* current diagram syntax type */
+const syntaxType = computed<'mermaid' | 'plantuml'>(() => {
+  const t = (selectedDiagram.value as any)?.syntax_type
+      || (selectedDiagram.value as any)?.syntaxType
+      || ''
+  if (t === 'plantuml') return 'plantuml'
+  if (t === 'mermaid') return 'mermaid'
+  // fallback: detect from the editor content (works even if backend omits syntax_type)
+  const syn = (source.value ?? '').trimStart()
+  if (syn.startsWith('@start')) return 'plantuml'
+  return 'mermaid'
+})
+
+const PLANTUML_SERVER = 'https://www.plantuml.com/plantuml/svg'
+
+function buildPlantUmlUrl(text: string): string {
+  try {
+    const encoded = plantumlEncoder.encode(text)
+    return `${PLANTUML_SERVER}/${encoded}`
+  } catch {
+    return ''
+  }
+}
+
+function onPlantUmlImgError() {
+  error.value = 'PlantUML server could not render the diagram. Check your syntax.'
+}
 
 let pz: PanZoom | null = null
 let debounceTimer: number | undefined
@@ -499,6 +567,26 @@ async function validateSyntax(text: string) {
 }
 
 async function renderDiagram() {
+  error.value = null
+  const trimmed = (source.value ?? '').trim()
+
+  if (syntaxType.value === 'plantuml') {
+    svgMarkup.value = ''
+    if (!trimmed) {
+      plantUmlUrl.value = ''
+      return
+    }
+    isRendering.value = true
+    try {
+      plantUmlUrl.value = buildPlantUmlUrl(trimmed)
+    } finally {
+      isRendering.value = false
+    }
+    return
+  }
+
+  // mermaid path
+  plantUmlUrl.value = ''
   const ok = await validateSyntax(source.value)
   if (!ok) {
     svgMarkup.value = '';
@@ -527,10 +615,15 @@ function onEditorChange() {
   }, 300)
 }
 
+function getEditorLanguage(): string {
+  return syntaxType.value === 'plantuml' ? 'plantuml' : 'mermaid'
+}
+
 function createEditor() {
   if (!editorEl.value) return
   loader.init().then((m) => {
     try {
+      // ── Mermaid language ──────────────────────────────────────────────
       m.languages.register({id: 'mermaid'})
       m.languages.setMonarchTokensProvider('mermaid', {
         tokenizer: {
@@ -544,10 +637,47 @@ function createEditor() {
           ],
         },
       })
+
+      // ── PlantUML language ─────────────────────────────────────────────
+      m.languages.register({id: 'plantuml'})
+      m.languages.setMonarchTokensProvider('plantuml', {
+        tokenizer: {
+          root: [
+            // @startuml / @enduml
+            [/@start\w+|@end\w+/, 'keyword'],
+            // single-line comments (' is the comment char in PlantUML, NOT a string delimiter)
+            [/'.*$/, 'comment'],
+            // block comment open  /'
+            [/\/'\//, 'comment', '@blockComment'],
+            // preprocessor directives  !include !define etc.
+            [/![a-z_]+/, 'keyword.control'],
+            // arrows (longest patterns first)
+            [/<\|--|--\|>/, 'operator'],
+            [/<\*--|--\*>/, 'operator'],
+            [/<o--|--o>|<#--|--#>/, 'operator'],
+            [/<\.\.|\.\.>/, 'operator'],
+            [/<--|-->|->|<-/, 'operator'],
+            [/\.\.|--/, 'operator'],
+            // keywords
+            [/\b(participant|actor|boundary|control|entity|database|collections|queue|usecase|class|interface|enum|abstract|component|package|node|folder|frame|cloud|rectangle|namespace|object|map|state|hide|show|skinparam|title|note|ref|group|alt|else|opt|loop|break|par|critical|activate|deactivate|destroy|autonumber|newpage|box|together|end)\b/, 'keyword'],
+            // skin colour tags  #RoyalBlue  #aabbcc
+            [/#[a-zA-Z0-9_]+/, 'tag'],
+            // double-quoted strings
+            [/"[^"]*"/, 'string'],
+            // numbers
+            [/\b\d+(\.\d+)?\b/, 'number'],
+          ],
+          blockComment: [
+            [/'\//, 'comment', '@pop'],
+            [/[\s\S]/, 'comment'],
+          ],
+        },
+      })
     } catch {}
+
     editor = m.editor.create(editorEl.value!, {
       value: source.value,
-      language: 'mermaid',
+      language: getEditorLanguage(),
       automaticLayout: true,
       fontSize: 12,
       wordWrap: 'on',
@@ -613,7 +743,9 @@ function fromListAsDetail(id: string): DiagramDetail | null {
     title: hit.title,
     description: (hit as any).description ?? '',
     syntax: (hit as any).syntax ?? '',
-    latestUpdated: (hit as any).latestUpdated
+    syntax_type: (hit as any).syntax_type ?? hit.syntax_type ?? '',
+    syntaxType: (hit as any).syntaxType ?? hit.syntax_type ?? '',
+    latestUpdated: (hit as any).latestUpdated,
   } as DiagramDetail
 }
 
@@ -633,9 +765,10 @@ async function saveDiagram() {
 
   isSavingDiagram.value = true
   try {
-    const payload = {
+    const payload: any = {
       syntax: source.value,
       title: selectedDiagram.value.title,
+      syntax_type: syntaxType.value,
     }
 
     const svc = await withApiFeedback(
@@ -690,7 +823,27 @@ async function removeCollection() {
 
 /** create new diagram */
 const showCreate = ref(false)
-const createForm = ref({title: '', syntax: 'flowchart TD\n  A[Start] --> B[End]\n'})
+
+const MERMAID_DEFAULT_SYNTAX = 'flowchart TD\n  A[Start] --> B[End]\n'
+const PLANTUML_DEFAULT_SYNTAX = '@startuml\nA -> B: Hello\n@enduml\n'
+
+const createForm = ref({
+  title: '',
+  syntax: MERMAID_DEFAULT_SYNTAX,
+  syntaxType: 'mermaid' as 'mermaid' | 'plantuml',
+})
+
+function onCreateSyntaxTypeChange(val: string) {
+  const t = val as 'mermaid' | 'plantuml'
+  // only reset syntax if it's still the default for the other type
+  if (
+    (t === 'plantuml' && (createForm.value.syntax === MERMAID_DEFAULT_SYNTAX || createForm.value.syntax === '')) ||
+    (t === 'mermaid' && (createForm.value.syntax === PLANTUML_DEFAULT_SYNTAX || createForm.value.syntax === ''))
+  ) {
+    createForm.value.syntax = t === 'plantuml' ? PLANTUML_DEFAULT_SYNTAX : MERMAID_DEFAULT_SYNTAX
+  }
+  createForm.value.syntaxType = t
+}
 
 async function submitCreateDiagram() {
   if (!createForm.value.title.trim()) return
@@ -699,11 +852,11 @@ async function submitCreateDiagram() {
       collection_id: collectionId.value,
       title: createForm.value.title.trim(),
       syntax: createForm.value.syntax,
-      syntax_type: "mermaid",
+      syntax_type: createForm.value.syntaxType,
     })
     toast.success('Diagram created')
     showCreate.value = false
-    createForm.value = {title: '', syntax: 'flowchart TD\n  A[Start] --> B[End]\n'}
+    createForm.value = {title: '', syntax: MERMAID_DEFAULT_SYNTAX, syntaxType: 'mermaid'}
     await loadDiagramList()
     if (created?.id) selectedId.value = String(created.id)
   } catch (e: any) {
@@ -723,7 +876,7 @@ function openEditCollection() {
 
 /* ---------------- edit diagram modal ---------------- */
 const showEditDiagram = ref(false)
-const editDiagramForm = ref({ title: '', description: '' })
+const editDiagramForm = ref({ title: '', description: '', syntaxType: 'mermaid' as 'mermaid' | 'plantuml' })
 
 function openEditDiagram() {
   if (!selectedDiagram.value) {
@@ -732,6 +885,7 @@ function openEditDiagram() {
   }
   editDiagramForm.value.title = selectedDiagram.value.title || ''
   editDiagramForm.value.description = selectedDiagram.value.description || ''
+  editDiagramForm.value.syntaxType = syntaxType.value
   showEditDiagram.value = true
 }
 
@@ -741,6 +895,7 @@ async function submitEditDiagram() {
     const payload: any = {
       title: editDiagramForm.value.title.trim(),
       description: editDiagramForm.value.description,
+      syntax_type: editDiagramForm.value.syntaxType,
     }
 
     const svc = await withApiFeedback(
@@ -758,14 +913,20 @@ async function submitEditDiagram() {
     // sync local state
     selectedDiagram.value.title = payload.title
     selectedDiagram.value.description = payload.description
+    ;(selectedDiagram.value as any).syntax_type = payload.syntax_type
+    ;(selectedDiagram.value as any).syntaxType = payload.syntax_type
 
     const idx = diagrams.value.findIndex(d => String(d.id) === String(selectedDiagram.value!.id))
     if (idx >= 0) {
       diagrams.value[idx].title = payload.title
       ;(diagrams.value[idx] as any).description = payload.description
+      ;(diagrams.value[idx] as any).syntax_type = payload.syntax_type
+      ;(diagrams.value[idx] as any).syntaxType = payload.syntax_type
     }
 
     showEditDiagram.value = false
+    // re-render with potentially changed type
+    await renderDiagram()
   } catch (e: any) {
     toast.error(e?.message || 'Failed to update diagram.')
   }
@@ -874,6 +1035,12 @@ watch(selectedId, async (id) => {
     selectedDiagram.value = fromList
     source.value = fromList.syntax ?? ''
     editor?.setValue(source.value)
+    // update Monaco language to match syntax type
+    await nextTick()
+    if (editor) {
+      const model = editor.getModel()
+      if (model) monaco.editor.setModelLanguage(model, getEditorLanguage())
+    }
     await renderDiagram()
   } else {
     try {
@@ -881,6 +1048,12 @@ watch(selectedId, async (id) => {
       selectedDiagram.value = d
       source.value = d?.syntax ?? ''
       editor?.setValue(source.value)
+      // update Monaco language to match syntax type
+      await nextTick()
+      if (editor) {
+        const model = editor.getModel()
+        if (model) monaco.editor.setModelLanguage(model, getEditorLanguage())
+      }
       await renderDiagram()
     } catch (e: any) {
       toast.error(e?.message || 'Failed to load diagram.')
