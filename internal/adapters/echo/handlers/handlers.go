@@ -60,7 +60,7 @@ func (h handlers) Routes() {
 	h.server.File("/v2", "resources/views/bonclay/public/bonclay/index.html")
 	h.server.File("/v2/*", "resources/views/bonclay/public/bonclay/index.html")
 
-	v2 := h.server.Group("/api/v2")
+	v2 := h.server.Group("/v3")
 
 	diagramHandlers.RegisterRoutes(v2)
 	endpointHandlers.RegisterRoutes(v2)

@@ -68,7 +68,7 @@ const navMain = computed(() => [
 
 const getSquads = async () => {
   try {
-    const res = await client.get<any[]>('/api/squad')
+    const res = await client.get<any[]>('/squad/all')
     // client.get unwraps the API response and returns the inner data array
     teams.value = (res || []).map((s: any) => ({
       name: s.name,
@@ -89,7 +89,7 @@ onMounted(() => {
 <template>
   <Sidebar v-bind="props">
     <SidebarHeader>
-      <TeamSwitcher :teams="teams" />
+      <TeamSwitcher :teams="teams" @squad-created="getSquads" />
     </SidebarHeader>
     <SidebarContent>
       <NavMain :items="navMain"/>

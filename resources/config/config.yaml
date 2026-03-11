@@ -12,7 +12,7 @@ database:
   port: 3306
   user: root
   pass: root
-  databaseName: ditto
+  databaseName: bonclay
   charset: utf8mb4
   debugLog: true
   pool:

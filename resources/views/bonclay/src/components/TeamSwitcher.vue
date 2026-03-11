@@ -3,6 +3,7 @@ import type { Component } from "vue"
 
 import { ChevronsUpDown, Plus } from "lucide-vue-next"
 import { ref, watch } from "vue"
+import CreateSquadSheet from '@/components/CreateSquadSheet.vue'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +34,11 @@ const props = defineProps<{
 const router = useRouter()
 const { isMobile } = useSidebar()
 const activeTeam = ref(props.teams[0] ?? null)
+const createSquadRef = ref<InstanceType<typeof CreateSquadSheet> | null>(null)
+
+const emit = defineEmits<{
+  squadCreated: []
+}>()
 
 // when teams are loaded/updated from parent, set activeTeam if not set
 watch(
@@ -50,6 +56,14 @@ const selectTeam = (team: any) => {
   if (team.slug) {
     router.push({ name: 'MockApiTools-Index', params: { slug: team.slug } })
   }
+}
+
+const handleAddTeam = () => {
+  createSquadRef.value?.openDialog()
+}
+
+const handleSquadCreated = () => {
+  emit('squadCreated')
 }
 </script>
 
@@ -96,7 +110,7 @@ const selectTeam = (team: any) => {
             <DropdownMenuShortcut>⌘{{ index + 1 }}</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem class="gap-2 p-2">
+          <DropdownMenuItem class="gap-2 p-2" @click="handleAddTeam">
             <div class="flex size-6 items-center justify-center rounded-md border bg-background">
               <Plus class="size-4" />
             </div>
@@ -106,6 +120,8 @@ const selectTeam = (team: any) => {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <CreateSquadSheet ref="createSquadRef" @created="handleSquadCreated" />
     </SidebarMenuItem>
   </SidebarMenu>
 </template>

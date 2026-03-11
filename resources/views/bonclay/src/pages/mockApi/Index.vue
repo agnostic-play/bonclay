@@ -2,6 +2,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import CreateCollectionSheet from '@/pages/mockApi/components/CreateCollectionSheet.vue'
 import { computed, ref, watch } from 'vue'
 import client from "@/api/bonClayHttpClient";
 import { useRouter, useRoute } from 'vue-router'
@@ -40,6 +41,20 @@ const squads = ref<Squad | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
+const fetchSquadDetail = async (slug: string) => {
+  loading.value = true
+  try {
+    const detail = await getSquadDetail(slug)
+    squads.value = detail
+    error.value = null
+  } catch (err) {
+    error.value = 'Failed to fetch squad detail'
+    console.error(err)
+  } finally {
+    loading.value = false
+  }
+}
+
 watch(
   () => route.params.slug,
   async (newSlug) => {
@@ -48,21 +63,17 @@ watch(
       squads.value = null
       return
     }
-
-    loading.value = true
-    try {
-      const detail = await getSquadDetail(slug)
-      squads.value = detail
-      error.value = null
-    } catch (err) {
-      error.value = 'Failed to fetch squad detail'
-      console.error(err)
-    } finally {
-      loading.value = false
-    }
+    await fetchSquadDetail(slug)
   },
   { immediate: true }
 )
+
+const handleCollectionCreated = () => {
+  const slug = route.params.slug ? String(route.params.slug) : undefined
+  if (slug) {
+    fetchSquadDetail(slug)
+  }
+}
 
 const filteredCollections = computed(() => {
   if (!searchQuery.value) return squads.value?.collections || []
@@ -85,7 +96,15 @@ const filteredCollections = computed(() => {
         <div class="p-5 space-y-7 flex-shrink-0 ">
           <!-- Header -->
           <div class="w-full space-y-3">
-            <h1 class="text-2xl font-semibold text-gray-900">Api Collection's</h1>
+            <div class="flex items-center justify-between">
+              <h1 class="text-2xl font-semibold text-gray-900">Api Collection's</h1>
+              <CreateCollectionSheet
+                v-if="route.params.slug"
+                :squad-id="squads?.id"
+                :squad-slug="String(route.params.slug)"
+                @created="handleCollectionCreated"
+              />
+            </div>
             <div class="w-12 h-0.5 bg-primary"></div>
           </div>
 

@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	`log`
 	"net/http"
 	"strconv"
 
@@ -53,6 +54,7 @@ func (h baseCRUDHandlers[T]) GetPath() string {
 
 // GET {path}/all?search=...&sort_by=...  (uses ListQuery but returns all that match)
 func (h baseCRUDHandlers[T]) getAll(c echo.Context) error {
+	log.Println("xxxx")
 	q, _ := extractPaginationQuery(c)
 	q.ShowAll = true
 
