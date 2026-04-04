@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useRouter } from 'vue-router'
+import { useSquadSession } from '@/composables/useSquadSession'
 
 import {
   SidebarMenu,
@@ -24,6 +25,7 @@ import {
 
 const props = defineProps<{
   teams: {
+    id?: string
     name: string
     logo: Component
     plan: string
@@ -33,6 +35,7 @@ const props = defineProps<{
 
 const router = useRouter()
 const { isMobile } = useSidebar()
+const { activeSquad, setActiveSquad } = useSquadSession()
 const activeTeam = ref(props.teams[0] ?? null)
 const createSquadRef = ref<InstanceType<typeof CreateSquadSheet> | null>(null)
 
@@ -40,11 +43,24 @@ const emit = defineEmits<{
   squadCreated: []
 }>()
 
-// when teams are loaded/updated from parent, set activeTeam if not set
+// When teams are loaded/updated from parent, restore selection from session
+// or default to the first team
 watch(
   () => props.teams,
   (newVal) => {
-    if ((!activeTeam.value || activeTeam.value === null) && Array.isArray(newVal) && newVal.length) {
+    if (!Array.isArray(newVal) || newVal.length === 0) return
+
+    // Try to restore the previously active squad from session
+    if (activeSquad.value?.slug) {
+      const match = newVal.find(t => t.slug === activeSquad.value!.slug)
+      if (match) {
+        activeTeam.value = match
+        return
+      }
+    }
+
+    // Default to first team if nothing in session
+    if (!activeTeam.value || activeTeam.value === null) {
       activeTeam.value = newVal[0]
     }
   },
@@ -53,6 +69,15 @@ watch(
 
 const selectTeam = (team: any) => {
   activeTeam.value = team
+  // Persist to session store
+  if (team.id || team.slug) {
+    setActiveSquad({
+      id: team.id || '',
+      slug: team.slug || '',
+      name: team.name,
+      plan: team.plan,
+    })
+  }
   if (team.slug) {
     router.push({ name: 'MockApiTools-Index', params: { slug: team.slug } })
   }
@@ -95,12 +120,13 @@ const handleSquadCreated = () => {
             :side-offset="4"
         >
           <DropdownMenuLabel class="text-xs text-muted-foreground">
-            Teams
+            Squads
           </DropdownMenuLabel>
           <DropdownMenuItem
             v-for="(team, index) in teams"
             :key="team.name"
             class="gap-2 p-2"
+            :class="{ 'bg-accent': activeTeam?.slug === team.slug }"
             @click="selectTeam(team)"
           >
             <div class="flex size-6 items-center justify-center rounded-sm border">
@@ -115,7 +141,7 @@ const handleSquadCreated = () => {
               <Plus class="size-4" />
             </div>
             <div class="font-medium text-muted-foreground">
-              Add team
+              Add squad
             </div>
           </DropdownMenuItem>
         </DropdownMenuContent>

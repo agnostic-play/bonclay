@@ -14,6 +14,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import client from '@/api/bonClayHttpClient'
+import { useSquadSession } from '@/composables/useSquadSession'
 
 interface Props {
   squadId?: string
@@ -21,6 +22,8 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const { activeSquadId } = useSquadSession()
 
 const emit = defineEmits<{
   created: []
@@ -43,21 +46,21 @@ watch(open, (isOpen) => {
 })
 
 const resolveSquadId = async (): Promise<string | null> => {
+  // Priority 1: explicit squad_id prop
   if (props.squadId) return props.squadId
 
-  if (!props.squadSlug) return null
-
-  try {
-    const res = await client.get<any>(`/v3/squads/all`, {
-      params: { search: props.squadSlug }
-    })
-    // res could be { list: [...] } or an array
-    const list = Array.isArray(res) ? res : (res?.list || [])
-    const match = list.find((s: any) => s.slug === props.squadSlug)
-    return match?.id || (list.length > 0 ? list[0].id : null)
-  } catch {
-    return null
+  // Priority 2: slug prop → fetch from API
+  if (props.squadSlug) {
+    try {
+      const res = await client.get<any>(`/api/squad/detail/${props.squadSlug}`)
+      return res?.id || null
+    } catch {
+      return null
+    }
   }
+
+  // Priority 3: fall back to session store
+  return activeSquadId.value
 }
 
 const handleSubmit = async () => {
@@ -77,12 +80,12 @@ const handleSubmit = async () => {
   try {
     const squadId = await resolveSquadId()
     if (!squadId) {
-      errorMessage.value = 'Could not determine the squad. Please try again.'
+      errorMessage.value = 'No squad selected. Please select a squad first.'
       submitting.value = false
       return
     }
 
-    await client.post('/v3/collections/create', {
+    await client.post('/api/v2/collections/create', {
       name: form.value.name.trim(),
       desc: form.value.desc.trim(),
       squad_id: squadId,

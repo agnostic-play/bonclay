@@ -35,6 +35,7 @@ const user = {
 }
 
 const teams = ref<{
+  id?: string
   name: string
   logo: Component
   plan: string
@@ -68,9 +69,9 @@ const navMain = computed(() => [
 
 const getSquads = async () => {
   try {
-    const res = await client.get<any[]>('/squad/all')
-    // client.get unwraps the API response and returns the inner data array
+    const res = await client.get<any[]>('/api/v2/squads/all')
     teams.value = (res || []).map((s: any) => ({
+      id: s.id || '',
       name: s.name,
       logo: Clover,
       plan: s.desc || '',

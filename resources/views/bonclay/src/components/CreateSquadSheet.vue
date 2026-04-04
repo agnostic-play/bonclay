@@ -53,7 +53,7 @@ const handleSubmit = async () => {
   errorMessage.value = null
 
   try {
-    await client.post('/v3/squads/create', {
+    await client.post('/api/v2/squads/create', {
       name: form.value.name.trim(),
       desc: form.value.desc.trim(),
     })

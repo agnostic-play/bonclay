@@ -1,7 +1,7 @@
 package handler
 
 import (
-	`fmt`
+	"fmt"
 
 	"github.com/agnostic-play/ditoo/internal/services"
 	"github.com/labstack/echo/v4"
@@ -56,19 +56,18 @@ func (h handlers) Routes() {
 	//h.server.File("/v2", "resources/views/spa/dist/index.html")
 	//h.server.File("/v2/*", "resources/views/spa/dist/index.html")
 
+	apiV2 := h.server.Group("/api/v2")
+	diagramHandlers.RegisterRoutes(apiV2)
+	endpointHandlers.RegisterRoutes(apiV2)
+	endpointHandlers.RegisterRoutes(apiV2)
+	squadHandlers.RegisterRoutes(apiV2)
+	diagramCollHandlers.RegisterRoutes(apiV2)
+	collectionHandlers.RegisterRoutes(apiV2)
+	scenarioHandler.RegisterRoutes(apiV2)
+
 	h.server.Static("/v2/assets", "resources/views/bonclay/public/bonclay/assets")
-	h.server.File("/v2", "resources/views/bonclay/public/bonclay/index.html")
+	h.server.File("/v2/", "resources/views/bonclay/public/bonclay/index.html")
 	h.server.File("/v2/*", "resources/views/bonclay/public/bonclay/index.html")
-
-	v2 := h.server.Group("/v3")
-
-	diagramHandlers.RegisterRoutes(v2)
-	endpointHandlers.RegisterRoutes(v2)
-	endpointHandlers.RegisterRoutes(v2)
-	squadHandlers.RegisterRoutes(v2)
-	diagramCollHandlers.RegisterRoutes(v2)
-	collectionHandlers.RegisterRoutes(v2)
-	scenarioHandler.RegisterRoutes(v2)
 
 	fmt.Println("endpoints ===")
 	for _, r := range h.server.Routes() {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 
@@ -41,7 +40,6 @@ func (r *baseRepository[T]) GetList(ctx context.Context, paginationQuery *pagina
 		result     = pagination.NewListResult[T](paginationQuery)
 	)
 
-	log.Println("xxxxx")
 	rawExec := r.dbClient.client(ctx).
 		Model(r.ent.GetEntity()).
 		Table(r.ent.GetTableName()).

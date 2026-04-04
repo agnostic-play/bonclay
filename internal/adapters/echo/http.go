@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
-	`github.com/agnostic-play/ditoo/internal/adapters/echo/handlers`
-	httpUtils2 `github.com/agnostic-play/ditoo/internal/adapters/echo/utils`
+	handler "github.com/agnostic-play/ditoo/internal/adapters/echo/handlers"
+	httpUtils2 "github.com/agnostic-play/ditoo/internal/adapters/echo/utils"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"

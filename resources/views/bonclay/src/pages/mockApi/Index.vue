@@ -6,6 +6,7 @@ import CreateCollectionSheet from '@/pages/mockApi/components/CreateCollectionSh
 import { computed, ref, watch } from 'vue'
 import client from "@/api/bonClayHttpClient";
 import { useRouter, useRoute } from 'vue-router'
+import { useSquadSession } from '@/composables/useSquadSession'
 
 interface Squad {
   id: string
@@ -27,8 +28,15 @@ const searchQuery = ref('')
 
 const router = useRouter()
 const route = useRoute()
+const { activeSquadId, activeSquadSlug } = useSquadSession()
+
+// Effective slug: prefer route param, fall back to session store
+const effectiveSlug = computed(() =>
+  route.params.slug ? String(route.params.slug) : (activeSquadSlug.value ?? undefined)
+)
+
 const go = (collectionSlug: string) => {
-  const parentSlug = String(route.params.slug || '')
+  const parentSlug = effectiveSlug.value || ''
   router.push({ name: 'MockApiTools-CollectionShow', params: { slug: parentSlug, collectionSlug } })
 }
 
@@ -56,9 +64,8 @@ const fetchSquadDetail = async (slug: string) => {
 }
 
 watch(
-  () => route.params.slug,
-  async (newSlug) => {
-    const slug = newSlug ? String(newSlug) : undefined
+  effectiveSlug,
+  async (slug) => {
     if (!slug) {
       squads.value = null
       return
@@ -69,9 +76,8 @@ watch(
 )
 
 const handleCollectionCreated = () => {
-  const slug = route.params.slug ? String(route.params.slug) : undefined
-  if (slug) {
-    fetchSquadDetail(slug)
+  if (effectiveSlug.value) {
+    fetchSquadDetail(effectiveSlug.value)
   }
 }
 
@@ -99,9 +105,8 @@ const filteredCollections = computed(() => {
             <div class="flex items-center justify-between">
               <h1 class="text-2xl font-semibold text-gray-900">Api Collection's</h1>
               <CreateCollectionSheet
-                v-if="route.params.slug"
-                :squad-id="squads?.id"
-                :squad-slug="String(route.params.slug)"
+                :squad-id="squads?.id || activeSquadId || undefined"
+                :squad-slug="effectiveSlug"
                 @created="handleCollectionCreated"
               />
             </div>
@@ -141,14 +146,19 @@ const filteredCollections = computed(() => {
 
               <!-- Empty State -->
               <div v-if="filteredCollections?.length === 0" class="text-center py-12">
-                <div class="text-gray-400 mb-2">
+                <div class="text-gray-400 mb-3">
                   <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
                 <h3 class="text-sm font-medium text-gray-900 mb-1">No collection found</h3>
-                <p class="text-sm text-gray-500">Have you select the squad? or try adjusting your search terms.</p>
+                <p class="text-sm text-gray-500 mb-4">Have you selected the squad? or try adjusting your search terms.</p>
+                <CreateCollectionSheet
+                  :squad-id="squads?.id || activeSquadId || undefined"
+                  :squad-slug="effectiveSlug"
+                  @created="handleCollectionCreated"
+                />
               </div>
             </div>
           </ScrollArea>
