@@ -2,8 +2,13 @@ import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import Index from "@/pages/mockApi/Index.vue";
 import ShowCollection from "@/pages/mockApi/ShowCollection.vue";
+import History from "@/pages/mockApi/History.vue";
 
 const routes: RouteRecordRaw[] = [
+    {
+        path: '/',
+        redirect: '/tools/mock-api',
+    },
     {
         path: '/tools',
         name: 'tools',
@@ -17,6 +22,11 @@ const routes: RouteRecordRaw[] = [
                         path: ':slug/collection/:collectionSlug',
                         name: 'MockApiTools-CollectionShow',
                         component: ShowCollection,
+                    },
+                    {
+                        path: ':slug/collection/:collectionSlug/history',
+                        name: 'MockApiTools-CollectionHistory',
+                        component: History,
                     },
                     {
                         path: ':slug?',

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import type { LucideIcon } from "lucide-vue-next"
-import { ChevronRight } from "lucide-vue-next"
+import { useRoute } from 'vue-router'
+import type { LucideIcon } from 'lucide-vue-next'
+import { ChevronRight } from 'lucide-vue-next'
 import {
   Collapsible,
   CollapsibleContent,
@@ -30,9 +31,8 @@ defineProps<{
     }[]
   }[]
 }>()
-  import { useRoute } from 'vue-router'
 
-  const route = useRoute()
+const route = useRoute()
 </script>
 
 <template>
@@ -57,8 +57,8 @@ defineProps<{
           <CollapsibleContent>
             <SidebarMenuSub>
               <SidebarMenuSubItem v-for="subItem in item.items" :key="subItem.title">
-                <SidebarMenuSubButton as-child >
-                  <RouterLink :to="{ name: subItem.routeName, params: route.params ? { slug: route.params.slug } : {} }" >
+                <SidebarMenuSubButton as-child>
+                  <RouterLink :to="{ name: subItem.routeName, params: route.params?.slug ? { slug: route.params.slug } : {} }">
                     <span>{{ subItem.title }}</span>
                   </RouterLink>
                 </SidebarMenuSubButton>

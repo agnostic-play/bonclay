@@ -7,6 +7,11 @@ app:
   baseURL: https://api-mockup.alexandria.allobank.local
   templatePath: ["./resources/views/layout/*.gohtml","./resources/views/modal/*.gohtml","./resources/views/pages/*.gohtml"]
   staticPath: "./resources/public/assets"
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
 database:
   host: localhost
   port: 3306

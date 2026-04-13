@@ -1,157 +1,210 @@
--- phpMyAdmin SQL Dump
--- version 5.2.0
--- https://www.phpmyadmin.net/
---
--- Host: mysql
--- Generation Time: Feb 03, 2023 at 02:38 AM
--- Server version: 8.0.32
--- PHP Version: 8.0.27
-SET
-    SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+-- =========================================
+-- GLOBAL SETTINGS
+-- =========================================
+SET NAMES utf8mb4;
+SET sql_mode = 'STRICT_ALL_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE';
 
-START TRANSACTION;
-
-SET
-    time_zone = "+00:00";
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */
-;
-
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */
-;
-
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */
-;
-
-/*!40101 SET NAMES utf8mb4 */
-;
-
---
--- Database: `bonclay`
---
--- --------------------------------------------------------
---
--- Table structure for table `collections`
---
-CREATE TABLE `collections` (
-    `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-    `squad_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-    `name` varchar(75) COLLATE utf8mb4_unicode_ci NOT NULL,
-    `baseURL` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-    `slug` varchar(125) COLLATE utf8mb4_unicode_ci NOT NULL,
-    `desc` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-    `docs` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    `deleted_at` timestamp NULL DEFAULT NULL
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
---
--- Table structure for table `endpoints`
---
-CREATE TABLE `endpoints` (
-    `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-    `category` varchar(75) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-    `collection_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-    `path` varchar(75) COLLATE utf8mb4_unicode_ci NOT NULL,
-    `desc` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-    `method` enum(
-        'GET',
-        'POST',
-        'PUT',
-        'PATCH',
-        'DELETE',
-        'OPTIONS',
-        'TRACE'
-    ) COLLATE utf8mb4_unicode_ci NOT NULL,
-    `active_scenario` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    `deleted_at` timestamp NULL DEFAULT NULL
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
---
--- Table structure for table `migrations`
---
-CREATE TABLE `migrations` (
-    `id` int UNSIGNED NOT NULL,
-    `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-    `batch` int NOT NULL
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
---
--- Table structure for table `scenario_response`
---
-CREATE TABLE `scenario_response` (
-    `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-    `endpoint_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-    `desc` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-    `status_header` int DEFAULT NULL,
-    `delay` tinyint DEFAULT NULL,
-    `body` text COLLATE utf8mb4_unicode_ci,
-    `header` json DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `deleted_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
---
--- Table structure for table `squads`
---
+-- =========================================
+-- TABLE: squads
+-- =========================================
 CREATE TABLE `squads` (
-    `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
-    `name` varchar(75) COLLATE utf8mb4_unicode_ci NOT NULL,
-    `slug` varchar(125) COLLATE utf8mb4_unicode_ci NOT NULL,
-    `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-    `desc` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-    `created_at` timestamp NULL DEFAULT NULL,
-    `updated_at` timestamp NULL DEFAULT NULL,
-    `deleted_at` timestamp NULL DEFAULT NULL
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+                          `id` CHAR(36) NOT NULL,
+                          `name` VARCHAR(75) NOT NULL,
+                          `slug` VARCHAR(125) NOT NULL,
+                          `password` VARCHAR(255) NOT NULL,
+                          `desc` VARCHAR(255),
+                          `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                          `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                          `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+                          PRIMARY KEY (`id`),
+                          UNIQUE KEY `uk_squads_slug` (`slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
---
--- Indexes for dumped tables
---
---
--- Indexes for table `migrations`
---
-ALTER TABLE
-    `migrations`
-ADD
-    PRIMARY KEY (`id`);
+-- =========================================
+-- TABLE: collections
+-- =========================================
+CREATE TABLE `collections` (
+                               `id` CHAR(36) NOT NULL,
+                               `squad_id` CHAR(36) NOT NULL,
+                               `name` VARCHAR(75) NOT NULL,
+                               `base_url` VARCHAR(255),
+                               `slug` VARCHAR(125) NOT NULL,
+                               `desc` VARCHAR(255),
+                               `docs` VARCHAR(255),
+                               `forward_proxy_url` VARCHAR(255),
+                               `is_proxy_enable` TINYINT(1) NOT NULL DEFAULT 0,
+                               `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                               `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                               `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+                               PRIMARY KEY (`id`),
+                               KEY `idx_collections_squad` (`squad_id`),
+                               UNIQUE KEY `uk_collections_slug` (`slug`),
+                               CONSTRAINT `fk_collections_squad`
+                                   FOREIGN KEY (`squad_id`) REFERENCES `squads`(`id`)
+                                       ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
---
--- AUTO_INCREMENT for dumped tables
---
---
--- AUTO_INCREMENT for table `migrations`
---
-ALTER TABLE
-    `migrations`
-MODIFY
-    `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+-- =========================================
+-- TABLE: custom_variables
+-- =========================================
+CREATE TABLE `custom_variables` (
+                                    `id` CHAR(36) NOT NULL,
+                                    `collection_id` CHAR(36),
+                                    `key` VARCHAR(255) NOT NULL,
+                                    `value` TEXT,
+                                    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                                    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+                                    PRIMARY KEY (`id`),
+                                    KEY `idx_cv_collection` (`collection_id`),
+                                    CONSTRAINT `fk_cv_collection`
+                                        FOREIGN KEY (`collection_id`) REFERENCES `collections`(`id`)
+                                            ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-COMMIT;
+-- =========================================
+-- TABLE: diagram_collections
+-- =========================================
+CREATE TABLE `diagram_collections` (
+                                       `id` CHAR(36) NOT NULL,
+                                       `name` VARCHAR(255) NOT NULL,
+                                       `description` TEXT,
+                                       `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                                       `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                       `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+                                       PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */
-;
+-- =========================================
+-- TABLE: diagrams
+-- =========================================
+CREATE TABLE `diagrams` (
+                            `id` CHAR(36) NOT NULL,
+                            `collection_id` CHAR(36) NOT NULL,
+                            `title` VARCHAR(255) NOT NULL,
+                            `description` TEXT,
+                            `syntax_type` VARCHAR(50) DEFAULT 'mermaid',
+                            `syntax` TEXT NOT NULL,
+                            `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                            `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                            `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+                            PRIMARY KEY (`id`),
+                            KEY `idx_diagrams_collection` (`collection_id`),
+                            CONSTRAINT `fk_diagrams_collection`
+                                FOREIGN KEY (`collection_id`) REFERENCES `collections`(`id`)
+                                    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */
-;
+-- =========================================
+-- TABLE: endpoints
+-- =========================================
+CREATE TABLE `endpoints` (
+                             `id` CHAR(36) NOT NULL,
+                             `category` VARCHAR(75),
+                             `collection_id` CHAR(36) NOT NULL,
+                             `path` VARCHAR(75) NOT NULL,
+                             `desc` VARCHAR(120),
+                             `method` ENUM('GET','POST','PUT','PATCH','DELETE','OPTIONS','TRACE') NOT NULL,
+                             `active_scenario` CHAR(36),
+                             `enable_response_intercept` TINYINT(1) NOT NULL DEFAULT 0,
+                             `delay` TINYINT,
+                             `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                             `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                             `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+                             PRIMARY KEY (`id`),
+                             KEY `idx_endpoints_collection` (`collection_id`),
+                             CONSTRAINT `fk_endpoints_collection`
+                                 FOREIGN KEY (`collection_id`) REFERENCES `collections`(`id`)
+                                     ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */
-;
+-- =========================================
+-- TABLE: scenario_response
+-- =========================================
+CREATE TABLE `scenario_response` (
+                                     `id` CHAR(36) NOT NULL,
+                                     `endpoint_id` CHAR(36) NOT NULL,
+                                     `desc` VARCHAR(120),
+                                     `status_header` INT,
+                                     `delay` TINYINT,
+                                     `body` TEXT,
+                                     `header` LONGTEXT,
+                                     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                                     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+                                     PRIMARY KEY (`id`),
+                                     KEY `idx_sr_endpoint` (`endpoint_id`),
+                                     CONSTRAINT `fk_sr_endpoint`
+                                         FOREIGN KEY (`endpoint_id`) REFERENCES `endpoints`(`id`)
+                                             ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE custom_variables (
-    id char(36) NOT NULL,
-    collection_id char(36) NULL,
-    `key` varchar(255) NOT NULL,
-    value TEXT NULL,
-    created_at timestamp NULL,
-    deleted_at timestamp NULL,
-    updated_at timestamp NULL
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+-- =========================================
+-- TRIGGERS (AUTO UUID)
+-- =========================================
+DELIMITER //
+
+CREATE TRIGGER bi_squads
+    BEFORE INSERT ON squads
+    FOR EACH ROW
+BEGIN
+    IF NEW.id IS NULL OR NEW.id = '' THEN
+        SET NEW.id = UUID();
+END IF;
+END//
+
+CREATE TRIGGER bi_collections
+    BEFORE INSERT ON collections
+    FOR EACH ROW
+BEGIN
+    IF NEW.id IS NULL OR NEW.id = '' THEN
+        SET NEW.id = UUID();
+END IF;
+END//
+
+CREATE TRIGGER bi_custom_variables
+    BEFORE INSERT ON custom_variables
+    FOR EACH ROW
+BEGIN
+    IF NEW.id IS NULL OR NEW.id = '' THEN
+        SET NEW.id = UUID();
+END IF;
+END//
+
+CREATE TRIGGER bi_diagram_collections
+    BEFORE INSERT ON diagram_collections
+    FOR EACH ROW
+BEGIN
+    IF NEW.id IS NULL OR NEW.id = '' THEN
+        SET NEW.id = UUID();
+END IF;
+END//
+
+CREATE TRIGGER bi_diagrams
+    BEFORE INSERT ON diagrams
+    FOR EACH ROW
+BEGIN
+    IF NEW.id IS NULL OR NEW.id = '' THEN
+        SET NEW.id = UUID();
+END IF;
+END//
+
+CREATE TRIGGER bi_endpoints
+    BEFORE INSERT ON endpoints
+    FOR EACH ROW
+BEGIN
+    IF NEW.id IS NULL OR NEW.id = '' THEN
+        SET NEW.id = UUID();
+END IF;
+END//
+
+CREATE TRIGGER bi_scenario_response
+    BEFORE INSERT ON scenario_response
+    FOR EACH ROW
+BEGIN
+    IF NEW.id IS NULL OR NEW.id = '' THEN
+        SET NEW.id = UUID();
+END IF;
+END//
+
+DELIMITER ;

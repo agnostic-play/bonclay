@@ -103,10 +103,12 @@ func (h baseCRUDHandlers[T]) getShow(c echo.Context) error {
 	if err != nil {
 		return respErr(c, http.StatusBadRequest, err)
 	}
+
 	item, err := h.services.Get(context.Background(), id)
 	if err != nil {
 		return respErr(c, http.StatusInternalServerError, err)
 	}
+
 	return respJSON(c, http.StatusOK, item)
 }
 

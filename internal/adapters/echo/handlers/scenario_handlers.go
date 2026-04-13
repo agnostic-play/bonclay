@@ -22,7 +22,7 @@ type scenarioHandlers struct {
 	serviceContainer services.ServiceContainer
 }
 
-// NewScenarioRoutes creates a new ScenarioHandlers instance
+// NewScenarioHandlers creates a new ScenarioHandlers instance
 func NewScenarioRoutes(
 	scenarioServices crud_services.BaseCRUDService[entities.ScenarioEntity],
 	serviceContainer services.ServiceContainer,

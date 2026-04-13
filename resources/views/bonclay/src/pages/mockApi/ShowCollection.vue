@@ -4,89 +4,82 @@ import { Card, CardContent } from '@/components/ui/card'
 import CollectionHeader from '@/pages/mockApi/components/CollectionHeader.vue'
 import ConfigurationSection from '@/pages/mockApi/components/ConfigurationSection.vue'
 import ApiCategoriesSection from '@/pages/mockApi/components/ApiCategoriesSection.vue'
-import { type EndpointByCategory, type Scenario } from '@/types/api.types'
-import client from "@/api/bonClayHttpClient";
-import { useRouter, useRoute } from 'vue-router'
+import EditCollectionDialog from '@/pages/mockApi/components/EditCollectionDialog.vue'
+import CreateEndpointDialog from '@/pages/mockApi/components/CreateEndpointDialog.vue'
+import { type CollectionDetail } from '@/types/api.types'
+import { getCollectionDetail } from '@/api'
+import { useRoute } from 'vue-router'
 
 const route = useRoute()
 
-const getCollectionDetail = async (slug: string): Promise<EndpointByCategory> => {
-  const res = await client.get<EndpointByCategory>(`/api/v2/collection/${slug}/endpoint_scenario`)
-  return res
-}
+const collection = ref<CollectionDetail | null>(null)
+const loading = ref(false)
+const error = ref<string | null>(null)
 
-const collectionDetail = ref<EndpointByCategory | null>(null);
-const loading = ref(false);
-const error = ref<string | null>(null);
+const fetchCollection = async (slug: string) => {
+  loading.value = true
+  try {
+    collection.value = await getCollectionDetail(slug)
+    error.value = null
+  } catch (err) {
+    error.value = 'Failed to fetch collection detail'
+    console.error(err)
+  } finally {
+    loading.value = false
+  }
+}
 
 watch(
   () => route.params.collectionSlug,
   async (newSlug) => {
     const slug = newSlug ? String(newSlug) : undefined
     if (!slug) {
-      collectionDetail.value = null
+      collection.value = null
       return
     }
-
-    loading.value = true
-    try {
-      const detail = await getCollectionDetail(slug)
-      collectionDetail.value = detail
-      error.value = null
-    } catch (err) {
-      error.value = 'Failed to fetch collection detail'
-      console.error(err)
-    } finally {
-      loading.value = false
-    }
+    await fetchCollection(slug)
   },
   { immediate: true }
 )
 
-// Configuration - these could come from collection metadata in the future
-const baseUrl = 'https://mock.com/test123123123123213'
-const documentationUrl = 'https://docs.example.com'
+const mockBaseUrl = computed(() => {
+  const apiBase: string = (import.meta.env as any).VITE_API_BASE_URL ?? ''
+  const origin = apiBase ? new URL(apiBase).origin : window.location.origin
+  const slug = collection.value?.slug || String(route.params.collectionSlug)
+  return `${origin}/mock/${slug}`
+})
 
-// Computed properties
 const totalEndpoints = computed(() => {
-  if (!collectionDetail.value) return 0
-  return Object.values(collectionDetail.value).reduce((acc, endpoints) => acc + endpoints.length, 0)
+  if (!collection.value) return 0
+  return Object.values(collection.value.endpoints).reduce((acc, eps) => acc + eps.length, 0)
 })
 
 const categoryCount = computed(() => {
-  if (!collectionDetail.value) return 0
-  return Object.keys(collectionDetail.value).length
+  if (!collection.value) return 0
+  return Object.keys(collection.value.endpoints).length
 })
 
 const activeScenarioCount = computed(() => {
-  if (!collectionDetail.value) return 0
+  if (!collection.value) return 0
   let count = 0
-  Object.values(collectionDetail.value).forEach(endpoints => {
-    endpoints.forEach(endpoint => {
-      if (endpoint.active_scenario) count++
-    })
+  Object.values(collection.value.endpoints).forEach(eps => {
+    eps.forEach(ep => { if (ep.active_scenario) count++ })
   })
   return count
 })
 
-// Event handlers
-const handleEditCollection = () => {
-  console.log('Editing collection')
-}
+const editDialogOpen = ref(false)
+const endpointDialogOpen = ref(false)
 
-const handleCreateNewEndpoint = () => {
-  console.log('Creating new endpoint')
-}
+const handleEditCollection = () => { editDialogOpen.value = true }
+const handleCreateNewEndpoint = () => { endpointDialogOpen.value = true }
 
-const handleScenarioUpdate = () => {
-  // Refresh collection data after scenario update
+const refresh = () => {
   const slug = route.params.collectionSlug ? String(route.params.collectionSlug) : undefined
-  if (slug) {
-    getCollectionDetail(slug).then(detail => {
-      collectionDetail.value = detail
-    })
-  }
+  if (slug) fetchCollection(slug)
 }
+
+const handleScenarioUpdate = refresh
 </script>
 
 <template>
@@ -102,40 +95,56 @@ const handleScenarioUpdate = () => {
             {{ error }}
           </div>
           
-          <div v-else-if="collectionDetail">
+          <div v-else-if="collection">
             <div class="p-8 px-4 py-0">
               <div class="space-y-4">
-                <CollectionHeader :total-endpoints="totalEndpoints" :active-scenario-count="activeScenarioCount"
-                  :category-count="categoryCount" @edit-collection="handleEditCollection"
-                  @create-new-endpoint="handleCreateNewEndpoint" />
+                <CollectionHeader
+                  :collection-id="collection.id"
+                  :collection-name="collection.name"
+                  :collection-desc="collection.desc"
+                  :total-endpoints="totalEndpoints"
+                  :active-scenario-count="activeScenarioCount"
+                  :category-count="categoryCount"
+                  :forward-proxy-url="collection.forward_proxy_url || undefined"
+                  :is-proxy-enable="collection.is_proxy_enable"
+                  @edit-collection="handleEditCollection"
+                  @create-new-endpoint="handleCreateNewEndpoint"
+                  @updated="refresh" />
 
-                <ConfigurationSection :base-url="baseUrl" :documentation-url="documentationUrl" />
+                <ConfigurationSection
+                  :collection-id="collection.id"
+                  :base-url="mockBaseUrl"
+                  :documentation-url="collection.docs" />
               </div>
             </div>
 
-            <ApiCategoriesSection :categories="collectionDetail"
-              @scenarios-updated="handleScenarioUpdate" />
+            <ApiCategoriesSection
+              :categories="collection.endpoints"
+              :base-url="mockBaseUrl"
+              :is-proxy-enable="collection.is_proxy_enable"
+              @scenarios-updated="handleScenarioUpdate"
+            />
           </div>
         </CardContent>
       </Card>
     </div>
+
+    <EditCollectionDialog
+      v-if="collection"
+      v-model:open="editDialogOpen"
+      :collection-id="collection.id"
+      :initial-name="collection.name"
+      :initial-desc="collection.desc"
+      :initial-docs="collection.docs"
+      :initial-forward-proxy-url="collection.forward_proxy_url"
+      @updated="refresh" />
+
+    <CreateEndpointDialog
+      v-if="collection"
+      v-model:open="endpointDialogOpen"
+      :collection-id="collection.id"
+      :existing-endpoints="Object.values(collection.endpoints).flat()"
+      @created="refresh" />
   </div>
 </template>
 
-<style scoped>
-@keyframes pulse {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.5;
-  }
-}
-
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-</style>

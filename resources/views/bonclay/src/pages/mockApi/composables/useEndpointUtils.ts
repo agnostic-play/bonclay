@@ -1,5 +1,7 @@
+import type { HttpMethod } from '@/types/api.types'
+
 export const useEndpointUtils = () => {
-    const getMethodColor = (method: string): string => {
+    const getMethodColor = (method: HttpMethod): string => {
         const colors: Record<string, string> = {
             GET: 'bg-green-500 hover:bg-green-600',
             POST: 'bg-blue-500 hover:bg-blue-600',
@@ -10,7 +12,7 @@ export const useEndpointUtils = () => {
         return colors[method] || 'bg-gray-500 hover:bg-gray-600'
     }
 
-    const getMethodBgColor = (method: string): string => {
+    const getMethodBgColor = (method: HttpMethod): string => {
         const colors: Record<string, string> = {
             GET: 'bg-green-300/10',
             POST: 'bg-blue-300/10',

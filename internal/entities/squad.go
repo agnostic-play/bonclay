@@ -1,5 +1,10 @@
 package entities
 
+import (
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
 // SquadEntity represents a squad in the system for API V2
 type SquadEntity struct {
 	BaseEntityWithID
@@ -10,26 +15,35 @@ type SquadEntity struct {
 	Desc     string `json:"desc,omitempty" gorm:"type:text"`
 }
 
-func (e SquadEntity) GetTableName() string {
+func (e *SquadEntity) GetFieldIdentifier() string {
+	return "id"
+}
+
+func (e *SquadEntity) BeforeCreate(tx *gorm.DB) (err error) {
+	e.ID = uuid.New()
+	return
+}
+
+func (e *SquadEntity) GetTableName() string {
 	return "squads"
 }
 
-func (e SquadEntity) GetTitle() string {
+func (e *SquadEntity) GetTitle() string {
 	return "Squad"
 }
 
-func (e SquadEntity) GetPreloadTables() []string {
+func (e *SquadEntity) GetPreloadTables() []string {
 	return []string{}
 }
 
-func (e SquadEntity) GetFieldForKeywords() []string {
+func (e *SquadEntity) GetFieldForKeywords() []string {
 	return []string{"name", "desc"}
 }
 
-func (e SquadEntity) GetExcludeFieldForUpdate() []string {
+func (e *SquadEntity) GetExcludeFieldForUpdate() []string {
 	return []string{"slug", "password"}
 }
 
-func (e SquadEntity) GetEntity() *SquadEntity {
-	return &e
+func (e *SquadEntity) GetEntity() *SquadEntity {
+	return e
 }

@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import client from '@/api/bonClayHttpClient'
+import { getSquadDetail, createCollection } from '@/api'
 import { useSquadSession } from '@/composables/useSquadSession'
 
 interface Props {
@@ -49,10 +49,10 @@ const resolveSquadId = async (): Promise<string | null> => {
   // Priority 1: explicit squad_id prop
   if (props.squadId) return props.squadId
 
-  // Priority 2: slug prop → fetch from API
+  // Priority 2: slug prop → fetch id from API
   if (props.squadSlug) {
     try {
-      const res = await client.get<any>(`/api/squad/detail/${props.squadSlug}`)
+      const res = await getSquadDetail(props.squadSlug)
       return res?.id || null
     } catch {
       return null
@@ -85,7 +85,7 @@ const handleSubmit = async () => {
       return
     }
 
-    await client.post('/api/v2/collections/create', {
+    await createCollection({
       name: form.value.name.trim(),
       desc: form.value.desc.trim(),
       squad_id: squadId,

@@ -12,26 +12,35 @@ type ScenarioEntity struct {
 	Delay        *int   `json:"delay" gorm:"column:delay"`
 }
 
-func (e ScenarioEntity) GetTableName() string {
+func (e *ScenarioEntity) GetTableName() string {
 	return "scenario_response"
 }
 
-func (e ScenarioEntity) GetTitle() string {
+// TableName implements GORM's Tabler interface so Preload resolves the correct table.
+func (e *ScenarioEntity) TableName() string {
+	return "scenario_response"
+}
+
+func (e *ScenarioEntity) GetTitle() string {
 	return "Scenario"
 }
 
-func (e ScenarioEntity) GetPreloadTables() []string {
+func (e *ScenarioEntity) GetPreloadTables() []string {
 	return []string{}
 }
 
-func (e ScenarioEntity) GetFieldForKeywords() []string {
+func (e *ScenarioEntity) GetFieldForKeywords() []string {
 	return []string{"desc"}
 }
 
-func (e ScenarioEntity) GetExcludeFieldForUpdate() []string {
+func (e *ScenarioEntity) GetExcludeFieldForUpdate() []string {
 	return []string{"endpoint_id"}
 }
 
-func (e ScenarioEntity) GetEntity() *ScenarioEntity {
-	return &e
+func (e *ScenarioEntity) GetEntity() *ScenarioEntity {
+	return e
+}
+
+func (e *ScenarioEntity) HookBeforeCreate() *ScenarioEntity {
+	return e
 }

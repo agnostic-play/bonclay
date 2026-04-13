@@ -38,8 +38,8 @@ func (h handlers) viewShowCollection(ctx echo.Context) error {
 	collection = collResult.List[0]
 
 	endpointScenario, _ := h.serviceContainer.GetEndpointScenarioService().GetEndpointScenario(c, ctx.Param("collectionSlug"))
-	if len(endpointScenario) > 0 {
-		endpoints = endpointScenario
+	if len(endpointScenario.Endpoints) > 0 {
+		endpoints = endpointScenario.Endpoints
 	}
 
 	return h.render(ctx, "squad_show", map[string]interface{}{

@@ -75,22 +75,22 @@ func (r *baseRepository[T]) GetList(ctx context.Context, paginationQuery *pagina
 }
 
 func (r *baseRepository[T]) Create(ctx context.Context, entity T) (T, error) {
-	var result T
-
 	exec := r.dbClient.client(ctx).
 		Model(r.ent.GetEntity()).
 		Table(r.ent.GetTableName()).
 		Create(&entity)
 
 	if exec.Error != nil {
-		return result, exec.Error
+		var zero T
+		return zero, exec.Error
 	}
 
 	if exec.RowsAffected < 1 {
-		return result, fmt.Errorf("%s | failed to insert entity", r.ent.GetTitle())
+		var zero T
+		return zero, fmt.Errorf("%s | failed to insert entity", r.ent.GetTitle())
 	}
 
-	return result, nil
+	return entity, nil
 }
 
 func (r *baseRepository[T]) Get(ctx context.Context, id string) (T, error) {

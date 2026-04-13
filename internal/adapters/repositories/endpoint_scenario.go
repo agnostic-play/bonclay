@@ -12,11 +12,24 @@ import (
 // EndpointScenario - join struct for endpoint with scenarios
 type EndpointScenario struct {
 	entities.EndpointEntity
-	ScenarioResponse []entities.ScenarioEntity `json:"scenario_response" gorm:"foreignKey:endpoint_id"`
+	ScenarioResponse []entities.ScenarioEntity `json:"scenario_response" gorm:"foreignKey:EndpointID"`
 }
 
 func (EndpointScenario) TableName() string {
 	return "endpoints"
+}
+
+// CollectionDetailResponse is the unified response for the collection detail endpoint.
+// It includes collection metadata and endpoints grouped by category.
+type CollectionDetailResponse struct {
+	ID              string                        `json:"id"`
+	Name            string                        `json:"name"`
+	Slug            string                        `json:"slug"`
+	Desc            string                        `json:"desc"`
+	Docs            string                        `json:"docs"`
+	ForwardProxyURL string                        `json:"forward_proxy_url"`
+	IsProxyEnable   *bool                         `json:"is_proxy_enable"`
+	Endpoints       map[string][]EndpointScenario `json:"endpoints"`
 }
 
 // EndpointScenarioRepoInterface - custom operations for endpoint-scenario management

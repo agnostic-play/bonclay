@@ -1,7 +1,10 @@
 package services
 
 import (
-	repository2 `github.com/agnostic-play/ditoo/internal/adapters/repositories`
+	"fmt"
+
+	redisclient "github.com/agnostic-play/ditoo/internal/adapters/redis"
+	repository2 "github.com/agnostic-play/ditoo/internal/adapters/repositories"
 	"github.com/agnostic-play/ditoo/internal/config"
 	api_mock_services "github.com/agnostic-play/ditoo/internal/services/api-mock-services"
 	common_services "github.com/agnostic-play/ditoo/internal/services/common-services"
@@ -17,6 +20,7 @@ type ServiceContainer interface {
 	GetMockService() api_mock_services.MockService
 	GetEndpointScenarioService() api_mock_services.EndpointScenarioService
 	GetCustomVariableService() api_mock_services.CustomVariableService
+	GetHistoryService() api_mock_services.HistoryService
 
 	// Common Services
 	GetEncryptionService() common_services.EncryptionService
@@ -27,8 +31,13 @@ func NewServiceContainer(
 	repoContainer repository2.RepoContainer,
 	dbClient repository2.DBClient,
 ) ServiceContainer {
-	// Create CRUD services first since they're used by api-mock-services
 	crudServices := crud_services.NewCRUDServices(dbClient)
+
+	redis := redisclient.NewRedisClient(
+		fmt.Sprintf("%s:%s", cfg.Redis.Host, cfg.Redis.Port),
+		cfg.Redis.Password,
+		cfg.Redis.DB,
+	)
 
 	return &serviceContainer{
 		crudServices: crudServices,
@@ -47,6 +56,7 @@ func NewServiceContainer(
 			crudServices.CollectionServices,
 			repoContainer,
 		),
+		historyService:    api_mock_services.NewHistoryService(redis),
 		encryptionService: common_services.NewEncryptionService(),
 		config:            cfg,
 	}
@@ -57,6 +67,7 @@ type serviceContainer struct {
 	mockService             api_mock_services.MockService
 	endpointScenarioService api_mock_services.EndpointScenarioService
 	customVariableService   api_mock_services.CustomVariableService
+	historyService          api_mock_services.HistoryService
 	encryptionService       common_services.EncryptionService
 	config                  *config.Config
 }
@@ -75,6 +86,10 @@ func (c *serviceContainer) GetEndpointScenarioService() api_mock_services.Endpoi
 
 func (c *serviceContainer) GetCustomVariableService() api_mock_services.CustomVariableService {
 	return c.customVariableService
+}
+
+func (c *serviceContainer) GetHistoryService() api_mock_services.HistoryService {
+	return c.historyService
 }
 
 func (c *serviceContainer) GetEncryptionService() common_services.EncryptionService {

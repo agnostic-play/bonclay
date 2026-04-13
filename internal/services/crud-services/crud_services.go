@@ -18,13 +18,13 @@ type Services struct {
 
 func NewCRUDServices(dbClient repositories.DBClient) *Services {
 	return &Services{
-		DiagramCollectionServices: NewBaseCRUDServices(new(entities.DiagramCollectionEntity), dbClient),
-		DiagramServices:           NewBaseCRUDServices(new(entities.DiagramEntity), dbClient),
+		DiagramCollectionServices: NewBaseCRUDServices[entities.DiagramCollectionEntity](new(entities.DiagramCollectionEntity), dbClient),
+		DiagramServices:           NewBaseCRUDServices[entities.DiagramEntity](new(entities.DiagramEntity), dbClient),
 
 		// V2 API Services
-		SquadServices:      NewBaseCRUDServices(new(entities.SquadEntity), dbClient),
-		CollectionServices: NewBaseCRUDServices(new(entities.CollectionEntity), dbClient),
-		EndpointServices:   NewBaseCRUDServices(new(entities.EndpointEntity), dbClient),
-		ScenarioServices:   NewBaseCRUDServices(new(entities.ScenarioEntity), dbClient),
+		SquadServices:      NewBaseCRUDServices[entities.SquadEntity](new(entities.SquadEntity), dbClient),
+		CollectionServices: NewBaseCRUDServices[entities.CollectionEntity](new(entities.CollectionEntity), dbClient),
+		EndpointServices:   NewBaseCRUDServices[entities.EndpointEntity](new(entities.EndpointEntity), dbClient),
+		ScenarioServices:   NewBaseCRUDServices[entities.ScenarioEntity](new(entities.ScenarioEntity), dbClient),
 	}
 }

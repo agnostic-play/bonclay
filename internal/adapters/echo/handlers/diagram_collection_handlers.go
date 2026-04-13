@@ -19,7 +19,7 @@ type diagramCollectionHandlers struct {
 	diagramServices         crud_services.BaseCRUDService[entities.DiagramEntity]
 }
 
-func NewDiagramCollectionRoutes(diagramCollectionServices crud_services.BaseCRUDService[entities.DiagramCollectionEntity], diagramService crud_services.BaseCRUDService[entities.DiagramEntity]) BaseCRUDHandlers[entities.DiagramCollectionEntity] {
+func NewDiagramCollectionHandlers(diagramCollectionServices crud_services.BaseCRUDService[entities.DiagramCollectionEntity], diagramService crud_services.BaseCRUDService[entities.DiagramEntity]) BaseCRUDHandlers[entities.DiagramCollectionEntity] {
 	return &diagramCollectionHandlers{
 		diagramCollectionRoutes: NewBaseCRUDHandlers(diagramCollectionServices),
 		diagramServices:         diagramService,

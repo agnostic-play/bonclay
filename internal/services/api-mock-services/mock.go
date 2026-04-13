@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"reflect"
+	"regexp"
 	"strings"
 
 	repository2 `github.com/agnostic-play/ditoo/internal/adapters/repositories`
@@ -55,34 +56,52 @@ func (s *mockService) MockAPI(echoCtx echo.Context, collectionSlug, method, apiP
 	collection := collResult.List[0]
 
 	// Get endpoint mock configuration using repository
-	endpoint, err := s.repoContainer.GetEndpointRepo().GetEndpointMock(ctx, collection.ID.String(), method, path)
+	listEndpoint, err := s.repoContainer.GetEndpointRepo().GetListEndpointByCollectionID(ctx, collection.ID.String(), method)
 	if err != nil {
 		return MockEntityRes{}, fmt.Errorf("failed to get endpoint mock: %w", err)
 	}
 
+	if listEndpoint == nil || len(listEndpoint) < 1 {
+		return MockEntityRes{}, fmt.Errorf("endpoint mock not found")
+	}
+
+	var matchedEndpoint *entities.EndpointEntity
+	for _, data := range listEndpoint {
+		re := regexp.MustCompile(data.Path)
+		if re.MatchString(path) {
+			matchedEndpoint = &data
+			break
+		}
+	}
+
+	if matchedEndpoint == nil {
+		return MockEntityRes{}, fmt.Errorf("endpoint mock not found")
+	}
+
+	endpoint := matchedEndpoint
 	var mockScenario MockEntityRes
 
 	// Handle proxy forwarding if enabled
-	if collection.IsProxyEnable && collection.ForwardProxyURL != "" && endpoint.ActiveScenario == "" {
-		proxyResponse, err := s.forwardToProxy(echoCtx, collection.ForwardProxyURL, path)
+	if collection.IsProxyEnable != nil && *collection.IsProxyEnable && collection.ForwardProxyURL != "" && endpoint.ActiveScenario == "" {
+		proxyResponse, err := s.forwardToProxy(echoCtx, *endpoint, collection.ForwardProxyURL, path)
 		if err != nil {
 			return MockEntityRes{}, fmt.Errorf("proxy forwarding failed: %w", err)
 		}
 
-		if endpoint.ActiveScenario == "" {
-			return proxyResponse, nil
+		mockScenario = proxyResponse
+	}
+
+	if endpoint.ActiveScenario != "" {
+		// Get scenario using CRUD service
+		scenario, err := s.scenarioService.Get(ctx, endpoint.ActiveScenario)
+		if err != nil {
+			return MockEntityRes{}, fmt.Errorf("failed to get scenario: %w", err)
 		}
-	}
 
-	// Get scenario using CRUD service
-	scenario, err := s.scenarioService.Get(ctx, endpoint.ActiveScenario)
-	if err != nil {
-		return MockEntityRes{}, fmt.Errorf("failed to get scenario: %w", err)
-	}
-
-	// Convert scenario to mock response structure
-	if err := convertStruct(scenario, &mockScenario); err != nil {
-		return MockEntityRes{}, fmt.Errorf("failed to convert scenario: %w", err)
+		// Convert scenario to mock response structure
+		if err := convertStruct(scenario, &mockScenario); err != nil {
+			return MockEntityRes{}, fmt.Errorf("failed to convert scenario: %w", err)
+		}
 	}
 
 	// Apply custom variables using repository
@@ -97,7 +116,7 @@ func (s *mockService) MockAPI(echoCtx echo.Context, collectionSlug, method, apiP
 }
 
 // forwardToProxy forwards the request to a proxy server
-func (s *mockService) forwardToProxy(echoCtx echo.Context, proxyURL, path string) (MockEntityRes, error) {
+func (s *mockService) forwardToProxy(echoCtx echo.Context, endpoint entities.EndpointEntity, proxyURL, path string) (MockEntityRes, error) {
 	targetURL := fmt.Sprintf("%s%s", proxyURL, path)
 
 	client := &http.Client{
@@ -150,8 +169,10 @@ func (s *mockService) forwardToProxy(echoCtx echo.Context, proxyURL, path string
 	copyHeaders(resp.Header, proxyHeaders)
 
 	return MockEntityRes{
+		EndpointID:          endpoint.ID.String(),
 		ProxyIsEnabled:      true,
 		StatusHeader:        resp.StatusCode,
+		Delay:               endpoint.Delay,
 		ProxyResponseHeader: proxyHeaders,
 		ProxyResponseBody:   bodyBytes,
 	}, nil

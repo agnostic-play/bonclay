@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import client from '@/api/bonClayHttpClient'
+import { createSquad } from '@/api'
 
 const emit = defineEmits<{
   created: []
@@ -53,7 +53,7 @@ const handleSubmit = async () => {
   errorMessage.value = null
 
   try {
-    await client.post('/api/v2/squads/create', {
+    await createSquad({
       name: form.value.name.trim(),
       desc: form.value.desc.trim(),
     })

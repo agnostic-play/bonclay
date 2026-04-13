@@ -12,7 +12,7 @@ import (
 )
 
 type EndpointScenarioService interface {
-	GetEndpointScenario(ctx context.Context, slug string) (map[string][]repository2.EndpointScenario, error)
+	GetEndpointScenario(ctx context.Context, slug string) (repository2.CollectionDetailResponse, error)
 	SetActiveResponse(ctx context.Context, req SetActiveScenarioReq) error
 	RemoveScenario(ctx context.Context, req SetActiveScenarioReq) error
 }
@@ -74,29 +74,40 @@ func (s *endpointScenarioService) RemoveScenario(ctx context.Context, req SetAct
 	return nil
 }
 
-func (s *endpointScenarioService) GetEndpointScenario(ctx context.Context, slug string) (map[string][]repository2.EndpointScenario, error) {
-	resp := make(map[string][]repository2.EndpointScenario)
+func (s *endpointScenarioService) GetEndpointScenario(ctx context.Context, slug string) (repository2.CollectionDetailResponse, error) {
+	empty := repository2.CollectionDetailResponse{}
 
-	// Get collection by slug using CRUD service
+	// Try slug first; fall back to ID for collections that have no slug yet
 	collQuery := &pagination.ListQuery{ShowAll: true, Filters: map[string]interface{}{"slug = ?": slug}}
 	collResult, err := s.collectionService.GetList(ctx, collQuery)
 	if err != nil || len(collResult.List) == 0 {
-		return map[string][]repository2.EndpointScenario{}, fmt.Errorf("collection not found")
+		collQuery = &pagination.ListQuery{ShowAll: true, Filters: map[string]interface{}{"id = ?": slug}}
+		collResult, err = s.collectionService.GetList(ctx, collQuery)
+		if err != nil || len(collResult.List) == 0 {
+			return empty, fmt.Errorf("collection not found")
+		}
 	}
 	collection := collResult.List[0]
 
 	// Get endpoint scenarios using repository
 	endpoints, err := s.repoContainer.GetEndpointScenarioRepo().GetListEndpointScenario(ctx, collection.ID.String())
 	if err != nil {
-		return map[string][]repository2.EndpointScenario{}, err
+		return empty, err
 	}
 
+	grouped := make(map[string][]repository2.EndpointScenario)
 	for _, val := range endpoints {
-		if _, ok := resp[val.Category]; !ok {
-			resp[val.Category] = []repository2.EndpointScenario{}
-		}
-		resp[val.Category] = append(resp[val.Category], val)
+		grouped[val.Category] = append(grouped[val.Category], val)
 	}
 
-	return resp, nil
+	return repository2.CollectionDetailResponse{
+		ID:              collection.ID.String(),
+		Name:            collection.Name,
+		Slug:            collection.Slug,
+		Desc:            collection.Desc,
+		Docs:            collection.Docs,
+		ForwardProxyURL: collection.ForwardProxyURL,
+		IsProxyEnable:   collection.IsProxyEnable,
+		Endpoints:       grouped,
+	}, nil
 }

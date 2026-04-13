@@ -13,6 +13,7 @@ import (
 type EndpointRepoInterface interface {
 	BaseCRUDRepo[entities.EndpointEntity]
 	GetEndpointMock(ctx context.Context, collectionID, method, path string) (entities.EndpointEntity, error)
+	GetListEndpointByCollectionID(ctx context.Context, collectionID, method string) ([]entities.EndpointEntity, error)
 }
 
 type endpointRepository struct {
@@ -41,6 +42,24 @@ func (r *endpointRepository) GetEndpointMock(ctx context.Context, collectionID, 
 			return entities.EndpointEntity{}, fmt.Errorf("endpoint not found")
 		}
 		return entities.EndpointEntity{}, fmt.Errorf("query error: %s", exec.Error)
+	}
+
+	return entity, nil
+}
+
+func (r *endpointRepository) GetListEndpointByCollectionID(ctx context.Context, collectionID, method string) ([]entities.EndpointEntity, error) {
+	var entity []entities.EndpointEntity
+
+	exec := r.dbClient.client(ctx).Table("endpoints").
+		Where("collection_id=?", collectionID).
+		Where("method=?", method).
+		Find(&entity)
+	if exec.Error != nil {
+		if errors.Is(exec.Error, gorm.ErrRecordNotFound) {
+			return []entities.EndpointEntity{}, fmt.Errorf("endpoint not found")
+		}
+
+		return []entities.EndpointEntity{}, fmt.Errorf("query error: %s", exec.Error)
 	}
 
 	return entity, nil

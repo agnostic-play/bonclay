@@ -11,50 +11,50 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// CollectionRoutes extends BaseCRUDHandlers with collection-specific endpoints
-type CollectionRoutes interface {
+// CollectionHandlers extends BaseCRUDHandlers with collection-specific endpoints
+type CollectionHandlers interface {
 	BaseCRUDHandlers[entities.CollectionEntity]
 }
 
-type collectionRoutes struct {
-	baseCRUDRoutes   BaseCRUDHandlers[entities.CollectionEntity]
+type collectionHandlers struct {
+	baseCRUDHandlers BaseCRUDHandlers[entities.CollectionEntity]
 	endpointServices crud_services.BaseCRUDService[entities.EndpointEntity]
 	serviceContainer services.ServiceContainer
 }
 
-// NewCollectionRoutes creates a new CollectionRoutes instance
-func NewCollectionRoutes(
+// NewCollectionHandlers creates a new CollectionRoutes instance
+func NewCollectionHandlers(
 	collectionServices crud_services.BaseCRUDService[entities.CollectionEntity],
 	endpointServices crud_services.BaseCRUDService[entities.EndpointEntity],
 	serviceContainer services.ServiceContainer,
 ) BaseCRUDHandlers[entities.CollectionEntity] {
-	return &collectionRoutes{
-		baseCRUDRoutes:   NewBaseCRUDHandlers(collectionServices),
+	return &collectionHandlers{
+		baseCRUDHandlers: NewBaseCRUDHandlers(collectionServices),
 		endpointServices: endpointServices,
 		serviceContainer: serviceContainer,
 	}
 }
 
-func (h collectionRoutes) RegisterRoutes(e *echo.Group) {
+func (h collectionHandlers) RegisterRoutes(e *echo.Group) {
 	// Register standard CRUD routes
-	h.baseCRUDRoutes.RegisterRoutes(e)
+	h.baseCRUDHandlers.RegisterRoutes(e)
 
 	// Register custom routes
-	path := h.baseCRUDRoutes.GetPath()
+	path := h.baseCRUDHandlers.GetPath()
 	e.GET(fmt.Sprintf("/%s/:id/endpoints", path), h.getEndpoints)
 	e.GET(fmt.Sprintf("/%s/:slug/endpoint_scenario", path), h.getEndpointScenario)
 }
 
-func (h collectionRoutes) GetPath() string {
-	return h.baseCRUDRoutes.GetPath()
+func (h collectionHandlers) GetPath() string {
+	return h.baseCRUDHandlers.GetPath()
 }
 
-func (h collectionRoutes) GetServices() crud_services.BaseCRUDService[entities.CollectionEntity] {
-	return h.baseCRUDRoutes.GetServices()
+func (h collectionHandlers) GetServices() crud_services.BaseCRUDService[entities.CollectionEntity] {
+	return h.baseCRUDHandlers.GetServices()
 }
 
 // getEndpoints returns all endpoints for a collection
-func (h collectionRoutes) getEndpoints(ctx echo.Context) error {
+func (h collectionHandlers) getEndpoints(ctx echo.Context) error {
 	id, err := validateUUID(ctx)
 	if err != nil {
 		return respErr(ctx, http.StatusBadRequest, err)
@@ -78,7 +78,7 @@ func (h collectionRoutes) getEndpoints(ctx echo.Context) error {
 }
 
 // getEndpointScenario returns endpoint scenarios for a collection by slug
-func (h collectionRoutes) getEndpointScenario(ctx echo.Context) error {
+func (h collectionHandlers) getEndpointScenario(ctx echo.Context) error {
 	slug := ctx.Param("slug")
 	if slug == "" {
 		return respErr(ctx, http.StatusBadRequest, fmt.Errorf("slug is required"))

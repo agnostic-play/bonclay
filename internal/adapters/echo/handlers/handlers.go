@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"fmt"
-
 	"github.com/agnostic-play/ditoo/internal/services"
 	"github.com/labstack/echo/v4"
 )
@@ -36,16 +34,16 @@ func (h handlers) Routes() {
 	crudServices := h.serviceContainer.GetCRUDServices()
 
 	diagramHandlers := NewBaseCRUDHandlers(crudServices.DiagramServices)
-	endpointHandlers := NewBaseCRUDHandlers(crudServices.EndpointServices)
+	endpointHandlers := NewEndpointHandlers(crudServices.EndpointServices)
 	squadHandlers := NewBaseCRUDHandlers(crudServices.SquadServices)
-	diagramCollHandlers := NewDiagramCollectionRoutes(crudServices.DiagramCollectionServices, crudServices.DiagramServices)
-	collectionHandlers := NewCollectionRoutes(crudServices.CollectionServices, crudServices.EndpointServices, h.serviceContainer)
+	diagramCollHandlers := NewDiagramCollectionHandlers(crudServices.DiagramCollectionServices, crudServices.DiagramServices)
+	collectionHandler := NewCollectionHandlers(crudServices.CollectionServices, crudServices.EndpointServices, h.serviceContainer)
 	scenarioHandler := NewScenarioRoutes(crudServices.ScenarioServices, h.serviceContainer)
 
 	// Legacy routes (not yet migrated to v2)
 	h.server.GET("/api/collection/custom_variable/list/:collectionSlug", h.getCustomVariable)
 	h.server.POST("/api/collection/custom_variable/create", h.actCreateCustomVariable)
-	h.server.GET("/api/squad/detail/:slug", h.getSquadDetail)
+
 	h.server.Any("/mock/:collection/:path", h.actMock)
 
 	h.server.GET("/share/diagram/:url", h.viewShareDiagram)
@@ -59,18 +57,18 @@ func (h handlers) Routes() {
 	apiV2 := h.server.Group("/api/v2")
 	diagramHandlers.RegisterRoutes(apiV2)
 	endpointHandlers.RegisterRoutes(apiV2)
-	endpointHandlers.RegisterRoutes(apiV2)
 	squadHandlers.RegisterRoutes(apiV2)
 	diagramCollHandlers.RegisterRoutes(apiV2)
-	collectionHandlers.RegisterRoutes(apiV2)
+	collectionHandler.RegisterRoutes(apiV2)
 	scenarioHandler.RegisterRoutes(apiV2)
+
+	apiV2.GET("/squad/detail/:slug", h.getSquadDetail)
+
+	apiV2.GET("/collections/:slug/history", h.getHistory)
+	apiV2.DELETE("/collections/:slug/history", h.clearHistory)
 
 	h.server.Static("/v2/assets", "resources/views/bonclay/public/bonclay/assets")
 	h.server.File("/v2/", "resources/views/bonclay/public/bonclay/index.html")
 	h.server.File("/v2/*", "resources/views/bonclay/public/bonclay/index.html")
 
-	fmt.Println("endpoints ===")
-	for _, r := range h.server.Routes() {
-		fmt.Println(r.Method, r.Path, r.Name)
-	}
 }
