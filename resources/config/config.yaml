@@ -8,7 +8,7 @@ app:
   templatePath: ["./resources/views/layout/*.gohtml","./resources/views/modal/*.gohtml","./resources/views/pages/*.gohtml"]
   staticPath: "./resources/public/assets"
 redis:
-  host: localhost
+  host: 10.8.200.39
   port: 6379
   password: ""
   db: 0

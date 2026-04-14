@@ -5,19 +5,17 @@ ARG GO_VERSION=1.23.9-alpine3.20
 # ============================================
 FROM honolulu.allobank.local/allodevops/node:22-alpine3.22 AS frontend-builder
 
-RUN npm config set registry http://california.allobank.local:8081/repository/npm-central/ \
- && corepack enable \
- && pnpm config set registry http://california.allobank.local:8081/repository/npm-central/
+RUN npm config set registry http://california.allobank.local:8081/repository/npm-central/
 
 WORKDIR /frontend
 
 # Install deps first for better layer caching
-COPY resources/views/bonclay/package.json resources/views/bonclay/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+COPY resources/views/bonclay/package.json ./
+RUN npm install
 
 # Copy source and build
 COPY resources/views/bonclay/ ./
-RUN pnpm run build
+RUN npm run build
 
 # ============================================
 # Stage 2: Go builder
