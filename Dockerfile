@@ -5,7 +5,8 @@ ARG GO_VERSION=1.23.9-alpine3.20
 # ============================================
 FROM honolulu.allobank.local/allodevops/node:22-alpine3.22 AS frontend-builder
 
-RUN corepack enable \
+RUN npm config set registry http://california.allobank.local:8081/repository/npm-central/ \
+ && corepack enable \
  && pnpm config set registry http://california.allobank.local:8081/repository/npm-central/
 
 WORKDIR /frontend
