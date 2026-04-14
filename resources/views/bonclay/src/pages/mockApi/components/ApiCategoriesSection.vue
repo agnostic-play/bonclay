@@ -42,8 +42,8 @@ const handleAccordionChange = (categoryId: string, value: string | null) => {
         type="single"
         class="w-full space-y-2"
         collapsible
-        :model-value="openItems[index] ?? null"
-        @update:model-value="(val) => handleAccordionChange(index, val)"
+        :model-value="openItems[index] ?? undefined"
+        @update:model-value="(val) => handleAccordionChange(index, (val as string) ?? null)"
       >
         <EndpointAccordionItem
           v-for="endpoint in category"

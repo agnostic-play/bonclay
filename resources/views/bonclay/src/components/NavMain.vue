@@ -27,7 +27,7 @@ defineProps<{
     items?: {
       routeName: string
       title: string
-      url: string
+      url?: string
     }[]
   }[]
 }>()

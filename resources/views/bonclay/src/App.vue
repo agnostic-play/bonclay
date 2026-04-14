@@ -1,13 +1,12 @@
 
 <script setup lang="ts">
 import AppSidebar from "@/components/AppSidebar.vue"
+import SelectSquadModal from "@/components/SelectSquadModal.vue"
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -15,13 +14,11 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import {useRoute} from "vue-router";
-
-const route = useRoute()
 </script>
 
 <template>
   <SidebarProvider>
+    <SelectSquadModal />
     <AppSidebar />
     <SidebarInset>
       <header class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">

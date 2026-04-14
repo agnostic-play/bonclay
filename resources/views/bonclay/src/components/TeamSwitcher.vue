@@ -32,31 +32,15 @@ const createSquadRef = ref<InstanceType<typeof CreateSquadSheet> | null>(null)
 // The squad shown in the trigger button. Initialised from session if available.
 const activeTeam = ref(activeSquad.value ? squads.value.find(s => s.slug === activeSquad.value!.slug) ?? null : null)
 
-// When the squad list arrives (or changes), restore the session selection or
-// fall back to the first squad.
+// When the squad list arrives, restore the active team from session.
+// Initial selection is handled by SelectSquadModal.
 watch(
   squads,
   (list) => {
     if (!Array.isArray(list) || list.length === 0) return
-
-    // Prefer whatever is already in session
     if (activeSquad.value?.slug) {
       const match = list.find(s => s.slug === activeSquad.value!.slug)
-      if (match) {
-        activeTeam.value = match
-        return
-      }
-    }
-
-    // Nothing in session → default to first and save it
-    if (!activeTeam.value) {
-      activeTeam.value = list[0]
-      setActiveSquad({
-        id: list[0].id,
-        slug: list[0].slug,
-        name: list[0].name,
-        plan: list[0].plan,
-      })
+      if (match) activeTeam.value = match
     }
   },
   { immediate: true }
