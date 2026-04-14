@@ -47,6 +47,6 @@ COPY --from=go-builder /app/resources ./resources
 #              File("/v2/*", "resources/views/bonclay/public/bonclay/index.html")
 COPY --from=frontend-builder /frontend/dist/ ./resources/views/bonclay/public/bonclay/
 
-EXPOSE ${APP_PORT}
+EXPOSE 6106
 
 CMD ["./runner"]

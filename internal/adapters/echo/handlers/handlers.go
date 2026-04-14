@@ -24,9 +24,12 @@ func NewSetupHandlers(server *echo.Echo, baseURL string, container services.Serv
 }
 
 func (h handlers) Routes() {
-	h.server.GET("/", func(ctx echo.Context) error {
-		return h.render(ctx, "squadIndex", nil)
-	})
+	// h.server.GET("/", func(ctx echo.Context) error {
+	// 	return h.render(ctx, "squadIndex", nil)
+	// })
+	h.server.Static("/assets", "resources/views/bonclay/public/bonclay/assets")
+	h.server.File("/", "resources/views/bonclay/public/bonclay/index.html")
+	h.server.File("/*", "resources/views/bonclay/public/bonclay/index.html")
 	h.server.GET("/ping", func(c echo.Context) error {
 		return c.JSON(200, "hello :)")
 	}).Name = "ping"
@@ -50,9 +53,9 @@ func (h handlers) Routes() {
 	h.server.GET("/squad/:slug", h.viewShowSquad)
 	h.server.GET("/squad/:slug/collection/:collectionSlug", h.viewShowCollection)
 
-	//h.server.Static("/v2/assets", "resources/views/spa/dist/assets")
-	//h.server.File("/v2", "resources/views/spa/dist/index.html")
-	//h.server.File("/v2/*", "resources/views/spa/dist/index.html")
+	// h.server.Static("/v2/assets", "resources/views/spa/dist/assets")
+	// h.server.File("/v2", "resources/views/spa/dist/index.html")
+	// h.server.File("/v2/*", "resources/views/spa/dist/index.html")
 
 	apiV2 := h.server.Group("/api/v2")
 	diagramHandlers.RegisterRoutes(apiV2)
@@ -66,9 +69,5 @@ func (h handlers) Routes() {
 
 	apiV2.GET("/collections/:slug/history", h.getHistory)
 	apiV2.DELETE("/collections/:slug/history", h.clearHistory)
-
-	h.server.Static("/v2/assets", "resources/views/bonclay/public/bonclay/assets")
-	h.server.File("/v2/", "resources/views/bonclay/public/bonclay/index.html")
-	h.server.File("/v2/*", "resources/views/bonclay/public/bonclay/index.html")
 
 }
