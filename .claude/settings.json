@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx shadcn-vue@latest add textarea select combobox --yes)"
+    ]
+  }
+}

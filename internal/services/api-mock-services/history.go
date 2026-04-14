@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	historyTTL      = 24 * time.Hour
+	historyTTL      = 1 * time.Hour
 	historyMaxItems = 100
 )
 
