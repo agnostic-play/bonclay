@@ -22,7 +22,7 @@ RUN pnpm run build
 # ============================================
 FROM honolulu.allobank.local/allodevops/golang:${GO_VERSION} AS go-builder
 
-ENV GOPROXY=http://california.allobank.local:8081/repository/golang-proxy
+ENV GOPROXY=http://california.allobank.local:8081/repository/golang-hosted
 
 WORKDIR /app
 COPY . .

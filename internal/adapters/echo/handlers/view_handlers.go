@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/agnostic-play/ditoo/internal/common/pagination"
+	"berlin.allobank.com/tools/bonclay/internal/common/pagination"
 	"github.com/labstack/echo/v4"
 )
 

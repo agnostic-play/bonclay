@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/agnostic-play/ditoo/internal/entities"
-	"github.com/agnostic-play/ditoo/internal/services"
-	api_mock_services "github.com/agnostic-play/ditoo/internal/services/api-mock-services"
-	crud_services "github.com/agnostic-play/ditoo/internal/services/crud-services"
+	"berlin.allobank.com/tools/bonclay/internal/entities"
+	"berlin.allobank.com/tools/bonclay/internal/services"
+	api_mock_services "berlin.allobank.com/tools/bonclay/internal/services/api-mock-services"
+	crud_services "berlin.allobank.com/tools/bonclay/internal/services/crud-services"
 	"github.com/labstack/echo/v4"
 )
 

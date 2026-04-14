@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/agnostic-play/ditoo/internal/common/pagination"
-	"github.com/agnostic-play/ditoo/internal/entities"
+	"berlin.allobank.com/tools/bonclay/internal/common/pagination"
+	"berlin.allobank.com/tools/bonclay/internal/entities"
 	"gorm.io/gorm"
 )
 

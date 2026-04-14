@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	repository2 `github.com/agnostic-play/ditoo/internal/adapters/repositories`
-	"github.com/agnostic-play/ditoo/internal/common/errs"
-	"github.com/agnostic-play/ditoo/internal/common/pagination"
-	"github.com/agnostic-play/ditoo/internal/entities"
+	repository2 `berlin.allobank.com/tools/bonclay/internal/adapters/repositories`
+	"berlin.allobank.com/tools/bonclay/internal/common/errs"
+	"berlin.allobank.com/tools/bonclay/internal/common/pagination"
+	"berlin.allobank.com/tools/bonclay/internal/entities"
 	"gorm.io/gorm"
 )
 

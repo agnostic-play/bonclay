@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	redisclient "github.com/agnostic-play/ditoo/internal/adapters/redis"
+	redisclient "berlin.allobank.com/tools/bonclay/internal/adapters/redis"
 )
 
 const (

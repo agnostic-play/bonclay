@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/agnostic-play/ditoo/internal/services"
+	"berlin.allobank.com/tools/bonclay/internal/services"
 	"github.com/labstack/echo/v4"
 )
 

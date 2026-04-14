@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"github.com/agnostic-play/ditoo/internal/common/pagination"
+	"berlin.allobank.com/tools/bonclay/internal/common/pagination"
 	"gorm.io/gorm"
 )
 

@@ -4,7 +4,7 @@ import (
 	`context`
 	`net/http`
 
-	api_mock_services `github.com/agnostic-play/ditoo/internal/services/api-mock-services`
+	api_mock_services `berlin.allobank.com/tools/bonclay/internal/services/api-mock-services`
 	`github.com/labstack/echo/v4`
 )
 

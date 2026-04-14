@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go version:*)",
+      "Bash(cmd.exe /c \"where go 2>&1\")",
+      "Bash(cmd.exe /c \"go version 2>&1\")",
+      "Read(//c/Go/**)",
+      "Read(//c/go/**)",
+      "Read(//c/Users/25003106/sdk//**)",
+      "Read(//c/Users/25003106/AppData/Local/**)",
+      "Bash(/c/Users/25003106/sdk/go1.23.9/bin/go mod:*)",
+      "Bash(find . -name \"*.go\" -exec sed -i 's|github\\\\.com/agnostic-play/ditoo/|berlin.allobank.com/tools/bonclay/|g' {} \\\\;)",
+      "Bash(GOPATH=/c/Users/25003106/go GOROOT=/c/Users/25003106/sdk/go1.23.9 /c/Users/25003106/sdk/go1.23.9/bin/go list -m -json github.com/go-playground/validator/v10@v10.22.0)",
+      "Bash(GOTOOLCHAIN=go1.23.9 GOROOT=/c/Users/25003106/sdk/go1.23.9 /c/Users/25003106/sdk/go1.23.9/bin/go get github.com/go-playground/validator/v10@v10.22.0)",
+      "Bash(GOTOOLCHAIN=go1.23.9 /c/Users/25003106/sdk/go1.23.9/bin/go get filippo.io/edwards25519@v1.1.0)",
+      "Bash(GOTOOLCHAIN=go1.23.9 /c/Users/25003106/sdk/go1.23.9/bin/go get filippo.io/edwards25519@v1.1.0 github.com/go-playground/validator/v10@v10.22.0)",
+      "Bash(GOTOOLCHAIN=local /c/Users/25003106/sdk/go1.23.9/bin/go mod tidy)",
+      "Bash(GOTOOLCHAIN=local /c/Users/25003106/sdk/go1.23.9/bin/go mod why golang.org/x/crypto)",
+      "Bash(GOTOOLCHAIN=local /c/Users/25003106/sdk/go1.23.9/bin/go mod download -json github.com/labstack/echo/v4@v4.15.1)",
+      "Bash(GOTOOLCHAIN=local /c/Users/25003106/sdk/go1.23.9/bin/go mod download -json github.com/spf13/viper@v1.21.0)",
+      "Bash(GOTOOLCHAIN=local /c/Users/25003106/sdk/go1.23.9/bin/go mod download -json gorm.io/driver/mysql@v1.6.0)",
+      "Bash(GOTOOLCHAIN=local /c/Users/25003106/sdk/go1.23.9/bin/go mod download -json github.com/labstack/echo/v4@v4.13.3)",
+      "Bash(GOTOOLCHAIN=local /c/Users/25003106/sdk/go1.23.9/bin/go mod download -json github.com/labstack/echo/v4@v4.12.0)",
+      "Bash(GOTOOLCHAIN=local /c/Users/25003106/sdk/go1.23.9/bin/go mod download -json github.com/labstack/echo/v4@v4.14.0)",
+      "Bash(GOTOOLCHAIN=local /c/Users/25003106/sdk/go1.23.9/bin/go mod download -json \"filippo.io/edwards25519@v1.1.0\")",
+      "Bash(GOTOOLCHAIN=local /c/Users/25003106/sdk/go1.23.9/bin/go build ./...)"
+    ]
+  }
+}

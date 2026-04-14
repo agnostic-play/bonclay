@@ -1,8 +1,8 @@
 package crud_services
 
 import (
-	`github.com/agnostic-play/ditoo/internal/adapters/repositories`
-	"github.com/agnostic-play/ditoo/internal/entities"
+	`berlin.allobank.com/tools/bonclay/internal/adapters/repositories`
+	"berlin.allobank.com/tools/bonclay/internal/entities"
 )
 
 type Services struct {

@@ -5,8 +5,8 @@ import (
 	`strconv`
 	`strings`
 
-	`github.com/agnostic-play/ditoo/internal/common/errs`
-	`github.com/agnostic-play/ditoo/pkg/validator`
+	`berlin.allobank.com/tools/bonclay/internal/common/errs`
+	`berlin.allobank.com/tools/bonclay/pkg/validator`
 	`github.com/labstack/echo/v4`
 )
 
