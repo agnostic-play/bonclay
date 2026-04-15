@@ -1,11 +1,14 @@
-ARG GO_VERSION=1.23.9-alpine3.20
+ARG GO_VERSION=1.25.9-alpine3.23
 
 # ============================================
 # Stage 1: Frontend builder
 # ============================================
-FROM honolulu.allobank.local/allodevops/node:22-alpine3.22 AS frontend-builder
+FROM node:22-alpine AS frontend-builder
 
-RUN corepack enable
+# RUN npm install -g pnpm && \
+#     pnpm config set registry http://california.allobank.local:8081/repository/npm-central/
+
+RUN npm install -g pnpm
 
 WORKDIR /frontend
 
@@ -20,9 +23,9 @@ RUN pnpm run build
 # ============================================
 # Stage 2: Go builder
 # ============================================
-FROM honolulu.allobank.local/allodevops/golang:${GO_VERSION} AS go-builder
+FROM golang:${GO_VERSION} AS go-builder
 
-ENV GOPROXY=http://california.allobank.local:8081/repository/golang-proxy
+ENV GOPROXY=http://california.allobank.local:8081/repository/golang-hosted
 
 WORKDIR /app
 COPY . .
@@ -33,7 +36,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
 # ============================================
 # Stage 3: Runner
 # ============================================
-FROM honolulu.allobank.local/allodevops/golang:${GO_VERSION} AS go-runner
+FROM golang:${GO_VERSION} AS go-runner
 
 ENV GOPROXY=http://california.allobank.local:8081/repository/golang-hosted
 
@@ -47,6 +50,6 @@ COPY --from=go-builder /app/resources ./resources
 #              File("/v2/*", "resources/views/bonclay/public/bonclay/index.html")
 COPY --from=frontend-builder /frontend/dist/ ./resources/views/bonclay/public/bonclay/
 
-EXPOSE ${APP_PORT}
+EXPOSE 6106
 
 CMD ["./runner"]

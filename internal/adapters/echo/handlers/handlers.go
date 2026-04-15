@@ -24,7 +24,11 @@ func NewSetupHandlers(server *echo.Echo, baseURL string, container services.Serv
 }
 
 func (h handlers) Routes() {
-	h.server.GET("/", func(ctx echo.Context) error {
+
+	h.server.Static("/assets", "resources/views/bonclay/public/bonclay/assets")
+	h.server.File("/", "resources/views/bonclay/public/bonclay/index.html")
+	h.server.File("/*", "resources/views/bonclay/public/bonclay/index.html")
+	h.server.GET("/old", func(ctx echo.Context) error {
 		return h.render(ctx, "squadIndex", nil)
 	})
 	h.server.GET("/ping", func(c echo.Context) error {
