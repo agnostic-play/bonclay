@@ -1,5 +1,3 @@
-import {BaseHttpClient} from "@/lib/httpClient/http.ts";
-
 export interface Parameter {
     name: string
     type: string

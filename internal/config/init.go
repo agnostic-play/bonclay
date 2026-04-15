@@ -19,6 +19,14 @@ type Config struct {
 		StaticPath   string
 	}
 	Database Database
+	Redis    Redis
+}
+
+type Redis struct {
+	Host     string
+	Port     string
+	Password string
+	DB       int
 }
 
 type Database struct {

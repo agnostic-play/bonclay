@@ -383,7 +383,7 @@ async function onFileChange(e: Event) {
     toast.success('QR decoded from image')
   } catch (err: any) {
     decodeError.value = err?.message ?? 'Failed to decode QR image'
-    toast.error(decodeError.value)
+    toast.error(decodeError.value ?? 'Failed to decode QR image')
   } finally {
     decoding.value = false
     if (fileInput.value) fileInput.value.value = ''
@@ -560,16 +560,6 @@ async function copyOutput() {
   }
 }
 
-async function copyTable() {
-  const text = kvRows.value.map(([k, v]) => `${k}: ${v}`).join('\n')
-  try {
-    await navigator.clipboard.writeText(text)
-    toast.success('Parsed fields copied')
-  } catch {
-    toast.error('Failed to copy')
-  }
-}
-
 function clearQr() {
   qrInput.value = ''
   qrParsed.value = {}
@@ -581,40 +571,6 @@ function loadSample() {
   qrInput.value =
       '00020101021226690017ID.CO.PRIMAQR.WWW011893600998297703010002150000880800000200303UME520454995303360540813000.005802ID5918AYAM GORENG SEKALI6010TANGGERANG61051511562210717C012345678901234563046CF4'
   parseQr()
-}
-
-function downloadJson() {
-  try {
-    const blob = new Blob([qrOutput.value], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'parser-emv-parse.json'
-    a.click()
-    URL.revokeObjectURL(url)
-  } catch {
-    toast.error('Failed to download JSON')
-  }
-}
-
-function downloadTable() {
-  try {
-    const header = 'field_name,tag,value'
-    const rows = kvRows.value.map(([k, v]) => {
-      const name = emvTags[tagId(k)]?.name || 'Unknown'
-      return `"${name}","${k.replace(/"/g, '""')}","${String(v).replace(/"/g, '""')}"`
-    })
-    const csv = [header, ...rows].join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'parser-emv-parse.csv'
-    a.click()
-    URL.revokeObjectURL(url)
-  } catch {
-    toast.error('Failed to download CSV')
-  }
 }
 
 /* Auto-parse (debounced) */

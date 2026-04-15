@@ -6,9 +6,9 @@ export const useScenarioUtils = () => {
         return 'text-red-600 bg-red-50'
     }
 
-    const formatDelay = (seconds: number): string => {
+    const formatDelay = (seconds: number | null | undefined): string => {
+        if (seconds == null) return 'nulls'
         if (seconds === 0) return '0s'
-        if (seconds === 1) return '1s'
         return `${seconds}s`
     }
 

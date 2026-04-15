@@ -84,18 +84,18 @@
                 <h2 class="text-sm font-semibold">Editor</h2>
                 <div class="text-xs text-muted-foreground flex items-center gap-2">
                   <span v-if="lastUpdatedText" class="text-xs text-muted-foreground">{{ lastUpdatedText }}</span>
-                  <Button size="xs" class="px-2 py-1 border text-xs" @click="saveDiagram">
+                  <Button size="sm" class="px-2 py-1 border text-xs" @click="saveDiagram">
                     <Save/>
                   </Button>
 
                   <!-- Share Diagram button -->
-                  <Button size="xs" variant="outline" class="px-2 py-1 text-xs" @click="openShare">
+                  <Button size="sm" variant="outline" class="px-2 py-1 text-xs" @click="openShare">
                     <Share2 class="mr-1 h-3.5 w-3.5" />
                     Share
                   </Button>
 
                   <!-- Edit Diagram button -->
-                  <Button size="xs" variant="outline" class="px-2 py-1 text-xs" @click="openEditDiagram">
+                  <Button size="sm" variant="outline" class="px-2 py-1 text-xs" @click="openEditDiagram">
                     <Pencil class="mr-1 h-3.5 w-3.5" />
                     Edit
                   </Button>
@@ -373,10 +373,10 @@ import {Label} from '@/components/ui/label'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select'
 
 /* 🔌 API service */
-import diagramCollectionAPI from '@/api/DiagramCollectionServices.ts'
-import type {DiagramCollection, DiagramDetail, DiagramSummary} from '@/types/entities.ts'
-import {useApiFeedback} from "@/composables/useApiFeedback.ts"
-import diagramServices from "@/api/DiagramServices.ts";
+import diagramCollectionAPI from '@/api/diagramCollectionServices'
+import type {DiagramCollection, DiagramDetail, DiagramSummary} from '@/types/entities'
+import {useApiFeedback} from "@/composables/useApiFeedback"
+import diagramServices from "@/api/diagramServices";
 
 /* ---------------- route & id ---------------- */
 const route = useRoute()
@@ -453,7 +453,6 @@ const fsPreviewRef = ref<HTMLDivElement | null>(null)
 let fsPz: PanZoom | null = null
 
 /* computed helpers */
-const isDirty = computed(() => !!selectedDiagram.value && source.value !== (selectedDiagram.value.syntax ?? ''))
 const lastUpdatedText = computed(() => {
   const iso = (selectedDiagram.value as any)?.latestUpdated
   return iso ? `Last updated ${new Date(iso).toLocaleString()}` : ''
@@ -685,7 +684,7 @@ function createEditor() {
       scrollBeyondLastLine: false,
       theme: 'vs',
     })
-    editor.onDidChangeModelContent(onEditorChange)
+    editor?.onDidChangeModelContent(onEditorChange)
   })
 }
 
@@ -833,7 +832,8 @@ const createForm = ref({
   syntaxType: 'mermaid' as 'mermaid' | 'plantuml',
 })
 
-function onCreateSyntaxTypeChange(val: string) {
+function onCreateSyntaxTypeChange(val: unknown) {
+  val = String(val ?? '')
   const t = val as 'mermaid' | 'plantuml'
   // only reset syntax if it's still the default for the other type
   if (
@@ -1016,15 +1016,16 @@ onBeforeUnmount(() => {
 })
 
 /* ---------------- Combobox behavior ---------------- */
-function onComboChange(val: string) {
-  if (val === '__create__') {
+function onComboChange(val: unknown) {
+  const v = String(val ?? '')
+  if (v === '__create__') {
     showCreate.value = true;
     return;
   }
   // accept only known IDs
-  const exists = diagrams.value.some(d => String(d.id) === String(val))
+  const exists = diagrams.value.some(d => String(d.id) === v)
   if (!exists) return
-  selectedId.value = String(val)
+  selectedId.value = v
 }
 
 /* When selectedId changes: use list payload first; if absent, fetch detail */

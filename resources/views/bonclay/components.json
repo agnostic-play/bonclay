@@ -16,6 +16,5 @@
     "ui": "@/components/ui",
     "lib": "@/lib"
   },
-  "iconLibrary": "lucide",
-  "registries": {}
+  "iconLibrary": "lucide"
 }
