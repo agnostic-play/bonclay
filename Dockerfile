@@ -5,10 +5,9 @@ ARG GO_VERSION=1.25.9-alpine3.23
 # ============================================
 FROM node:22-alpine AS frontend-builder
 
-# RUN npm install -g pnpm && \
-#     pnpm config set registry http://california.allobank.local:8081/repository/npm-central/
+RUN npm install -g pnpm && \
+     pnpm config set registry http://california.allobank.local:8081/repository/npm-central/
 
-RUN npm install -g pnpm
 
 WORKDIR /frontend
 
@@ -23,7 +22,7 @@ RUN pnpm run build
 # ============================================
 # Stage 2: Go builder
 # ============================================
-FROM golang:${GO_VERSION} AS go-builder
+FROM honolulu.allobank.local/allodevops/golang:${GO_VERSION} AS go-builder
 
 ENV GOPROXY=http://california.allobank.local:8081/repository/golang-hosted
 
@@ -36,7 +35,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
 # ============================================
 # Stage 3: Runner
 # ============================================
-FROM golang:${GO_VERSION} AS go-runner
+FROM honolulu.allobank.local/allodevops/golang:${GO_VERSION} AS go-runner
 
 ENV GOPROXY=http://california.allobank.local:8081/repository/golang-hosted
 
