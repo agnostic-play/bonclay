@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/agnostic-play/ditoo/internal/services"
+	"berlin.allobank.com/tools/bonclay/internal/services"
 	"github.com/labstack/echo/v4"
 )
 
@@ -54,9 +54,9 @@ func (h handlers) Routes() {
 	h.server.GET("/squad/:slug", h.viewShowSquad)
 	h.server.GET("/squad/:slug/collection/:collectionSlug", h.viewShowCollection)
 
-	//h.server.Static("/v2/assets", "resources/views/spa/dist/assets")
-	//h.server.File("/v2", "resources/views/spa/dist/index.html")
-	//h.server.File("/v2/*", "resources/views/spa/dist/index.html")
+	// h.server.Static("/v2/assets", "resources/views/spa/dist/assets")
+	// h.server.File("/v2", "resources/views/spa/dist/index.html")
+	// h.server.File("/v2/*", "resources/views/spa/dist/index.html")
 
 	apiV2 := h.server.Group("/api/v2")
 	diagramHandlers.RegisterRoutes(apiV2)
