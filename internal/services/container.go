@@ -3,12 +3,12 @@ package services
 import (
 	"fmt"
 
-	redisclient "github.com/agnostic-play/ditoo/internal/adapters/redis"
-	repository2 "github.com/agnostic-play/ditoo/internal/adapters/repositories"
-	"github.com/agnostic-play/ditoo/internal/config"
-	api_mock_services "github.com/agnostic-play/ditoo/internal/services/api-mock-services"
-	common_services "github.com/agnostic-play/ditoo/internal/services/common-services"
-	crud_services "github.com/agnostic-play/ditoo/internal/services/crud-services"
+	redisclient "berlin.allobank.com/tools/bonclay/internal/adapters/redis"
+	repository2 "berlin.allobank.com/tools/bonclay/internal/adapters/repositories"
+	"berlin.allobank.com/tools/bonclay/internal/config"
+	api_mock_services "berlin.allobank.com/tools/bonclay/internal/services/api-mock-services"
+	common_services "berlin.allobank.com/tools/bonclay/internal/services/common-services"
+	crud_services "berlin.allobank.com/tools/bonclay/internal/services/crud-services"
 )
 
 // ServiceContainer provides access to all application services

@@ -11,12 +11,12 @@ import (
 	"regexp"
 	"strings"
 
-	repository2 `github.com/agnostic-play/ditoo/internal/adapters/repositories`
+	repository2 `berlin.allobank.com/tools/bonclay/internal/adapters/repositories`
 	"github.com/labstack/echo/v4"
 
-	"github.com/agnostic-play/ditoo/internal/common/pagination"
-	"github.com/agnostic-play/ditoo/internal/entities"
-	crud_services "github.com/agnostic-play/ditoo/internal/services/crud-services"
+	"berlin.allobank.com/tools/bonclay/internal/common/pagination"
+	"berlin.allobank.com/tools/bonclay/internal/entities"
+	crud_services "berlin.allobank.com/tools/bonclay/internal/services/crud-services"
 )
 
 // MockService defines the interface for mock API operations

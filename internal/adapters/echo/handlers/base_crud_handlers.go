@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/agnostic-play/ditoo/internal/common/pagination"
-	crud_services "github.com/agnostic-play/ditoo/internal/services/crud-services"
+	"berlin.allobank.com/tools/bonclay/internal/common/pagination"
+	crud_services "berlin.allobank.com/tools/bonclay/internal/services/crud-services"
 	"github.com/labstack/echo/v4"
 )
 

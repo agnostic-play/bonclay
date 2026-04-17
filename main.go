@@ -6,8 +6,8 @@ import (
 	"os/signal"
 	"runtime"
 
-	`github.com/agnostic-play/ditoo/cmd/http`
-	"github.com/agnostic-play/ditoo/internal/config"
+	`berlin.allobank.com/tools/bonclay/cmd/http`
+	"berlin.allobank.com/tools/bonclay/internal/config"
 )
 
 const banner = `

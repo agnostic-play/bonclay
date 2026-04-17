@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"github.com/agnostic-play/ditoo/internal/config"
+	"berlin.allobank.com/tools/bonclay/internal/config"
 	"gorm.io/gorm"
 )
 

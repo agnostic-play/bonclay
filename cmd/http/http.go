@@ -1,11 +1,11 @@
 package http
 
 import (
-	`github.com/agnostic-play/ditoo/internal/adapters/echo`
-	repository2 `github.com/agnostic-play/ditoo/internal/adapters/repositories`
-	"github.com/agnostic-play/ditoo/internal/config"
-	"github.com/agnostic-play/ditoo/internal/services"
-	"github.com/agnostic-play/ditoo/pkg/gorm"
+	`berlin.allobank.com/tools/bonclay/internal/adapters/echo`
+	repository2 `berlin.allobank.com/tools/bonclay/internal/adapters/repositories`
+	"berlin.allobank.com/tools/bonclay/internal/config"
+	"berlin.allobank.com/tools/bonclay/internal/services"
+	"berlin.allobank.com/tools/bonclay/pkg/gorm"
 	"github.com/labstack/gommon/log"
 )
 

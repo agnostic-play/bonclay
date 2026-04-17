@@ -8,8 +8,8 @@ import (
 	`net/http`
 	`time`
 
-	`github.com/agnostic-play/ditoo/internal/common/pagination`
-	api_mock_services `github.com/agnostic-play/ditoo/internal/services/api-mock-services`
+	`berlin.allobank.com/tools/bonclay/internal/common/pagination`
+	api_mock_services `berlin.allobank.com/tools/bonclay/internal/services/api-mock-services`
 	`github.com/google/uuid`
 	`github.com/labstack/echo/v4`
 	`github.com/labstack/gommon/log`

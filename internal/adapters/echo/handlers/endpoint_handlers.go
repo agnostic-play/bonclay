@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/agnostic-play/ditoo/internal/common/pagination"
-	"github.com/agnostic-play/ditoo/internal/entities"
-	crud_services "github.com/agnostic-play/ditoo/internal/services/crud-services"
+	"berlin.allobank.com/tools/bonclay/internal/common/pagination"
+	"berlin.allobank.com/tools/bonclay/internal/entities"
+	crud_services "berlin.allobank.com/tools/bonclay/internal/services/crud-services"
 	"github.com/labstack/echo/v4"
 )
 

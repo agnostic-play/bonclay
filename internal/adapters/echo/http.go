@@ -6,16 +6,16 @@ import (
 	"fmt"
 	"net/http"
 
-	handler "github.com/agnostic-play/ditoo/internal/adapters/echo/handlers"
-	httpUtils2 "github.com/agnostic-play/ditoo/internal/adapters/echo/utils"
+	handler "berlin.allobank.com/tools/bonclay/internal/adapters/echo/handlers"
+	httpUtils2 "berlin.allobank.com/tools/bonclay/internal/adapters/echo/utils"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 
-	"github.com/agnostic-play/ditoo/internal/common/constant"
-	"github.com/agnostic-play/ditoo/internal/config"
-	"github.com/agnostic-play/ditoo/internal/services"
-	"github.com/agnostic-play/ditoo/pkg/validator"
+	"berlin.allobank.com/tools/bonclay/internal/common/constant"
+	"berlin.allobank.com/tools/bonclay/internal/config"
+	"berlin.allobank.com/tools/bonclay/internal/services"
+	"berlin.allobank.com/tools/bonclay/pkg/validator"
 )
 
 func RunHttpServer(config *config.Config, container services.ServiceContainer) chan bool {

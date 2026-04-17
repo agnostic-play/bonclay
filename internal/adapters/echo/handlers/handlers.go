@@ -71,8 +71,4 @@ func (h handlers) Routes() {
 	apiV2.GET("/collections/:slug/history", h.getHistory)
 	apiV2.DELETE("/collections/:slug/history", h.clearHistory)
 
-	h.server.Static("/v2/assets", "resources/views/bonclay/public/bonclay/assets")
-	h.server.File("/v2/", "resources/views/bonclay/public/bonclay/index.html")
-	h.server.File("/v2/*", "resources/views/bonclay/public/bonclay/index.html")
-
 }
