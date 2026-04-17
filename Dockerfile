@@ -3,7 +3,7 @@ ARG GO_VERSION=1.25.9-alpine3.23
 # ============================================
 # Stage 1: Frontend builder
 # ============================================
-FROM node:22-alpine AS frontend-builder
+FROM  honolulu.allobank.local/allodevops/node:22-alpine3.22 AS frontend-builder
 
 RUN npm install -g pnpm && \
      pnpm config set registry http://california.allobank.local:8081/repository/npm-central/
