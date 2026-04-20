@@ -46,7 +46,7 @@ COPY --from=go-builder /app/resources ./resources
 # Place Vue build output where the Go handler expects it:
 # handlers.go: Static("/assets", "resources/views/bonclay/public/bonclay/assets")
 #              File("/*", "resources/views/bonclay/public/bonclay/index.html")
-COPY --from=frontend-builder /frontend/dist/ ./resources/views/bonclay/public/bonclay/
+COPY --from=frontend-builder /frontend/public/bonclay/ ./resources/views/bonclay/public/bonclay/
 
 EXPOSE 6106
 
