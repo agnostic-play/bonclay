@@ -37,10 +37,6 @@ const navMain = computed(() => [
         title: "API Collection",
         routeName: "MockApiTools-Index",
       },
-      {
-        title: "Histories",
-        routeName: "MockApiTools-Index",
-      },
     ],
   },
   {

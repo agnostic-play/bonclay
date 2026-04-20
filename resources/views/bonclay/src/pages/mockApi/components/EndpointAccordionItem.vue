@@ -40,7 +40,17 @@ const fullUrl = computed(() => props.baseUrl + displayPath.value)
 
 const copyToClipboard = async (text: string, itemId: string): Promise<void> => {
   try {
-    await navigator.clipboard.writeText(text)
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+    } else {
+      const el = document.createElement('textarea')
+      el.value = text
+      el.style.cssText = 'position:fixed;opacity:0'
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand('copy')
+      document.body.removeChild(el)
+    }
     copiedItems.value[itemId] = true
     setTimeout(() => { delete copiedItems.value[itemId] }, 2000)
   } catch (err) {
