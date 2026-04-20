@@ -28,24 +28,45 @@ const emit = defineEmits<{
 
 const submitting = ref(false)
 const errorMessage = ref<string | null>(null)
+const headerViewMode = ref<'edit' | 'preview'>('edit')
+const bodyViewMode = ref<'edit' | 'preview'>('edit')
 
 const form = ref({
   desc: '',
   status_header: 200,
   delay: 0,
-  header: '',
-  body: '',
+  header: '{}',
+  body: '{}',
 })
 
 watch(
   () => props.open,
   (isOpen) => {
     if (!isOpen) {
-      form.value = { desc: '', status_header: 200, delay: 0, header: '', body: '' }
+      form.value = { desc: '', status_header: 200, delay: 0, header: '{}', body: '{}' }
       errorMessage.value = null
+      headerViewMode.value = 'edit'
+      bodyViewMode.value = 'edit'
     }
   }
 )
+
+const highlightJson = (val: string): string => {
+  if (!val.trim()) return val
+  try {
+    const formatted = JSON.stringify(JSON.parse(val), null, 2)
+    return formatted
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, match => {
+        if (/^"/.test(match)) return `<span class="${/:$/.test(match) ? 'text-violet-600' : 'text-emerald-600'}">${match}</span>`
+        if (/true|false/.test(match)) return `<span class="text-amber-600">${match}</span>`
+        if (/null/.test(match)) return `<span class="text-gray-400">${match}</span>`
+        return `<span class="text-blue-600">${match}</span>`
+      })
+  } catch {
+    return val.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  }
+}
 
 const tryFormatJson = (field: 'body' | 'header') => {
   const val = form.value[field].trim()
@@ -99,7 +120,7 @@ const handleSubmit = async () => {
 
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent class="sm:max-w-lg">
+    <DialogContent class="sm:max-w-3xl">
       <DialogHeader>
         <DialogTitle>New Scenario</DialogTitle>
         <DialogDescription>Define a mock response scenario for this endpoint.</DialogDescription>
@@ -146,51 +167,89 @@ const handleSubmit = async () => {
           </div>
         </div>
 
-        <!-- Response Headers (above body) -->
+        <!-- Response Headers -->
         <div class="space-y-2">
           <div class="flex items-center justify-between">
             <Label for="sc-header">
               Response Headers <span class="text-xs text-gray-400">(JSON)</span>
             </Label>
-            <button
-              type="button"
-              @click="tryFormatJson('header')"
-              class="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 transition-colors"
-            >
-              <Wand2 class="w-3 h-3" />
-              Format JSON
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                @click="tryFormatJson('header')"
+                class="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 transition-colors"
+              >
+                <Wand2 class="w-3 h-3" />
+                Format
+              </button>
+              <div class="flex border border-gray-200 rounded-md overflow-hidden text-xs">
+                <button
+                  type="button"
+                  @click="headerViewMode = 'edit'"
+                  :class="['px-2 py-0.5 transition-colors', headerViewMode === 'edit' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-100']"
+                >Edit</button>
+                <button
+                  type="button"
+                  @click="headerViewMode = 'preview'"
+                  :class="['px-2 py-0.5 transition-colors', headerViewMode === 'preview' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-100']"
+                >Preview</button>
+              </div>
+            </div>
           </div>
+          <pre
+            v-if="headerViewMode === 'preview'"
+            class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-mono h-24 max-h-40 overflow-y-auto"
+            v-html="highlightJson(form.header)"
+          />
           <textarea
+            v-else
             id="sc-header"
             v-model="form.header"
             placeholder='{"Content-Type": "application/json"}'
-            rows="2"
             :disabled="submitting"
-            class="flex w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm font-mono shadow-sm placeholder:text-gray-400 focus:border-gray-300 focus:ring-1 focus:ring-gray-300 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+            class="flex w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm font-mono shadow-sm placeholder:text-gray-400 focus:border-gray-300 focus:ring-1 focus:ring-gray-300 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 resize-y h-24 max-h-40 overflow-y-auto"
           />
         </div>
 
-        <!-- Response Body (below headers) -->
+        <!-- Response Body -->
         <div class="space-y-2">
           <div class="flex items-center justify-between">
             <Label for="sc-body">Response Body</Label>
-            <button
-              type="button"
-              @click="tryFormatJson('body')"
-              class="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 transition-colors"
-            >
-              <Wand2 class="w-3 h-3" />
-              Format JSON
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                @click="tryFormatJson('body')"
+                class="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 transition-colors"
+              >
+                <Wand2 class="w-3 h-3" />
+                Format
+              </button>
+              <div class="flex border border-gray-200 rounded-md overflow-hidden text-xs">
+                <button
+                  type="button"
+                  @click="bodyViewMode = 'edit'"
+                  :class="['px-2 py-0.5 transition-colors', bodyViewMode === 'edit' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-100']"
+                >Edit</button>
+                <button
+                  type="button"
+                  @click="bodyViewMode = 'preview'"
+                  :class="['px-2 py-0.5 transition-colors', bodyViewMode === 'preview' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-100']"
+                >Preview</button>
+              </div>
+            </div>
           </div>
+          <pre
+            v-if="bodyViewMode === 'preview'"
+            class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-mono h-48 max-h-64 overflow-y-auto"
+            v-html="highlightJson(form.body)"
+          />
           <textarea
+            v-else
             id="sc-body"
             v-model="form.body"
             placeholder='{"message": "ok"}'
-            rows="5"
             :disabled="submitting"
-            class="flex w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm font-mono shadow-sm placeholder:text-gray-400 focus:border-gray-300 focus:ring-1 focus:ring-gray-300 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+            class="flex w-full rounded-lg border border-gray-200 bg-transparent px-3 py-2 text-sm font-mono shadow-sm placeholder:text-gray-400 focus:border-gray-300 focus:ring-1 focus:ring-gray-300 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 resize-y h-48 max-h-64 overflow-y-auto"
           />
         </div>
 
