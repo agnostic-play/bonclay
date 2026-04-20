@@ -225,8 +225,8 @@ import {
   Braces
 } from 'lucide-vue-next'
 import { Card, CardContent } from '@/components/ui/card'
-import encryptionToolServices from '@/api/EncryptionToolServices.ts'
-import { useApiFeedback } from '@/composables/useApiFeedback.ts'
+import encryptionToolServices from '@/api/EncryptionToolServices'
+import { useApiFeedback } from '@/composables/useApiFeedback'
 
 const encryptionTypes = ['AES GCM', 'AES CBC', 'AES CBC IV', 'AES Imeg']
 const keyDeriveMethods = ['No SUM', 'sha256', 'sha512', 'md5', 'sha1', 'hmac-sha256']

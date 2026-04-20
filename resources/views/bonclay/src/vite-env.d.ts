@@ -1,13 +1,8 @@
 /// <reference types="vite/client" />
 
-
-
-interface ImportMetaEnv {
-    readonly BONCLAY_URL: string
-    // add more as needed...
-    // readonly VITE_API_KEY: string
-}
-
-interface ImportMeta {
-    readonly env: ImportMetaEnv
+declare module 'plantuml-encoder' {
+  export function encode(input: string): string
+  export function decode(input: string): string
+  const plantumlEncoder: { encode: typeof encode; decode: typeof decode }
+  export default plantumlEncoder
 }

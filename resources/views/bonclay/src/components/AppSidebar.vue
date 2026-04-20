@@ -1,14 +1,8 @@
 <script setup lang="ts">
-import { type SidebarProps} from '@/components/ui/sidebar'
-
-
-import {
-  Clover, FileKey2,
-  SquareTerminal, WorkflowIcon, ArrowUpDown
-} from "lucide-vue-next"
+import { type SidebarProps } from '@/components/ui/sidebar'
+import { SquareTerminal, GitBranch, LockKeyhole, ScanLine } from "lucide-vue-next"
 import NavMain from '@/components/NavMain.vue'
 import NavUser from '@/components/NavUser.vue'
-
 import {
   Sidebar,
   SidebarContent,
@@ -16,102 +10,94 @@ import {
   SidebarHeader,
   SidebarRail,
 } from '@/components/ui/sidebar'
-import {useRoute} from "vue-router";
-import {type Component, computed} from "vue";
-import TeamSwitcher from "@/components/TeamSwitcher.vue";
-
+import { useRoute } from "vue-router"
+import { computed } from "vue"
+import TeamSwitcher from "@/components/TeamSwitcher.vue"
 
 const props = withDefaults(defineProps<SidebarProps>(), {
   collapsible: "icon",
 })
 
-
 const route = useRoute()
-const data = computed(() => ({
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+
+const user = {
+  name: "shadcn",
+  email: "m@example.com",
+  avatar: "/avatars/shadcn.jpg",
+}
+
+const navMain = computed(() => [
+  {
+    title: "Mock API",
+    url: "#",
+    icon: SquareTerminal,
+    isActive: route.path.startsWith("/tools/mock-api"),
+    items: [
+      {
+        title: "API Collection",
+        routeName: "MockApiTools-Index",
+      },
+      {
+        title: "Histories",
+        routeName: "MockApiTools-Index",
+      },
+    ],
   },
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: Clover,
-      plan: "Enterprise",
-    }
-  ],
-  navMain: [
-    {
-      title: "Mock API",
-      url: "#",
-      icon: SquareTerminal,
-      isActive: route.path.startsWith("/tools/mock-api"),
-      items: [
-        {
-          title: "API Collection",
-          routeName: "MockApiTools-Index",
-        },
-        {
-          title: "Histories",
-          routeName: "MockApiTools-Index",
-        },
-      ],
-    },
-    {
-      title: "Encryption Tools",
-      url: "#",
-      icon: FileKey2,
-      isActive: route.path.startsWith("/tools/encryption"),
-      items: [
-        {
-          title: "Encryption Tools",
-          routeName: "EncryptionTools-Index",
-        }
-      ],
-    },
-    {
-      title: "Diagram",
-      url: "#",
-      icon: WorkflowIcon,
-      isActive: route.path.startsWith("/tools/mermaid-diagram"),
-      items: [
-        {
-          title: "Projects",
-          routeName: "MermaidDiagramTools-Index",
-        },
-      ],
-    },
-    {
-      title: "Parser",
-      url: "#",
-      icon: ArrowUpDown,
-      isActive: route.path.startsWith("/tools/parser"),
-      items: [
-        {
-          title: "Qr Parser Emvco",
-          routeName: "ParserTools-Emvco",
-        },
-        {
-          title: "ISO Parser",
-          routeName: "ParserTools-ISO",
-        },
-      ],
-    },
-  ],
-}))
+  {
+    title: "Diagram",
+    url: "#",
+    icon: GitBranch,
+    isActive: route.path.startsWith("/tools/mermaid-diagram"),
+    items: [
+      {
+        title: "Collections",
+        routeName: "MermaidDiagramTools-Index",
+      },
+    ],
+  },
+  {
+    title: "Encryption",
+    url: "#",
+    icon: LockKeyhole,
+    isActive: route.path.startsWith("/tools/encryption-tools"),
+    items: [
+      {
+        title: "Encrypt / Decrypt",
+        routeName: "EncryptionTools-Index",
+      },
+    ],
+  },
+  {
+    title: "Parser",
+    url: "#",
+    icon: ScanLine,
+    isActive: route.path.startsWith("/tools/parser"),
+    items: [
+      {
+        title: "EMVCo / QRIS",
+        routeName: "ParserTools-Emvco",
+      },
+      {
+        title: "ISO 8583",
+        routeName: "ParserTools-ISO",
+      },
+    ],
+  },
+])
 </script>
 
 <template>
   <Sidebar v-bind="props">
     <SidebarHeader>
-      <TeamSwitcher :teams="data.teams" />
+      <!-- TeamSwitcher is self-fetching; no props needed -->
+      <TeamSwitcher />
     </SidebarHeader>
     <SidebarContent>
-      <NavMain :items="data.navMain"/>
+      <NavMain :items="navMain" />
     </SidebarContent>
     <SidebarFooter>
-      <NavUser :user="data.user"/>
+      <NavUser :user="user" />
     </SidebarFooter>
-    <SidebarRail/>
+    <SidebarRail />
   </Sidebar>
 </template>

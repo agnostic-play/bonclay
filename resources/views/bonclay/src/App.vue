@@ -1,13 +1,12 @@
 
 <script setup lang="ts">
 import AppSidebar from "@/components/AppSidebar.vue"
+import SelectSquadModal from "@/components/SelectSquadModal.vue"
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -15,14 +14,11 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import {useRoute} from "vue-router";
-import { Toaster } from '@/components/ui/sonner'
-import 'vue-sonner/style.css'
-const route = useRoute()
 </script>
 
 <template>
   <SidebarProvider>
+    <SelectSquadModal />
     <AppSidebar />
     <SidebarInset>
       <header class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
@@ -33,7 +29,7 @@ const route = useRoute()
             <BreadcrumbList>
               <BreadcrumbItem class="hidden md:block">
                 <BreadcrumbLink href="#">
-
+                  Mock API
                 </BreadcrumbLink>
               </BreadcrumbItem>
 <!--              <BreadcrumbSeparator class="hidden md:block" />-->
@@ -46,7 +42,6 @@ const route = useRoute()
       </header>
       <div class="flex flex-1 flex-col gap-4 p-4 pt-0">
         <router-view/>
-        <Toaster position="top-right" rich-colors close-button />
 <!--        <div class="grid auto-rows-min gap-4 md:grid-cols-3">-->
 <!--          <div class="aspect-video rounded-xl bg-muted/50" />-->
 <!--          <div class="aspect-video rounded-xl bg-muted/50" />-->

@@ -23,8 +23,9 @@ import {
 } from '@/components/ui/combobox'
 
 /* 🔌 API */
-import diagramCollectionAPI from '@/api/DiagramCollectionServices.ts'
-import type { DiagramCollection, DiagramDetail, DiagramSummary } from '@/types/entities.ts'
+import diagramCollectionAPI from '@/api/diagramCollectionServices'
+import diagramServices from '@/api/diagramServices'
+import type { DiagramCollection, DiagramDetail, DiagramSummary } from '@/types/entities'
 
 /* -----------------------------
    👇 Keep: accept a projectId prop
@@ -81,7 +82,6 @@ let fsPz: PanZoom | null = null
 
 /* Monaco (kept) */
 const editorEl = ref<HTMLDivElement | null>(null)
-let monaco: typeof import('monaco-editor') | null = null
 let editor: import('monaco-editor').editor.IStandaloneCodeEditor | null = null
 
 let pz: PanZoom | null = null
@@ -247,7 +247,6 @@ function onEditorChange() {
 function createEditor() {
   if (!editorEl.value) return
   loader.init().then((m) => {
-    monaco = m as any
     try {
       m.languages.register({ id: 'mermaid' })
       m.languages.setMonarchTokensProvider('mermaid', {
@@ -280,7 +279,7 @@ function createEditor() {
       theme: 'vs',
     })
 
-    editor.onDidChangeModelContent(onEditorChange)
+    editor?.onDidChangeModelContent(onEditorChange)
   })
 }
 
@@ -357,7 +356,7 @@ async function selectDiagram(diagramId: string) {
   if (!diagramId) return
   apiError.value = null
   try {
-    const d: DiagramDetail = await diagramCollectionAPI.getDiagram(props.projectId, diagramId)
+    const d: DiagramDetail = await diagramServices.getDetail(diagramId)
     const normalized: LocalDiagram = {
       id: String(diagramId),
       title: d?.title ?? 'Untitled',
@@ -381,7 +380,7 @@ async function saveDiagram() {
   isSavingDiagram.value = true
   apiError.value = null
   try {
-    await diagramCollectionAPI.saveDiagram(props.projectId, selectedDiagram.value.id, { syntax: source.value })
+    await diagramServices.actUpdate(selectedDiagram.value.id, { syntax: source.value } as any)
     // refresh (e.g., latestUpdated)
     await selectDiagram(selectedDiagram.value.id)
   } catch (e: any) {

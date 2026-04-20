@@ -4,7 +4,6 @@ import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  base: '/v2/',
   plugins: [vue(), tailwindcss()],
   resolve: {
     alias: {
@@ -12,8 +11,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'public/bonclay', // change output folder
-    sourcemap: false,
-    cssCodeSplit: true,
+    outDir: 'public/bonclay',
+    emptyOutDir: true,
   },
 })

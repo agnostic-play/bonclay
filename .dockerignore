@@ -1,0 +1,4 @@
+resources/views/bonclay/node_modules/
+resources/views/bonclay/dist/
+resources/views/bonclay/.vite/
+resources/views/bonclay/public/bonclay/

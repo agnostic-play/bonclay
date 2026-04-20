@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/agnostic-play/ditoo/internal/common/errs"
-	"github.com/agnostic-play/ditoo/internal/common/pagination"
-	"github.com/agnostic-play/ditoo/internal/entities"
-	"github.com/agnostic-play/ditoo/internal/repository"
+	repository2 `berlin.allobank.com/tools/bonclay/internal/adapters/repositories`
+	"berlin.allobank.com/tools/bonclay/internal/common/errs"
+	"berlin.allobank.com/tools/bonclay/internal/common/pagination"
+	"berlin.allobank.com/tools/bonclay/internal/entities"
 	"gorm.io/gorm"
 )
 
@@ -24,13 +24,13 @@ type BaseCRUDService[T any] interface {
 
 type baseCRUDServices[T any] struct {
 	ent  entities.BaseEntityInterface[T]
-	repo repository.BaseCRUDRepo[T]
+	repo repository2.BaseCRUDRepo[T]
 }
 
-func NewBaseCRUDServices[T any](entity entities.BaseEntityInterface[T], dbClient repository.DBClient) BaseCRUDService[T] {
+func NewBaseCRUDServices[T any](entity entities.BaseEntityInterface[T], dbClient repository2.DBClient) BaseCRUDService[T] {
 	return &baseCRUDServices[T]{
 		ent:  entity,
-		repo: repository.NewBaseCRUDRepo(entity, dbClient),
+		repo: repository2.NewBaseCRUDRepo(entity, dbClient),
 	}
 }
 

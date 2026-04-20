@@ -1,6 +1,3 @@
-import {BaseHttpClient} from "@/lib/httpClient/http.ts";
-
-
 export interface EncryptionToolReq  {
     encryptionType: string;
     type: string;
@@ -9,7 +6,7 @@ export interface EncryptionToolReq  {
     inputFormat: string;
     keyDeriveMethod: string;
     rawValue: string;
-    iv: string;
+    iv?: string;
 }
 
 export interface EncryptionToolResp  {

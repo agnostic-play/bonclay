@@ -11,28 +11,32 @@ type DiagramCollectionEntity struct {
 	Description string `json:"description,omitempty" gorm:"type:text" validate:"omitempty,max=1000" example:"High-level architecture diagrams for backend systems."`
 }
 
-func (c DiagramCollectionEntity) GetTableName() string {
+func (c *DiagramCollectionEntity) GetTableName() string {
 	return "diagram_collections"
 }
 
-func (c DiagramCollectionEntity) GetTitle() string {
+func (c *DiagramCollectionEntity) GetTitle() string {
 	return "Diagram Collection"
 }
 
-func (c DiagramCollectionEntity) GetPreloadTables() []string {
+func (c *DiagramCollectionEntity) GetPreloadTables() []string {
 	return []string{"Diagrams"}
 }
 
-func (c DiagramCollectionEntity) GetFieldForKeywords() []string {
+func (c *DiagramCollectionEntity) GetFieldForKeywords() []string {
 	return []string{"name", "description"}
 }
 
-func (c DiagramCollectionEntity) GetExcludeFieldForUpdate() []string {
+func (c *DiagramCollectionEntity) GetExcludeFieldForUpdate() []string {
 	return []string{}
 }
 
-func (c DiagramCollectionEntity) GetEntity() *DiagramCollectionEntity {
-	return &c
+func (c *DiagramCollectionEntity) GetEntity() *DiagramCollectionEntity {
+	return c
+}
+
+func (c *DiagramCollectionEntity) HookBeforeCreate() *DiagramCollectionEntity {
+	return c
 }
 
 type DiagramEntity struct {
@@ -45,26 +49,30 @@ type DiagramEntity struct {
 	Syntax       string    `json:"syntax" gorm:"type:text;not null" validate:"omitempty,required,min=5" example:"graph TD; A-->B; B-->C;"`
 }
 
-func (d DiagramEntity) GetTableName() string {
+func (d *DiagramEntity) GetTableName() string {
 	return "diagrams"
 }
 
-func (d DiagramEntity) GetTitle() string {
+func (d *DiagramEntity) GetTitle() string {
 	return "Diagram"
 }
 
-func (d DiagramEntity) GetPreloadTables() []string {
+func (d *DiagramEntity) GetPreloadTables() []string {
 	return []string{"Collection"}
 }
 
-func (d DiagramEntity) GetFieldForKeywords() []string {
+func (d *DiagramEntity) GetFieldForKeywords() []string {
 	return []string{"title", "description", "syntax_type"}
 }
 
-func (c DiagramEntity) GetExcludeFieldForUpdate() []string {
+func (d *DiagramEntity) GetExcludeFieldForUpdate() []string {
 	return []string{"id", "collection_id", "syntax_type"}
 }
 
-func (d DiagramEntity) GetEntity() *DiagramEntity {
-	return &d
+func (d *DiagramEntity) GetEntity() *DiagramEntity {
+	return d
+}
+
+func (d *DiagramEntity) HookBeforeCreate() *DiagramEntity {
+	return d
 }

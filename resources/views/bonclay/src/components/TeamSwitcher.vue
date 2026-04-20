@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import type { Component } from "vue"
-
-import { ChevronsUpDown, Plus } from "lucide-vue-next"
-import { ref } from "vue"
+import { ChevronsUpDown, Plus, Loader2 } from "lucide-vue-next"
+import { ref, computed, onMounted, watch } from "vue"
+import CreateSquadSheet from '@/components/CreateSquadSheet.vue'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +11,9 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useRouter } from 'vue-router'
+import { useSquadSession } from '@/composables/useSquadSession'
+import { useSquadStore } from '@/composables/useSquadStore'
 
 import {
   SidebarMenu,
@@ -20,16 +22,64 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 
-const props = defineProps<{
-  teams: {
-    name: string
-    logo: Component
-    plan: string
-  }[]
-}>()
-
+const router = useRouter()
 const { isMobile } = useSidebar()
-const activeTeam = ref(props.teams[0])
+const { activeSquad, setActiveSquad } = useSquadSession()
+const { squads, loading, fetchSquads } = useSquadStore()
+
+const createSquadRef = ref<InstanceType<typeof CreateSquadSheet> | null>(null)
+
+// The squad shown in the trigger button. Initialised from session if available.
+const activeTeam = ref(activeSquad.value ? squads.value.find(s => s.slug === activeSquad.value!.slug) ?? null : null)
+
+// When the squad list arrives, restore the active team from session.
+// Initial selection is handled by SelectSquadModal.
+watch(
+  squads,
+  (list) => {
+    if (!Array.isArray(list) || list.length === 0) return
+    if (activeSquad.value?.slug) {
+      const match = list.find(s => s.slug === activeSquad.value!.slug)
+      if (match) activeTeam.value = match
+    }
+  },
+  { immediate: true }
+)
+
+// Display label for the trigger button
+const triggerName = computed(() => activeTeam.value?.name ?? 'Select squad')
+const triggerPlan = computed(() => activeTeam.value?.plan ?? '')
+
+const selectTeam = (team: typeof squads.value[number]) => {
+  activeTeam.value = team
+  // Persist to session so any page/component can read it
+  setActiveSquad({
+    id: team.id,
+    slug: team.slug,
+    name: team.name,
+    plan: team.plan,
+  })
+  // Navigate to squad view
+  if (team.slug) {
+    router.push({ name: 'MockApiTools-Index', params: { slug: team.slug } })
+  }
+}
+
+const handleAddTeam = () => {
+  createSquadRef.value?.openDialog()
+}
+
+const handleSquadCreated = async () => {
+  // Invalidate cache and re-fetch so the new squad appears immediately
+  const store = useSquadStore()
+  store.invalidate()
+  await fetchSquads(true)
+}
+
+// Fetch the squad list when the sidebar mounts (cached on subsequent renders)
+onMounted(() => {
+  void fetchSquads()
+})
 </script>
 
 <template>
@@ -42,17 +92,18 @@ const activeTeam = ref(props.teams[0])
               class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
             <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-              <component :is="activeTeam.logo" class="size-4" />
+              <Loader2 v-if="loading" class="size-4 animate-spin" />
+              <component v-else-if="activeTeam?.logo" :is="activeTeam.logo" class="size-4" />
+              <ChevronsUpDown v-else class="size-4 opacity-50" />
             </div>
             <div class="grid flex-1 text-left text-sm leading-tight">
-              <span class="truncate font-semibold">
-                {{ activeTeam.name }}
-              </span>
-              <span class="truncate text-xs">{{ activeTeam.plan }}</span>
+              <span class="truncate font-semibold">{{ triggerName }}</span>
+              <span class="truncate text-xs">{{ triggerPlan }}</span>
             </div>
             <ChevronsUpDown class="ml-auto" />
           </SidebarMenuButton>
         </DropdownMenuTrigger>
+
         <DropdownMenuContent
             class="w-[--reka-dropdown-menu-trigger-width] min-w-56 rounded-lg"
             align="start"
@@ -60,31 +111,44 @@ const activeTeam = ref(props.teams[0])
             :side-offset="4"
         >
           <DropdownMenuLabel class="text-xs text-muted-foreground">
-            Teams
+            Squads
           </DropdownMenuLabel>
-          <DropdownMenuItem
-              v-for="(team, index) in teams"
-              :key="team.name"
+
+          <!-- Loading state -->
+          <div v-if="loading" class="flex items-center justify-center py-4 gap-2 text-muted-foreground text-xs">
+            <Loader2 class="size-3 animate-spin" />
+            Loading squads…
+          </div>
+
+          <!-- Squad list -->
+          <template v-else>
+            <DropdownMenuItem
+              v-for="(team, index) in squads"
+              :key="team.slug"
               class="gap-2 p-2"
-              @click="activeTeam = team"
-          >
-            <div class="flex size-6 items-center justify-center rounded-sm border">
-              <component :is="team.logo" class="size-4 shrink-0" />
-            </div>
-            {{ team.name }}
-            <DropdownMenuShortcut>⌘{{ index + 1 }}</DropdownMenuShortcut>
-          </DropdownMenuItem>
+              :class="{ 'bg-accent': activeTeam?.slug === team.slug }"
+              @click="selectTeam(team)"
+            >
+              <div class="flex size-6 items-center justify-center rounded-sm border">
+                <component :is="team.logo" class="size-4 shrink-0" />
+              </div>
+              {{ team.name }}
+              <DropdownMenuShortcut>⌘{{ index + 1 }}</DropdownMenuShortcut>
+            </DropdownMenuItem>
+          </template>
+
           <DropdownMenuSeparator />
-          <DropdownMenuItem class="gap-2 p-2">
+
+          <DropdownMenuItem class="gap-2 p-2" @click="handleAddTeam">
             <div class="flex size-6 items-center justify-center rounded-md border bg-background">
               <Plus class="size-4" />
             </div>
-            <div class="font-medium text-muted-foreground">
-              Add team
-            </div>
+            <div class="font-medium text-muted-foreground">Add squad</div>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <CreateSquadSheet ref="createSquadRef" @created="handleSquadCreated" />
     </SidebarMenuItem>
   </SidebarMenu>
 </template>

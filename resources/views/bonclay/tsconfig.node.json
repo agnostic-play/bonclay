@@ -13,21 +13,13 @@
     "moduleDetection": "force",
     "noEmit": true,
 
-    // use this for dev
-    "strict": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "erasableSyntaxOnly": false,
-    "noFallthroughCasesInSwitch": false,
-    "noUncheckedSideEffectImports": false,
-//
-//    /* Linting */
-//    "strict": true,
-//    "noUnusedLocals": true,
-//    "noUnusedParameters": true,
-//    "erasableSyntaxOnly": true,
-//    "noFallthroughCasesInSwitch": true,
-//    "noUncheckedSideEffectImports": true
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
   },
   "include": ["vite.config.ts"]
 }

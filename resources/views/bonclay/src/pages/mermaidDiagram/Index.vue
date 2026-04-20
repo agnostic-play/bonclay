@@ -158,9 +158,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { FilePlus2 } from "lucide-vue-next";
 
-import diagramCollectionAPI from "@/api/DiagramCollectionServices.ts";
+import diagramCollectionAPI from "@/api/diagramCollectionServices";
 import { useApiFeedback } from "@/composables/useApiFeedback";
-import type { DiagramCollection } from "@/types/entities.ts";
+import type { DiagramCollection } from "@/types/entities";
 
 const router = useRouter();
 const searchQuery = ref("");
