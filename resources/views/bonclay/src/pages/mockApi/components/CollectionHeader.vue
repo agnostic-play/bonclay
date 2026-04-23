@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Plus, Copy, Check, History } from 'lucide-vue-next'
+import { Plus, Copy, Check, History, ArrowLeft } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { updateCollection } from '@/api'
-import { useRoute, RouterLink } from 'vue-router'
+import { useRoute, useRouter, RouterLink } from 'vue-router'
 
 const route = useRoute()
+const router = useRouter()
 
 interface Props {
   collectionId: string
@@ -57,6 +58,18 @@ const toggleProxy = async () => {
 
 <template>
   <div>
+    <!-- Back Navigation -->
+    <div class="mb-4">
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors"
+        @click="router.push({ name: 'MockApiTools-Index', params: { slug: route.params.slug } })"
+      >
+        <ArrowLeft class="w-4 h-4" />
+        Back to Collections
+      </button>
+    </div>
+
     <!-- Title Section -->
     <div class="flex items-start justify-between">
       <div>
