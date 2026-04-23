@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Loader2 } from 'lucide-vue-next'
+import { Loader2, Info } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Dialog,
   DialogContent,
@@ -111,7 +112,18 @@ const handleSubmit = async () => {
           </div>
 
           <div class="space-y-2 flex-1">
-            <Label for="ep-path">Path <span class="text-red-500">*</span></Label>
+            <div class="flex items-center gap-1.5">
+              <Label for="ep-path">Path <span class="text-red-500">*</span></Label>
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <Info class="w-3.5 h-3.5 text-gray-400 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent class="max-w-xs text-xs leading-relaxed">
+                  Use <code class="font-mono">{query_params}</code> to match any query string segment.<br />
+                  e.g. <code class="font-mono">/get-user/{query_params}</code> or <code class="font-mono">/user/{query_params}/remove</code>
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <Input
               id="ep-path"
               v-model="form.path"

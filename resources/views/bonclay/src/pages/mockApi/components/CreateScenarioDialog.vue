@@ -31,11 +31,13 @@ const errorMessage = ref<string | null>(null)
 const headerViewMode = ref<'edit' | 'preview'>('edit')
 const bodyViewMode = ref<'edit' | 'preview'>('edit')
 
+const DEFAULT_HEADER = '{\n  "Content-Type": "application/json"\n}'
+
 const form = ref({
   desc: '',
   status_header: 200,
   delay: 0,
-  header: '{}',
+  header: DEFAULT_HEADER,
   body: '{}',
 })
 
@@ -43,7 +45,7 @@ watch(
   () => props.open,
   (isOpen) => {
     if (!isOpen) {
-      form.value = { desc: '', status_header: 200, delay: 0, header: '{}', body: '{}' }
+      form.value = { desc: '', status_header: 200, delay: 0, header: DEFAULT_HEADER, body: '{}' }
       errorMessage.value = null
       headerViewMode.value = 'edit'
       bodyViewMode.value = 'edit'
