@@ -43,7 +43,7 @@ watch(
   (isOpen) => {
     if (isOpen) {
       form.value = {
-        path: props.initialPath.replaceAll('[^/]+', '{query_params}'),
+        path: props.initialPath.split('[^/]+').join('{query_params}'),
         method: props.initialMethod,
         category: props.initialCategory,
         desc: props.initialDesc,
