@@ -1,6 +1,8 @@
 package entities
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 
 	"gorm.io/gorm"
@@ -51,5 +53,13 @@ func (e *EndpointEntity) BeforeCreate(tx *gorm.DB) error {
 		return err
 	}
 	e.Path = strings.ReplaceAll(e.Path, "{query_params}", "[^/]+")
+	return nil
+}
+
+func (e *EndpointEntity) BeforeUpdate(tx *gorm.DB) (err error) {
+	if e.Path != "" {
+		e.Path = strings.ReplaceAll(e.Path, "{query_params}", "[^/]+")
+	}
+
 	return nil
 }

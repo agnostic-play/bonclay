@@ -3,5 +3,7 @@
 .idea/
 .vscode
 vendor/
-
+.claude
+./claude
+.claude/
 #config.yaml
