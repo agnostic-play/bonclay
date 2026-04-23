@@ -67,7 +67,7 @@ func (s *mockService) MockAPI(echoCtx echo.Context, collectionSlug, method, apiP
 
 	var matchedEndpoint *entities.EndpointEntity
 	for _, data := range listEndpoint {
-		re := regexp.MustCompile(data.Path)
+		re := regexp.MustCompile("^" + data.Path + "$")
 		if re.MatchString(path) {
 			matchedEndpoint = &data
 			break

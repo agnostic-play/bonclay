@@ -64,3 +64,10 @@ export const getCollectionInfo = (id: string): Promise<CollectionInfo> =>
  */
 export const updateCollection = (id: string, payload: UpdateCollectionPayload): Promise<void> =>
   client.patch<void>(`/collections/${id}/update`, payload)
+
+/**
+ * DELETE /api/v2/collections/:id/remove
+ * Permanently deletes a collection and all its endpoints/scenarios.
+ */
+export const deleteCollection = (id: string): Promise<void> =>
+  client.delete<void>(`/collections/${id}/remove`)
