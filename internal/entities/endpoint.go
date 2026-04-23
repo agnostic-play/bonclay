@@ -1,8 +1,6 @@
 package entities
 
 import (
-	"errors"
-	"fmt"
 	"strings"
 
 	"gorm.io/gorm"
