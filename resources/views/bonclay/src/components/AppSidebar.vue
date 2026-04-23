@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { type SidebarProps } from '@/components/ui/sidebar'
-import { SquareTerminal, GitBranch, LockKeyhole, ScanLine } from "lucide-vue-next"
+import { SquareTerminal, GitBranch } from "lucide-vue-next"
 import NavMain from '@/components/NavMain.vue'
 import NavUser from '@/components/NavUser.vue'
 import {
@@ -48,34 +48,6 @@ const navMain = computed(() => [
       {
         title: "Collections",
         routeName: "MermaidDiagramTools-Index",
-      },
-    ],
-  },
-  {
-    title: "Encryption",
-    url: "#",
-    icon: LockKeyhole,
-    isActive: route.path.startsWith("/tools/encryption-tools"),
-    items: [
-      {
-        title: "Encrypt / Decrypt",
-        routeName: "EncryptionTools-Index",
-      },
-    ],
-  },
-  {
-    title: "Parser",
-    url: "#",
-    icon: ScanLine,
-    isActive: route.path.startsWith("/tools/parser"),
-    items: [
-      {
-        title: "EMVCo / QRIS",
-        routeName: "ParserTools-Emvco",
-      },
-      {
-        title: "ISO 8583",
-        routeName: "ParserTools-ISO",
       },
     ],
   },

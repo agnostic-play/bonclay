@@ -55,7 +55,17 @@ func (e *EndpointEntity) BeforeCreate(tx *gorm.DB) error {
 }
 
 func (e *EndpointEntity) BeforeUpdate(tx *gorm.DB) (err error) {
-	if e.Path != "" {
+	if err := e.BaseEntityWithID.BeforeUpdate(tx); err != nil {
+		return err
+	}
+
+	// When Updates() is called with a map, GORM builds SQL from Statement.Dest (the map),
+	// not the model struct — so we must patch the map directly.
+	if dest, ok := tx.Statement.Dest.(map[string]interface{}); ok {
+		if path, ok := dest["path"].(string); ok && path != "" {
+			tx.Statement.SetColumn("path", strings.ReplaceAll(path, "{query_params}", "[^/]+"))
+		}
+	} else if e.Path != "" {
 		e.Path = strings.ReplaceAll(e.Path, "{query_params}", "[^/]+")
 	}
 
