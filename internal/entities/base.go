@@ -1,6 +1,8 @@
 package entities
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,7 +35,11 @@ func (e *BaseEntityWithID) BeforeCreate(tx *gorm.DB) (err error) {
 	return
 }
 
-//func (cont repoContainerGorm) generateSlug(table, name string) string {
+func (e *BaseEntityWithID) BeforeUpdate(tx *gorm.DB) (err error) {
+	return nil
+}
+
+// func (cont repoContainerGorm) generateSlug(table, name string) string {
 //	slug := strings.Replace(strings.ToLower(strings.TrimSpace(name)), " ", "-", -1)
 //
 //	var count int64
@@ -47,4 +53,4 @@ func (e *BaseEntityWithID) BeforeCreate(tx *gorm.DB) (err error) {
 //	}
 //
 //	return slug
-//}
+// }
