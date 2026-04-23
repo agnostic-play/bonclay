@@ -54,6 +54,7 @@ const handleAccordionChange = (categoryId: string, value: string | null) => {
           :is-proxy-enable="isProxyEnable"
           :is-open="isAccordionOpen(index, endpoint.id)"
           @scenarios-updated="emit('scenariosUpdated')"
+          @endpoint-deleted="emit('scenariosUpdated')"
         />
       </Accordion>
     </div>

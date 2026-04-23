@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Loader2 } from 'lucide-vue-next'
+import { Loader2, Info, Trash2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { updateEndpoint } from '@/api'
+import { updateEndpoint, deleteEndpoint } from '@/api'
 
 interface Props {
   open: boolean
@@ -29,12 +30,15 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'update:open': [value: boolean]
   updated: []
+  deleted: []
 }>()
 
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 
 const submitting = ref(false)
 const errorMessage = ref<string | null>(null)
+const confirmDelete = ref(false)
+const deleting = ref(false)
 
 const form = ref({ path: '', method: 'GET', category: '', desc: '', delay: null as number | null })
 
@@ -50,9 +54,28 @@ watch(
         delay: props.initialDelay ?? null,
       }
       errorMessage.value = null
+      confirmDelete.value = false
     }
   }
 )
+
+const handleDelete = async () => {
+  if (!confirmDelete.value) {
+    confirmDelete.value = true
+    return
+  }
+  deleting.value = true
+  try {
+    await deleteEndpoint(props.endpointId)
+    emit('update:open', false)
+    emit('deleted')
+  } catch (err: any) {
+    errorMessage.value = err?.message || 'Failed to delete endpoint'
+  } finally {
+    deleting.value = false
+    confirmDelete.value = false
+  }
+}
 
 const handleSubmit = async () => {
   if (!form.value.path.trim()) {
@@ -89,7 +112,7 @@ const handleSubmit = async () => {
     <DialogContent class="sm:max-w-md">
       <DialogHeader>
         <DialogTitle>Edit Endpoint</DialogTitle>
-        <DialogDescription>Update the endpoint details. <br/> if you want to use query params you can set it the path with {query_params} e.g "/get-user/{query_params}" "/user/{query_params}/remove" </DialogDescription>
+        <DialogDescription>Update the endpoint details.</DialogDescription>
       </DialogHeader>
 
       <form @submit.prevent="handleSubmit" class="flex flex-col gap-5 py-2">
@@ -107,7 +130,18 @@ const handleSubmit = async () => {
           </div>
 
           <div class="space-y-2 flex-1">
-            <Label for="edit-ep-path">Path <span class="text-red-500">*</span></Label>
+            <div class="flex items-center gap-1.5">
+              <Label for="edit-ep-path">Path <span class="text-red-500">*</span></Label>
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <Info class="w-3.5 h-3.5 text-gray-400 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent class="max-w-xs text-xs leading-relaxed">
+                  Use <code class="font-mono">{query_params}</code> to match any query string segment.<br />
+                  e.g. <code class="font-mono">/get-user/{query_params}</code> or <code class="font-mono">/user/{query_params}/remove</code>
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <Input
               id="edit-ep-path"
               v-model="form.path"
@@ -159,14 +193,34 @@ const handleSubmit = async () => {
           {{ errorMessage }}
         </div>
 
-        <DialogFooter class="pt-2">
-          <Button type="button" variant="outline" size="sm" class="h-9 font-normal" :disabled="submitting" @click="emit('update:open', false)">
-            Cancel
-          </Button>
-          <Button type="submit" size="sm" class="h-9 px-4 bg-gray-900 hover:bg-gray-800 font-normal" :disabled="submitting">
-            <Loader2 v-if="submitting" class="w-4 h-4 mr-2 animate-spin" />
-            {{ submitting ? 'Saving...' : 'Save Changes' }}
-          </Button>
+        <DialogFooter class="pt-2 flex-col gap-2">
+          <div class="flex justify-between w-full gap-2">
+            <Button
+              type="button"
+              size="sm"
+              :disabled="submitting || deleting"
+              :class="confirmDelete
+                ? 'h-9 px-4 font-normal bg-red-600 hover:bg-red-700 text-white'
+                : 'h-9 px-4 font-normal text-red-600 border border-red-200 hover:bg-red-50'"
+              @click="handleDelete"
+            >
+              <Loader2 v-if="deleting" class="w-4 h-4 mr-2 animate-spin" />
+              <Trash2 v-else class="w-4 h-4 mr-2" />
+              {{ confirmDelete ? 'Confirm delete?' : 'Delete Endpoint' }}
+            </Button>
+            <div class="flex gap-2">
+              <Button type="button" variant="outline" size="sm" class="h-9 font-normal" :disabled="submitting || deleting" @click="confirmDelete = false; emit('update:open', false)">
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" class="h-9 px-4 bg-gray-900 hover:bg-gray-800 font-normal" :disabled="submitting || deleting">
+                <Loader2 v-if="submitting" class="w-4 h-4 mr-2 animate-spin" />
+                {{ submitting ? 'Saving...' : 'Save Changes' }}
+              </Button>
+            </div>
+          </div>
+          <p v-if="confirmDelete" class="text-xs text-red-500 text-left w-full">
+            This will permanently delete the endpoint and all its scenarios. Click again to confirm.
+          </p>
         </DialogFooter>
       </form>
     </DialogContent>

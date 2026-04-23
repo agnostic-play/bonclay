@@ -25,6 +25,7 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   scenariosUpdated: []
+  endpointDeleted: []
 }>()
 
 const { getMethodColor, getMethodBgColor } = useEndpointUtils()
@@ -116,7 +117,7 @@ const handleScenariosUpdate = () => emit('scenariosUpdated')
                 <Clock class="w-4 h-4 text-gray-500" />
                 Mock Scenarios
               </h4>
-              <div class="flex gap-3">
+              <div class="flex gap-3 items-center">
                 <Button variant="outline" size="sm" class="h-8 px-3 font-normal text-xs" @click="editDialogOpen = true">
                   Edit Endpoint
                 </Button>
@@ -172,6 +173,7 @@ const handleScenariosUpdate = () => emit('scenariosUpdated')
     :initial-desc="endpoint.desc"
     :initial-delay="endpoint.delay"
     @updated="handleScenariosUpdate"
+    @deleted="emit('endpointDeleted')"
   />
 
   <CreateScenarioDialog

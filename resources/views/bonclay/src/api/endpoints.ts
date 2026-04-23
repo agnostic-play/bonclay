@@ -38,3 +38,10 @@ export const createEndpoint = (payload: CreateEndpointPayload): Promise<void> =>
  */
 export const updateEndpoint = (id: string, payload: UpdateEndpointPayload): Promise<void> =>
   client.patch<void>(`/endpoints/${id}/update`, payload)
+
+/**
+ * DELETE /api/v2/endpoints/:id/remove
+ * Permanently deletes an endpoint and all its scenarios.
+ */
+export const deleteEndpoint = (id: string): Promise<void> =>
+  client.delete<void>(`/endpoints/${id}/remove`)

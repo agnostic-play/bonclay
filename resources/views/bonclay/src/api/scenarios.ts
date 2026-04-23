@@ -60,3 +60,10 @@ export const createScenarioResponse = (payload: CreateScenarioPayload): Promise<
  */
 export const updateScenarioResponse = (id: string, payload: UpdateScenarioPayload): Promise<void> =>
   client.patch<void>(`/scenario_response/${id}/update`, payload)
+
+/**
+ * DELETE /api/v2/scenario_response/:id/remove
+ * Permanently deletes a scenario response.
+ */
+export const deleteScenarioResponse = (id: string): Promise<void> =>
+  client.delete<void>(`/scenario_response/${id}/remove`)

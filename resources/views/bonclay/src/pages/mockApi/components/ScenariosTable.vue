@@ -23,7 +23,7 @@ import {
 import ScenarioDetailDialog from './ScenarioDetailDialog.vue'
 import { useScenarioUtils } from '@/pages/mockApi/composables/useScenarioUtils'
 import type { ScenarioResponse } from '@/types/api.types'
-import { setActiveScenario, removeActiveScenario, updateEndpoint } from '@/api'
+import { setActiveScenario, removeActiveScenario, updateEndpoint, deleteScenarioResponse } from '@/api'
 
 const PROXY_ROW_ID = '__proxy__'
 
@@ -43,6 +43,26 @@ const emit = defineEmits<{
 
 const { getStatusColor, formatDelay } = useScenarioUtils()
 const isToggling = ref(false)
+
+const confirmDeleteId = ref<string | null>(null)
+const deletingId = ref<string | null>(null)
+
+const handleDeleteScenario = async (scenarioId: string) => {
+  if (confirmDeleteId.value !== scenarioId) {
+    confirmDeleteId.value = scenarioId
+    return
+  }
+  deletingId.value = scenarioId
+  try {
+    await deleteScenarioResponse(scenarioId)
+    emit('scenariosUpdated')
+  } catch (err) {
+    console.error('Failed to delete scenario:', err)
+  } finally {
+    deletingId.value = null
+    confirmDeleteId.value = null
+  }
+}
 
 const selectedScenario = ref<ScenarioResponse | null>(null)
 const detailOpen = ref(false)
@@ -158,14 +178,27 @@ const toggleScenario = async (scenarioId: string): Promise<void> => {
           />
         </TableCell>
         <TableCell class="text-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            @click="viewScenario(scenario)"
-            class="h-8 px-3 font-normal text-xs text-gray-600 hover:text-gray-800"
-          >
-            View
-          </Button>
+          <div class="flex items-center justify-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              @click="viewScenario(scenario)"
+              class="h-8 px-3 font-normal text-xs text-gray-600 hover:text-gray-800"
+            >
+              View
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              :disabled="deletingId === scenario.id"
+              :class="confirmDeleteId === scenario.id
+                ? 'h-8 px-3 font-normal text-xs bg-red-600 hover:bg-red-700 text-white rounded-md'
+                : 'h-8 px-3 font-normal text-xs text-red-400 hover:text-red-600 hover:bg-red-50'"
+              @click="handleDeleteScenario(scenario.id)"
+            >
+              {{ confirmDeleteId === scenario.id ? 'Confirm?' : 'Delete' }}
+            </Button>
+          </div>
         </TableCell>
       </TableRow>
 

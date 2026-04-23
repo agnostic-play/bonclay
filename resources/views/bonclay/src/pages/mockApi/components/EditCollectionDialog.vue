@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Loader2 } from 'lucide-vue-next'
+import { Loader2, Trash2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,7 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { updateCollection } from '@/api'
+import { updateCollection, deleteCollection } from '@/api'
+import { useRouter } from 'vue-router'
 
 interface Props {
   open: boolean
@@ -28,10 +29,34 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'update:open': [value: boolean]
   updated: []
+  deleted: []
 }>()
+
+const router = useRouter()
 
 const submitting = ref(false)
 const errorMessage = ref<string | null>(null)
+const confirmDelete = ref(false)
+const deleting = ref(false)
+
+const handleDelete = async () => {
+  if (!confirmDelete.value) {
+    confirmDelete.value = true
+    return
+  }
+  deleting.value = true
+  try {
+    await deleteCollection(props.collectionId)
+    emit('update:open', false)
+    emit('deleted')
+    router.push({ name: 'MockApiTools-Index' })
+  } catch (err: any) {
+    errorMessage.value = err?.message || 'Failed to delete collection'
+  } finally {
+    deleting.value = false
+    confirmDelete.value = false
+  }
+}
 
 const form = ref({
   name: '',
@@ -51,6 +76,7 @@ watch(
         forward_proxy_url: props.initialForwardProxyUrl,
       }
       errorMessage.value = null
+      confirmDelete.value = false
     }
   }
 )
@@ -142,14 +168,34 @@ const handleSubmit = async () => {
           {{ errorMessage }}
         </div>
 
-        <DialogFooter class="pt-2">
-          <Button type="button" variant="outline" size="sm" class="h-9 font-normal" :disabled="submitting" @click="emit('update:open', false)">
-            Cancel
-          </Button>
-          <Button type="submit" size="sm" class="h-9 px-4 bg-gray-900 hover:bg-gray-800 font-normal" :disabled="submitting">
-            <Loader2 v-if="submitting" class="w-4 h-4 mr-2 animate-spin" />
-            {{ submitting ? 'Saving...' : 'Save Changes' }}
-          </Button>
+        <DialogFooter class="pt-2 flex-col gap-3">
+          <div class="flex justify-between w-full gap-2">
+            <Button
+              type="button"
+              size="sm"
+              :disabled="submitting || deleting"
+              :class="confirmDelete
+                ? 'h-9 px-4 font-normal bg-red-600 hover:bg-red-700 text-white'
+                : 'h-9 px-4 font-normal text-red-600 border border-red-200 hover:bg-red-50'"
+              @click="handleDelete"
+            >
+              <Loader2 v-if="deleting" class="w-4 h-4 mr-2 animate-spin" />
+              <Trash2 v-else class="w-4 h-4 mr-2" />
+              {{ confirmDelete ? 'Confirm delete?' : 'Delete Collection' }}
+            </Button>
+            <div class="flex gap-2">
+              <Button type="button" variant="outline" size="sm" class="h-9 font-normal" :disabled="submitting || deleting" @click="confirmDelete = false; emit('update:open', false)">
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" class="h-9 px-4 bg-gray-900 hover:bg-gray-800 font-normal" :disabled="submitting || deleting">
+                <Loader2 v-if="submitting" class="w-4 h-4 mr-2 animate-spin" />
+                {{ submitting ? 'Saving...' : 'Save Changes' }}
+              </Button>
+            </div>
+          </div>
+          <p v-if="confirmDelete" class="text-xs text-red-500 text-left">
+            This will permanently delete the collection and all its endpoints and scenarios. Click again to confirm.
+          </p>
         </DialogFooter>
       </form>
     </DialogContent>
