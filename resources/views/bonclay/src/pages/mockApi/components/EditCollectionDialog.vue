@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue'
 import { updateCollection, deleteCollection } from '@/api'
 import { useRouter } from 'vue-router'
 
@@ -36,25 +37,22 @@ const router = useRouter()
 
 const submitting = ref(false)
 const errorMessage = ref<string | null>(null)
-const confirmDelete = ref(false)
+const deleteDialogOpen = ref(false)
 const deleting = ref(false)
 
-const handleDelete = async () => {
-  if (!confirmDelete.value) {
-    confirmDelete.value = true
-    return
-  }
+const handleConfirmDelete = async () => {
   deleting.value = true
   try {
     await deleteCollection(props.collectionId)
+    deleteDialogOpen.value = false
     emit('update:open', false)
     emit('deleted')
     router.push({ name: 'MockApiTools-Index' })
   } catch (err: any) {
     errorMessage.value = err?.message || 'Failed to delete collection'
+    deleteDialogOpen.value = false
   } finally {
     deleting.value = false
-    confirmDelete.value = false
   }
 }
 
@@ -76,7 +74,7 @@ watch(
         forward_proxy_url: props.initialForwardProxyUrl,
       }
       errorMessage.value = null
-      confirmDelete.value = false
+      deleteDialogOpen.value = false
     }
   }
 )
@@ -168,36 +166,38 @@ const handleSubmit = async () => {
           {{ errorMessage }}
         </div>
 
-        <DialogFooter class="pt-2 flex-col gap-3">
+        <DialogFooter class="pt-2">
           <div class="flex justify-between w-full gap-2">
             <Button
               type="button"
               size="sm"
-              :disabled="submitting || deleting"
-              :class="confirmDelete
-                ? 'h-9 px-4 font-normal bg-red-600 hover:bg-red-700 text-white'
-                : 'h-9 px-4 font-normal text-red-600 border border-red-200 bg-transparent hover:bg-red-50 hover:border-red-300'"
-              @click="handleDelete"
+              class="h-9 px-4 font-normal text-red-600 border border-red-200 bg-transparent hover:bg-red-50 hover:border-red-300"
+              :disabled="submitting"
+              @click="deleteDialogOpen = true"
             >
-              <Loader2 v-if="deleting" class="w-4 h-4 mr-2 animate-spin" />
-              <Trash2 v-else class="w-4 h-4 mr-2" />
-              {{ confirmDelete ? 'Confirm delete?' : 'Delete Collection' }}
+              <Trash2 class="w-4 h-4 mr-2" />
+              Delete Collection
             </Button>
             <div class="flex gap-2">
-              <Button type="button" variant="outline" size="sm" class="h-9 font-normal" :disabled="submitting || deleting" @click="confirmDelete = false; emit('update:open', false)">
+              <Button type="button" variant="outline" size="sm" class="h-9 font-normal" :disabled="submitting" @click="emit('update:open', false)">
                 Cancel
               </Button>
-              <Button type="submit" size="sm" class="h-9 px-4 bg-gray-900 hover:bg-gray-800 font-normal" :disabled="submitting || deleting">
+              <Button type="submit" size="sm" class="h-9 px-4 bg-gray-900 hover:bg-gray-800 font-normal" :disabled="submitting">
                 <Loader2 v-if="submitting" class="w-4 h-4 mr-2 animate-spin" />
                 {{ submitting ? 'Saving...' : 'Save Changes' }}
               </Button>
             </div>
           </div>
-          <p v-if="confirmDelete" class="text-xs text-red-500 text-left">
-            This will permanently delete the collection and all its endpoints and scenarios. Click again to confirm.
-          </p>
         </DialogFooter>
       </form>
     </DialogContent>
   </Dialog>
+
+  <ConfirmDeleteDialog
+    v-model:open="deleteDialogOpen"
+    title="Delete Collection?"
+    description="This will permanently delete the collection and all its endpoints and scenarios."
+    :loading="deleting"
+    @confirm="handleConfirmDelete"
+  />
 </template>

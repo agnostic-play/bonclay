@@ -39,7 +39,7 @@ watch(
 onMounted(() => void fetchSquads())
 
 const handleConfirm = () => {
-  const squad = squads.value.find(s => s.slug === selectedSlug.value)
+  const squad = squads.value.find(s => (s.slug || s.id) === selectedSlug.value)
   if (!squad) return
 
   setActiveSquad({ id: squad.id, slug: squad.slug, name: squad.name, plan: squad.plan })
@@ -76,8 +76,8 @@ const handleConfirm = () => {
             <SelectGroup>
               <SelectItem
                 v-for="squad in squads"
-                :key="squad.slug"
-                :value="squad.slug"
+                :key="squad.id"
+                :value="squad.slug || squad.id"
               >
                 {{ squad.name }}
               </SelectItem>

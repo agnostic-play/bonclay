@@ -22,6 +22,12 @@ type CustomVariableReq struct {
 	Value        string `json:"value" validate:"required"`
 }
 
+// CollectionVariableReq is the clean v2 request for creating/updating a variable.
+type CollectionVariableReq struct {
+	Key   string `json:"key" validate:"required"`
+	Value string `json:"value" validate:"required"`
+}
+
 type SetActiveScenarioReq struct {
 	EndpointID string `json:"endpoint_id" validate:"required,uuid"`
 	ScenarioID string `json:"scenario_id" validate:"required"`

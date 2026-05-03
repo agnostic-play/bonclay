@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Plus, Copy, Check, History, ArrowLeft } from 'lucide-vue-next'
+import { Plus, Copy, Check, History, ArrowLeft, Braces } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { updateCollection } from '@/api'
@@ -25,6 +25,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   editCollection: []
   createNewEndpoint: []
+  openVariables: []
   updated: []
 }>()
 
@@ -83,6 +84,10 @@ const toggleProxy = async () => {
       <div class="flex gap-2">
         <Button variant="outline" size="sm" @click="emit('editCollection')" class="h-9 px-4 font-normal">
           Edit Collection
+        </Button>
+        <Button variant="outline" size="sm" @click="emit('openVariables')" class="h-9 px-4 font-normal">
+          <Braces class="w-4 h-4 mr-2" />
+          Variables
         </Button>
         <RouterLink :to="{ name: 'MockApiTools-CollectionHistory', params: { slug: route.params.slug, collectionSlug: route.params.collectionSlug } }">
           <Button variant="outline" size="sm" class="h-9 px-4 font-normal">

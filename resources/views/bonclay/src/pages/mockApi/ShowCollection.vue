@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from '@/components/ui/resizable'
 import CollectionHeader from '@/pages/mockApi/components/CollectionHeader.vue'
 import ConfigurationSection from '@/pages/mockApi/components/ConfigurationSection.vue'
 import ApiCategoriesSection from '@/pages/mockApi/components/ApiCategoriesSection.vue'
 import EditCollectionDialog from '@/pages/mockApi/components/EditCollectionDialog.vue'
 import CreateEndpointDialog from '@/pages/mockApi/components/CreateEndpointDialog.vue'
+import EnvironmentVariablesPanel from '@/pages/mockApi/components/EnvironmentVariablesPanel.vue'
 import { type CollectionDetail } from '@/types/api.types'
 import { getCollectionDetail } from '@/api'
 import { useRoute } from 'vue-router'
@@ -33,10 +39,7 @@ watch(
   () => route.params.collectionSlug,
   async (newSlug) => {
     const slug = newSlug ? String(newSlug) : undefined
-    if (!slug) {
-      collection.value = null
-      return
-    }
+    if (!slug) { collection.value = null; return }
     await fetchCollection(slug)
   },
   { immediate: true }
@@ -70,65 +73,83 @@ const activeScenarioCount = computed(() => {
 
 const editDialogOpen = ref(false)
 const endpointDialogOpen = ref(false)
-
-const handleEditCollection = () => { editDialogOpen.value = true }
-const handleCreateNewEndpoint = () => { endpointDialogOpen.value = true }
+const variablesOpen = ref(false)
 
 const refresh = () => {
   const slug = route.params.collectionSlug ? String(route.params.collectionSlug) : undefined
   if (slug) fetchCollection(slug)
 }
-
-const handleScenarioUpdate = refresh
 </script>
 
 <template>
-  <div class="min-h-screen bg-white p-5 pt-0 ">
-    <div class="mx-auto">
-      <Card class="overflow-hidden border shadow-sm bg-white">
-        <CardContent class="pt-5">
-          <div v-if="loading" class="p-8 text-center">
-            <div class="animate-pulse">Loading collection...</div>
-          </div>
-          
-          <div v-else-if="error" class="p-8 text-center text-red-600">
-            {{ error }}
-          </div>
-          
-          <div v-else-if="collection">
-            <div class="p-8 px-4 py-0">
-              <div class="space-y-4">
-                <CollectionHeader
-                  :collection-id="collection.id"
-                  :collection-name="collection.name"
-                  :collection-desc="collection.desc"
-                  :total-endpoints="totalEndpoints"
-                  :active-scenario-count="activeScenarioCount"
-                  :category-count="categoryCount"
-                  :forward-proxy-url="collection.forward_proxy_url || undefined"
-                  :is-proxy-enable="collection.is_proxy_enable"
-                  @edit-collection="handleEditCollection"
-                  @create-new-endpoint="handleCreateNewEndpoint"
-                  @updated="refresh" />
+  <div class="min-h-screen bg-white p-5 pt-0">
+    <ResizablePanelGroup direction="horizontal" class="!h-auto gap-0">
 
-                <ConfigurationSection
-                  :collection-id="collection.id"
-                  :base-url="mockBaseUrl"
-                  :documentation-url="collection.docs" />
-              </div>
+      <!-- Collection panel -->
+      <ResizablePanel :default-size="100" :min-size="40">
+        <Card class="overflow-hidden border shadow-sm bg-white">
+          <CardContent class="pt-5">
+            <div v-if="loading" class="p-8 text-center">
+              <div class="animate-pulse">Loading collection...</div>
             </div>
 
-            <ApiCategoriesSection
-              :categories="collection.endpoints"
-              :base-url="mockBaseUrl"
-              :is-proxy-enable="collection.is_proxy_enable"
-              @scenarios-updated="handleScenarioUpdate"
-            />
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+            <div v-else-if="error" class="p-8 text-center text-red-600">
+              {{ error }}
+            </div>
 
+            <div v-else-if="collection">
+              <div class="px-4 py-0">
+                <div class="space-y-4">
+                  <CollectionHeader
+                    :collection-id="collection.id"
+                    :collection-name="collection.name"
+                    :collection-desc="collection.desc"
+                    :total-endpoints="totalEndpoints"
+                    :active-scenario-count="activeScenarioCount"
+                    :category-count="categoryCount"
+                    :forward-proxy-url="collection.forward_proxy_url || undefined"
+                    :is-proxy-enable="collection.is_proxy_enable"
+                    @edit-collection="editDialogOpen = true"
+                    @create-new-endpoint="endpointDialogOpen = true"
+                    @open-variables="variablesOpen = !variablesOpen"
+                    @updated="refresh"
+                  />
+                  <ConfigurationSection
+                    :collection-id="collection.id"
+                    :base-url="mockBaseUrl"
+                    :documentation-url="collection.docs"
+                  />
+                </div>
+              </div>
+
+              <ApiCategoriesSection
+                :categories="collection.endpoints"
+                :base-url="mockBaseUrl"
+                :is-proxy-enable="collection.is_proxy_enable"
+                @scenarios-updated="refresh"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </ResizablePanel>
+
+      <!-- Variables panel (toggled) -->
+      <template v-if="variablesOpen && collection">
+        <ResizableHandle :with-handle="true" class="mx-3 bg-transparent data-[resize-handle-state=drag]:bg-border" />
+        <ResizablePanel :default-size="35" :min-size="20" :max-size="55">
+          <Card class="overflow-hidden border shadow-sm bg-white h-full">
+            <EnvironmentVariablesPanel
+              :collection-id="collection.id"
+              :collection-slug="collection.slug"
+              @close="variablesOpen = false"
+            />
+          </Card>
+        </ResizablePanel>
+      </template>
+
+    </ResizablePanelGroup>
+
+    <!-- Dialogs -->
     <EditCollectionDialog
       v-if="collection"
       v-model:open="editDialogOpen"
@@ -137,14 +158,15 @@ const handleScenarioUpdate = refresh
       :initial-desc="collection.desc"
       :initial-docs="collection.docs"
       :initial-forward-proxy-url="collection.forward_proxy_url"
-      @updated="refresh" />
+      @updated="refresh"
+    />
 
     <CreateEndpointDialog
       v-if="collection"
       v-model:open="endpointDialogOpen"
       :collection-id="collection.id"
       :existing-endpoints="Object.values(collection.endpoints).flat()"
-      @created="refresh" />
+      @created="refresh"
+    />
   </div>
 </template>
-

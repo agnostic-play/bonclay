@@ -43,6 +43,7 @@ func (h handlers) Routes() {
 	diagramCollHandlers := NewDiagramCollectionHandlers(crudServices.DiagramCollectionServices, crudServices.DiagramServices)
 	collectionHandler := NewCollectionHandlers(crudServices.CollectionServices, crudServices.EndpointServices, h.serviceContainer)
 	scenarioHandler := NewScenarioRoutes(crudServices.ScenarioServices, h.serviceContainer)
+	customVariableHandlers := NewBaseCRUDHandlers(crudServices.CustomVariableServices)
 
 	// Legacy routes (not yet migrated to v2)
 	h.server.GET("/api/collection/custom_variable/list/:collectionSlug", h.getCustomVariable)
@@ -65,10 +66,17 @@ func (h handlers) Routes() {
 	diagramCollHandlers.RegisterRoutes(apiV2)
 	collectionHandler.RegisterRoutes(apiV2)
 	scenarioHandler.RegisterRoutes(apiV2)
+	customVariableHandlers.RegisterRoutes(apiV2)
 
 	apiV2.GET("/squad/detail/:slug", h.getSquadDetail)
 
 	apiV2.GET("/collections/:slug/history", h.getHistory)
 	apiV2.DELETE("/collections/:slug/history", h.clearHistory)
+
+	// Environment variables for a collection
+	apiV2.GET("/collections/:slug/variables", h.listCollectionVariables)
+	apiV2.POST("/collections/:slug/variables", h.createCollectionVariable)
+	apiV2.PATCH("/collections/variables/:id", h.updateCollectionVariable)
+	apiV2.DELETE("/collections/variables/:id", h.deleteCollectionVariable)
 
 }

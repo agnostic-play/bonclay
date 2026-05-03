@@ -13,8 +13,15 @@ import (
 )
 
 type CustomVariableService interface {
+	// Legacy methods kept for backward compatibility
 	GetCustomVariable(ctx context.Context, slug string) ([]repository2.CustomVariableEntity, error)
 	CreateOrUpdateCustomVariable(ctx context.Context, id string, req CustomVariableReq) (repository2.CustomVariableEntity, error)
+
+	// v2 methods
+	ListVariables(ctx context.Context, collectionSlug string) ([]repository2.CustomVariableEntity, error)
+	CreateVariable(ctx context.Context, collectionID, key, value string) (repository2.CustomVariableEntity, error)
+	UpdateVariable(ctx context.Context, id, key, value string) (repository2.CustomVariableEntity, error)
+	DeleteVariable(ctx context.Context, id string) error
 }
 
 type customVariableService struct {
@@ -73,4 +80,36 @@ func (req CustomVariableReq) translate() repository2.CustomVariableEntity {
 		Key:          req.Key,
 		Value:        req.Value,
 	}
+}
+
+func (s *customVariableService) ListVariables(ctx context.Context, collectionSlug string) ([]repository2.CustomVariableEntity, error) {
+	collQuery := &pagination.ListQuery{ShowAll: true, Filters: map[string]interface{}{"slug = ?": collectionSlug}}
+	collResult, err := s.collectionService.GetList(ctx, collQuery)
+	if err != nil || len(collResult.List) == 0 {
+		return nil, fmt.Errorf("collection not found")
+	}
+	return s.repoContainer.GetCustomVariableRepo().GetListCustomVariableByCollectionId(ctx, collResult.List[0].ID.String())
+}
+
+func (s *customVariableService) CreateVariable(ctx context.Context, collectionID, key, value string) (repository2.CustomVariableEntity, error) {
+	entity := repository2.CustomVariableEntity{
+		CollectionID: collectionID,
+		Key:          key,
+		Value:        value,
+	}
+	return s.repoContainer.GetCustomVariableRepo().CreateOrUpdateCustomVariable(ctx, "", entity)
+}
+
+func (s *customVariableService) UpdateVariable(ctx context.Context, id, key, value string) (repository2.CustomVariableEntity, error) {
+	existing, err := s.repoContainer.GetCustomVariableRepo().GetCustomVariableById(ctx, id)
+	if err != nil {
+		return repository2.CustomVariableEntity{}, err
+	}
+	existing.Key = key
+	existing.Value = value
+	return s.repoContainer.GetCustomVariableRepo().CreateOrUpdateCustomVariable(ctx, id, existing)
+}
+
+func (s *customVariableService) DeleteVariable(ctx context.Context, id string) error {
+	return s.repoContainer.GetCustomVariableRepo().DeleteCustomVariableById(ctx, id)
 }

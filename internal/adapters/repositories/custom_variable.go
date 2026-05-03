@@ -28,6 +28,7 @@ type CustomVariableRepoInterface interface {
 	GetCustomVariableById(ctx context.Context, customVariableID string) (CustomVariableEntity, error)
 	GetCustomVariableByKeyAndCollectionId(ctx context.Context, collectionId, key string) (CustomVariableEntity, error)
 	GetListCustomVariableByCollectionId(ctx context.Context, collectionId string) ([]CustomVariableEntity, error)
+	DeleteCustomVariableById(ctx context.Context, id string) error
 }
 
 type customVariableRepository struct {
@@ -105,4 +106,17 @@ func (r *customVariableRepository) GetListCustomVariableByCollectionId(ctx conte
 	}
 
 	return entity, nil
+}
+
+func (r *customVariableRepository) DeleteCustomVariableById(ctx context.Context, id string) error {
+	exec := r.dbClient.client(ctx).Table(customVariable).
+		Where("id = ?", id).
+		Delete(&CustomVariableEntity{})
+	if exec.Error != nil {
+		return fmt.Errorf("query error: %s", exec.Error)
+	}
+	if exec.RowsAffected < 1 {
+		return fmt.Errorf("custom variable not found")
+	}
+	return nil
 }

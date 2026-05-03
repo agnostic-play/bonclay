@@ -178,21 +178,27 @@ func (s *mockService) forwardToProxy(echoCtx echo.Context, endpoint entities.End
 	}, nil
 }
 
-// applyEnvironmentVariables replaces template variables in the response body
+// applyEnvironmentVariables replaces {{key}} placeholders in the response body and headers.
 func (res *MockEntityRes) applyEnvironmentVariables(env map[string]string) {
-	res.Body = variableRegex.ReplaceAllStringFunc(res.Body, func(match string) string {
-		// Extract variable name without {{ }}
+	res.Body = replaceEnvVars(res.Body, env)
+	res.Header = replaceEnvVars(res.Header, env)
+}
+
+// replaceEnvVars replaces all {{key}} placeholders in s with values from env.
+// Unmatched placeholders are left as-is. Works on any string depth including nested JSON.
+func replaceEnvVars(s string, env map[string]string) string {
+	if len(env) == 0 || s == "" {
+		return s
+	}
+	return variableRegex.ReplaceAllStringFunc(s, func(match string) string {
 		submatch := variableRegex.FindStringSubmatch(match)
 		if len(submatch) < 2 {
 			return match
 		}
-
 		varName := strings.TrimSpace(submatch[1])
 		if value, exists := env[varName]; exists {
 			return value
 		}
-
-		// Return original placeholder if variable not found
 		return match
 	})
 }

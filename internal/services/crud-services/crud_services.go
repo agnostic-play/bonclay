@@ -1,7 +1,7 @@
 package crud_services
 
 import (
-	`berlin.allobank.com/tools/bonclay/internal/adapters/repositories`
+	"berlin.allobank.com/tools/bonclay/internal/adapters/repositories"
 	"berlin.allobank.com/tools/bonclay/internal/entities"
 )
 
@@ -10,10 +10,11 @@ type Services struct {
 	DiagramServices           BaseCRUDService[entities.DiagramEntity]
 
 	// V2 API Services
-	SquadServices      BaseCRUDService[entities.SquadEntity]
-	CollectionServices BaseCRUDService[entities.CollectionEntity]
-	EndpointServices   BaseCRUDService[entities.EndpointEntity]
-	ScenarioServices   BaseCRUDService[entities.ScenarioEntity]
+	SquadServices          BaseCRUDService[entities.SquadEntity]
+	CollectionServices     BaseCRUDService[entities.CollectionEntity]
+	EndpointServices       BaseCRUDService[entities.EndpointEntity]
+	ScenarioServices       BaseCRUDService[entities.ScenarioEntity]
+	CustomVariableServices BaseCRUDService[entities.CustomVariable]
 }
 
 func NewCRUDServices(dbClient repositories.DBClient) *Services {
@@ -26,5 +27,7 @@ func NewCRUDServices(dbClient repositories.DBClient) *Services {
 		CollectionServices: NewBaseCRUDServices[entities.CollectionEntity](new(entities.CollectionEntity), dbClient),
 		EndpointServices:   NewBaseCRUDServices[entities.EndpointEntity](new(entities.EndpointEntity), dbClient),
 		ScenarioServices:   NewBaseCRUDServices[entities.ScenarioEntity](new(entities.ScenarioEntity), dbClient),
+
+		CustomVariableServices: NewBaseCRUDServices[entities.CustomVariable](new(entities.CustomVariable), dbClient),
 	}
 }

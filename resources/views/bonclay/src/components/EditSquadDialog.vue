@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue'
 import { updateSquad, deleteSquad } from '@/api'
 import { useSquadSession } from '@/composables/useSquadSession'
 
@@ -34,7 +35,7 @@ const { activeSquadId, clearActiveSquad } = useSquadSession()
 
 const submitting = ref(false)
 const errorMessage = ref<string | null>(null)
-const confirmDelete = ref(false)
+const deleteDialogOpen = ref(false)
 const deleting = ref(false)
 
 const form = ref({ name: '', desc: '' })
@@ -45,29 +46,26 @@ watch(
     if (isOpen) {
       form.value = { name: props.initialName, desc: props.initialDesc }
       errorMessage.value = null
-      confirmDelete.value = false
+      deleteDialogOpen.value = false
     }
   }
 )
 
-const handleDelete = async () => {
-  if (!confirmDelete.value) {
-    confirmDelete.value = true
-    return
-  }
+const handleConfirmDelete = async () => {
   deleting.value = true
   try {
     await deleteSquad(props.squadId)
     if (activeSquadId.value === props.squadId) {
       clearActiveSquad()
     }
+    deleteDialogOpen.value = false
     emit('update:open', false)
     emit('deleted')
   } catch (err: any) {
     errorMessage.value = err?.message || 'Failed to delete squad'
+    deleteDialogOpen.value = false
   } finally {
     deleting.value = false
-    confirmDelete.value = false
   }
 }
 
@@ -133,20 +131,17 @@ const handleSubmit = async () => {
           {{ errorMessage }}
         </div>
 
-        <DialogFooter class="pt-2 flex-col gap-3">
+        <DialogFooter class="pt-2">
           <div class="flex justify-between w-full gap-2">
             <Button
               type="button"
               size="sm"
-              :disabled="submitting || deleting"
-              :class="confirmDelete
-                ? 'h-9 px-4 font-normal bg-red-600 hover:bg-red-700 text-white'
-                : 'h-9 px-4 font-normal text-red-600 border border-red-200 bg-transparent hover:bg-red-50 hover:border-red-300'"
-              @click="handleDelete"
+              class="h-9 px-4 font-normal text-red-600 border border-red-200 bg-transparent hover:bg-red-50 hover:border-red-300"
+              :disabled="submitting"
+              @click="deleteDialogOpen = true"
             >
-              <Loader2 v-if="deleting" class="w-4 h-4 mr-2 animate-spin" />
-              <Trash2 v-else class="w-4 h-4 mr-2" />
-              {{ confirmDelete ? 'Confirm delete?' : 'Delete Squad' }}
+              <Trash2 class="w-4 h-4 mr-2" />
+              Delete Squad
             </Button>
             <div class="flex gap-2">
               <Button
@@ -154,8 +149,8 @@ const handleSubmit = async () => {
                 variant="outline"
                 size="sm"
                 class="h-9 font-normal"
-                :disabled="submitting || deleting"
-                @click="confirmDelete = false; emit('update:open', false)"
+                :disabled="submitting"
+                @click="emit('update:open', false)"
               >
                 Cancel
               </Button>
@@ -163,18 +158,23 @@ const handleSubmit = async () => {
                 type="submit"
                 size="sm"
                 class="h-9 px-4 bg-gray-900 hover:bg-gray-800 font-normal"
-                :disabled="submitting || deleting"
+                :disabled="submitting"
               >
                 <Loader2 v-if="submitting" class="w-4 h-4 mr-2 animate-spin" />
                 {{ submitting ? 'Saving...' : 'Save Changes' }}
               </Button>
             </div>
           </div>
-          <p v-if="confirmDelete" class="text-xs text-red-500 text-left">
-            This will permanently delete the squad and all its collections, endpoints, and scenarios. Click again to confirm.
-          </p>
         </DialogFooter>
       </form>
     </DialogContent>
   </Dialog>
+
+  <ConfirmDeleteDialog
+    v-model:open="deleteDialogOpen"
+    title="Delete Squad?"
+    description="This will permanently delete the squad and all its collections, endpoints, and scenarios."
+    :loading="deleting"
+    @confirm="handleConfirmDelete"
+  />
 </template>

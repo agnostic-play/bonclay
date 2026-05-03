@@ -461,8 +461,7 @@ const lastUpdatedText = computed(() => {
 /* ---------------- sharing ---------------- */
 // sharing refs & constants
 const showShare = ref(false)
-/** Hardcoded host base as requested */
-const SHARE_BASE = diagramServices.getBaseURL()
+const SHARE_BASE = new URL(diagramServices.getBaseURL()).origin
 const shareUrl = ref<string>('')
 
 // small helper to make base64 URL-safe (base64url)

@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import ConfirmDeleteDialog from '@/components/ConfirmDeleteDialog.vue'
 import { updateEndpoint, deleteEndpoint } from '@/api'
 
 interface Props {
@@ -37,7 +38,7 @@ const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 
 const submitting = ref(false)
 const errorMessage = ref<string | null>(null)
-const confirmDelete = ref(false)
+const deleteDialogOpen = ref(false)
 const deleting = ref(false)
 
 const form = ref({ path: '', method: 'GET', category: '', desc: '', delay: null as number | null })
@@ -54,26 +55,23 @@ watch(
         delay: props.initialDelay ?? null,
       }
       errorMessage.value = null
-      confirmDelete.value = false
+      deleteDialogOpen.value = false
     }
   }
 )
 
-const handleDelete = async () => {
-  if (!confirmDelete.value) {
-    confirmDelete.value = true
-    return
-  }
+const handleConfirmDelete = async () => {
   deleting.value = true
   try {
     await deleteEndpoint(props.endpointId)
+    deleteDialogOpen.value = false
     emit('update:open', false)
     emit('deleted')
   } catch (err: any) {
     errorMessage.value = err?.message || 'Failed to delete endpoint'
+    deleteDialogOpen.value = false
   } finally {
     deleting.value = false
-    confirmDelete.value = false
   }
 }
 
@@ -193,36 +191,38 @@ const handleSubmit = async () => {
           {{ errorMessage }}
         </div>
 
-        <DialogFooter class="pt-2 flex-col gap-2">
+        <DialogFooter class="pt-2">
           <div class="flex justify-between w-full gap-2">
             <Button
               type="button"
               size="sm"
-              :disabled="submitting || deleting"
-              :class="confirmDelete
-                ? 'h-9 px-4 font-normal bg-red-600 hover:bg-red-700 text-white'
-                : 'h-9 px-4 font-normal text-red-600 border border-red-200 bg-transparent hover:bg-red-50 hover:border-red-300'"
-              @click="handleDelete"
+              class="h-9 px-4 font-normal text-red-600 border border-red-200 bg-transparent hover:bg-red-50 hover:border-red-300"
+              :disabled="submitting"
+              @click="deleteDialogOpen = true"
             >
-              <Loader2 v-if="deleting" class="w-4 h-4 mr-2 animate-spin" />
-              <Trash2 v-else class="w-4 h-4 mr-2" />
-              {{ confirmDelete ? 'Confirm delete?' : 'Delete Endpoint' }}
+              <Trash2 class="w-4 h-4 mr-2" />
+              Delete Endpoint
             </Button>
             <div class="flex gap-2">
-              <Button type="button" variant="outline" size="sm" class="h-9 font-normal" :disabled="submitting || deleting" @click="confirmDelete = false; emit('update:open', false)">
+              <Button type="button" variant="outline" size="sm" class="h-9 font-normal" :disabled="submitting" @click="emit('update:open', false)">
                 Cancel
               </Button>
-              <Button type="submit" size="sm" class="h-9 px-4 bg-gray-900 hover:bg-gray-800 font-normal" :disabled="submitting || deleting">
+              <Button type="submit" size="sm" class="h-9 px-4 bg-gray-900 hover:bg-gray-800 font-normal" :disabled="submitting">
                 <Loader2 v-if="submitting" class="w-4 h-4 mr-2 animate-spin" />
                 {{ submitting ? 'Saving...' : 'Save Changes' }}
               </Button>
             </div>
           </div>
-          <p v-if="confirmDelete" class="text-xs text-red-500 text-left w-full">
-            This will permanently delete the endpoint and all its scenarios. Click again to confirm.
-          </p>
         </DialogFooter>
       </form>
     </DialogContent>
   </Dialog>
+
+  <ConfirmDeleteDialog
+    v-model:open="deleteDialogOpen"
+    title="Delete Endpoint?"
+    description="This will permanently delete the endpoint and all its scenarios."
+    :loading="deleting"
+    @confirm="handleConfirmDelete"
+  />
 </template>

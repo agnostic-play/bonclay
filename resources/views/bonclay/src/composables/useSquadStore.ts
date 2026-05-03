@@ -21,7 +21,7 @@ function mapSquad(s: { id: string; name: string; slug: string; desc?: string }):
   return {
     id: s.id,
     name: s.name,
-    slug: s.slug,
+    slug: s.slug || s.id,
     plan: s.desc ?? '',
     logo: Clover,
   }
