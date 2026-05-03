@@ -201,7 +201,7 @@ const handleSubmit = async () => {
               :disabled="submitting || deleting"
               :class="confirmDelete
                 ? 'h-9 px-4 font-normal bg-red-600 hover:bg-red-700 text-white'
-                : 'h-9 px-4 font-normal text-red-600 border border-red-200 hover:bg-red-50'"
+                : 'h-9 px-4 font-normal text-red-600 border border-red-200 bg-transparent hover:bg-red-50 hover:border-red-300'"
               @click="handleDelete"
             >
               <Loader2 v-if="deleting" class="w-4 h-4 mr-2 animate-spin" />

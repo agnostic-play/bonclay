@@ -70,3 +70,20 @@ export const getSquadDetail = (slug: string): Promise<SquadDetail> =>
  */
 export const createSquad = (payload: CreateSquadPayload): Promise<void> =>
   client.post<void>('/squads/create', payload)
+
+export interface UpdateSquadPayload {
+  name?: string
+  desc?: string
+}
+
+/**
+ * PATCH /api/v2/squads/:id/update
+ */
+export const updateSquad = (id: string, payload: UpdateSquadPayload): Promise<void> =>
+  client.patch<void>(`/squads/${id}/update`, payload)
+
+/**
+ * DELETE /api/v2/squads/:id/remove
+ */
+export const deleteSquad = (id: string): Promise<void> =>
+  client.delete<void>(`/squads/${id}/remove`)

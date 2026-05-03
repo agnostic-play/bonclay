@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Loader2, Wand2 } from 'lucide-vue-next'
+import { Loader2, Wand2, Trash2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { updateScenarioResponse, type UpdateScenarioPayload } from '@/api'
+import { updateScenarioResponse, deleteScenarioResponse, type UpdateScenarioPayload } from '@/api'
 import type { ScenarioResponse } from '@/types/api.types'
 
 interface Props {
@@ -25,10 +25,13 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'update:open': [value: boolean]
   updated: []
+  deleted: []
 }>()
 
 const submitting = ref(false)
 const errorMessage = ref<string | null>(null)
+const confirmDelete = ref(false)
+const deleting = ref(false)
 const headerViewMode = ref<'edit' | 'preview'>('edit')
 const bodyViewMode = ref<'edit' | 'preview'>('edit')
 
@@ -52,11 +55,31 @@ watch(
         body: props.scenario.body ?? '{}',
       }
       errorMessage.value = null
+      confirmDelete.value = false
       headerViewMode.value = 'edit'
       bodyViewMode.value = 'edit'
     }
   }
 )
+
+const handleDelete = async () => {
+  if (!props.scenario) return
+  if (!confirmDelete.value) {
+    confirmDelete.value = true
+    return
+  }
+  deleting.value = true
+  try {
+    await deleteScenarioResponse(props.scenario.id)
+    emit('update:open', false)
+    emit('deleted')
+  } catch (err: any) {
+    errorMessage.value = err?.message || 'Failed to delete scenario'
+  } finally {
+    deleting.value = false
+    confirmDelete.value = false
+  }
+}
 
 const highlightJson = (val: string): string => {
   if (!val.trim()) return val
@@ -267,14 +290,34 @@ const handleSubmit = async () => {
           {{ errorMessage }}
         </div>
 
-        <DialogFooter class="pt-2">
-          <Button type="button" variant="outline" size="sm" class="h-9 font-normal" :disabled="submitting" @click="emit('update:open', false)">
-            Cancel
-          </Button>
-          <Button type="submit" size="sm" class="h-9 px-4 bg-gray-900 hover:bg-gray-800 font-normal" :disabled="submitting">
-            <Loader2 v-if="submitting" class="w-4 h-4 mr-2 animate-spin" />
-            {{ submitting ? 'Saving...' : 'Save Changes' }}
-          </Button>
+        <DialogFooter class="pt-2 flex-col gap-3">
+          <div class="flex justify-between w-full gap-2">
+            <Button
+              type="button"
+              size="sm"
+              :disabled="submitting || deleting"
+              :class="confirmDelete
+                ? 'h-9 px-4 font-normal bg-red-600 hover:bg-red-700 text-white'
+                : 'h-9 px-4 font-normal text-red-600 border border-red-200 bg-transparent hover:bg-red-50 hover:border-red-300'"
+              @click="handleDelete"
+            >
+              <Loader2 v-if="deleting" class="w-4 h-4 mr-2 animate-spin" />
+              <Trash2 v-else class="w-4 h-4 mr-2" />
+              {{ confirmDelete ? 'Confirm delete?' : 'Delete Scenario' }}
+            </Button>
+            <div class="flex gap-2">
+              <Button type="button" variant="outline" size="sm" class="h-9 font-normal" :disabled="submitting || deleting" @click="confirmDelete = false; emit('update:open', false)">
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" class="h-9 px-4 bg-gray-900 hover:bg-gray-800 font-normal" :disabled="submitting || deleting">
+                <Loader2 v-if="submitting" class="w-4 h-4 mr-2 animate-spin" />
+                {{ submitting ? 'Saving...' : 'Save Changes' }}
+              </Button>
+            </div>
+          </div>
+          <p v-if="confirmDelete" class="text-xs text-red-500 text-left w-full">
+            This will permanently delete this scenario. Click again to confirm.
+          </p>
         </DialogFooter>
       </form>
     </DialogContent>
