@@ -26,6 +26,7 @@ func NewSetupHandlers(server *echo.Echo, baseURL string, container services.Serv
 func (h handlers) Routes() {
 
 	h.server.Static("/assets", "resources/views/bonclay/public/bonclay/assets")
+	h.server.Static("/static", "resources/public/assets")
 	h.server.File("/", "resources/views/bonclay/public/bonclay/index.html")
 	h.server.File("/*", "resources/views/bonclay/public/bonclay/index.html")
 	h.server.GET("/old", func(ctx echo.Context) error {
@@ -55,9 +56,9 @@ func (h handlers) Routes() {
 	h.server.GET("/squad/:slug", h.viewShowSquad)
 	h.server.GET("/squad/:slug/collection/:collectionSlug", h.viewShowCollection)
 
-	// h.server.Static("/v2/assets", "resources/views/spa/dist/assets")
-	// h.server.File("/v2", "resources/views/spa/dist/index.html")
-	// h.server.File("/v2/*", "resources/views/spa/dist/index.html")
+	h.server.Static("/v2/assets", "resources/views/spa/dist/assets")
+	h.server.File("/v2", "resources/views/spa/dist/index.html")
+	h.server.File("/v2/*", "resources/views/spa/dist/index.html")
 
 	apiV2 := h.server.Group("/api/v2")
 	diagramHandlers.RegisterRoutes(apiV2)

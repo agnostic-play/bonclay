@@ -120,7 +120,7 @@
                   <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="zoomIn()">＋</button>
                   <div class="w-px h-5 bg-gray-200 mx-1"/>
                   <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="downloadSVG">SVG</button>
-                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="downloadSVG">PNG</button>
+                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="downloadPNG">PNG</button>
                   <div class="w-px h-5 bg-gray-200 mx-1"/>
                   <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="openFullScreen">Full
                     screen
@@ -133,9 +133,9 @@
                 <div v-if="syntaxType === 'mermaid'" ref="previewRef" :class="{ 'opacity-50': isRendering }" class="absolute inset-0 select-none"
                      v-html="svgMarkup"/>
                 <!-- PlantUML: render via server image -->
-                <div v-else-if="syntaxType === 'plantuml'" class="absolute inset-0 overflow-auto flex items-center justify-center" ref="previewRef">
-                  <img v-if="plantUmlUrl" :src="plantUmlUrl" :class="{ 'opacity-50': isRendering }" class="max-w-full max-h-full object-contain select-none" alt="PlantUML Diagram" @error="onPlantUmlImgError" />
-                  <div v-else-if="!error" class="text-sm text-gray-400">Rendered diagram will appear here</div>
+                <div v-else-if="syntaxType === 'plantuml'" class="absolute inset-0 overflow-hidden" ref="previewRef">
+                  <img v-if="plantUmlUrl" :src="plantUmlUrl" :class="{ 'opacity-50': isRendering }" class="select-none" alt="PlantUML Diagram" @load="onPlantUmlImgLoad" @error="onPlantUmlImgError" />
+                  <div v-else-if="!error" class="absolute inset-0 flex items-center justify-center text-sm text-gray-400">Rendered diagram will appear here</div>
                 </div>
                 <div v-if="syntaxType === 'mermaid' && !svgMarkup && !error" class="absolute inset-0 grid place-items-center text-sm text-gray-400">
                   Rendered diagram will appear here
@@ -158,7 +158,7 @@
                   <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="zoomIn('fs')">＋</button>
                   <div class="w-px h-5 bg-gray-200 mx-1"/>
                   <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="downloadSVG">SVG</button>
-                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="downloadSVG">PNG</button>
+                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="downloadPNG">PNG</button>
                   <div class="w-px h-5 bg-gray-200 mx-1"/>
                   <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="closeFullScreen">Close
                     (Esc)
@@ -167,8 +167,8 @@
               </div>
               <div class="relative h-[calc(100vh-48px)]">
                 <div v-if="syntaxType === 'mermaid'" ref="fsPreviewRef" class="absolute inset-0 select-none" v-html="svgMarkup"/>
-                <div v-else-if="syntaxType === 'plantuml'" class="absolute inset-0 overflow-auto flex items-center justify-center" ref="fsPreviewRef">
-                  <img v-if="plantUmlUrl" :src="plantUmlUrl" class="max-w-full max-h-full object-contain select-none" alt="PlantUML Diagram" />
+                <div v-else-if="syntaxType === 'plantuml'" class="absolute inset-0 overflow-hidden" ref="fsPreviewRef">
+                  <img v-if="plantUmlUrl" :src="plantUmlUrl" class="select-none" alt="PlantUML Diagram" @load="onPlantUmlFsImgLoad" />
                 </div>
               </div>
             </div>
@@ -529,14 +529,31 @@ function disposePanzoom(i: PanZoom | null) {
 
 function attachPanZoom(containerRef: typeof previewRef, fullscreen: boolean) {
   if (fullscreen) {
-    disposePanzoom(fsPz);
+    disposePanzoom(fsPz)
     fsPz = null
   } else {
-    disposePanzoom(pz);
+    disposePanzoom(pz)
     pz = null
   }
   const container = containerRef.value
   if (!container) return
+
+  if (syntaxType.value === 'plantuml') {
+    const imgEl = container.querySelector('img') as HTMLImageElement | null
+    if (!imgEl) return
+    const instance = panzoom(imgEl, { smoothScroll: true, zoomSpeed: 0.065, maxZoom: 8, minZoom: 0.1, bounds: false })
+    if (fullscreen) fsPz = instance; else pz = instance
+    const rect = container.getBoundingClientRect()
+    const nw = imgEl.naturalWidth || 800
+    const nh = imgEl.naturalHeight || 600
+    if (rect.width > 0 && nw > 0) {
+      const scale = Math.min(rect.width / nw, rect.height / nh) * 0.9
+      instance.zoomAbs(0, 0, scale)
+      instance.moveTo((rect.width - nw * scale) / 2, (rect.height - nh * scale) / 2)
+    }
+    return
+  }
+
   const svgEl = container.querySelector('svg') as SVGSVGElement | null
   if (!svgEl) return
   svgEl.removeAttribute('width')
@@ -544,8 +561,16 @@ function attachPanZoom(containerRef: typeof previewRef, fullscreen: boolean) {
   svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet')
   svgEl.style.width = '100%'
   svgEl.style.height = '100%'
-  const instance = panzoom(svgEl, {smoothScroll: true, zoomSpeed: 0.065, maxZoom: 8, minZoom: 0.25, bounds: false})
+  const instance = panzoom(svgEl, { smoothScroll: true, zoomSpeed: 0.065, maxZoom: 8, minZoom: 0.25, bounds: false })
   if (fullscreen) fsPz = instance; else pz = instance
+}
+
+function onPlantUmlImgLoad() {
+  void nextTick(() => attachPanZoom(previewRef, false))
+}
+
+function onPlantUmlFsImgLoad() {
+  void nextTick(() => attachPanZoom(fsPreviewRef, true))
 }
 
 async function validateSyntax(text: string) {
@@ -953,17 +978,69 @@ async function removeDiagram() {
 
 /* ---------------- downloads & fullscreen ---------------- */
 function downloadSVG() {
-  if (!svgMarkup.value) {
-    toast.error('No SVG to download.');
+  if (syntaxType.value === 'plantuml') {
+    try {
+      const encoded = plantumlEncoder.encode(source.value)
+      window.open(`https://www.plantuml.com/plantuml/svg/${encoded}`, '_blank')
+    } catch { toast.error('Failed to encode PlantUML diagram.') }
     return
   }
-  const blob = new Blob([svgMarkup.value], {type: 'image/svg+xml'})
+  if (!svgMarkup.value) { toast.error('No SVG to download.'); return }
+  const blob = new Blob([svgMarkup.value], { type: 'image/svg+xml' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
   a.download = (selectedDiagram.value?.title || 'diagram') + '.svg'
   a.click()
   URL.revokeObjectURL(url)
+}
+
+function downloadPNG() {
+  if (syntaxType.value === 'plantuml') {
+    try {
+      const encoded = plantumlEncoder.encode(source.value)
+      const a = document.createElement('a')
+      a.href = `https://www.plantuml.com/plantuml/png/${encoded}`
+      a.download = (selectedDiagram.value?.title || 'diagram') + '.png'
+      a.click()
+    } catch { toast.error('Failed to encode PlantUML diagram.') }
+    return
+  }
+  if (!svgMarkup.value) { toast.error('No diagram to download.'); return }
+  const blob = new Blob([svgMarkup.value], { type: 'image/svg+xml' })
+  const url = URL.createObjectURL(blob)
+  const img = new Image()
+  img.onload = () => {
+    const probe = document.createElement('div')
+    probe.style.cssText = 'position:absolute;left:-9999px'
+    probe.innerHTML = svgMarkup.value
+    document.body.appendChild(probe)
+    const s = probe.querySelector('svg')
+    let w = 1600, h = 900
+    try {
+      const vb = (s?.getAttribute('viewBox') || '').split(/\s+/).map(Number)
+      if (vb.length === 4 && vb[2] > 0 && vb[3] > 0) {
+        w = Math.min(4000, Math.max(800, vb[2]))
+        h = Math.min(4000, Math.max(600, vb[3]))
+      }
+    } catch {}
+    document.body.removeChild(probe)
+    const canvasEl = document.createElement('canvas')
+    canvasEl.width = w; canvasEl.height = h
+    const ctx = canvasEl.getContext('2d')!
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h)
+    ctx.drawImage(img, 0, 0, w, h)
+    canvasEl.toBlob((b) => {
+      if (!b) return
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(b)
+      a.download = (selectedDiagram.value?.title || 'diagram') + '.png'
+      a.click()
+    }, 'image/png', 1)
+    URL.revokeObjectURL(url)
+  }
+  img.onerror = () => URL.revokeObjectURL(url)
+  img.src = url
 }
 
 function openFullScreen() {
@@ -996,10 +1073,23 @@ function zoomOut(target: 'fs' | 'normal' = 'normal') {
 
 function resetView(target: 'fs' | 'normal' = 'normal') {
   const inst = target === 'fs' ? fsPz : pz
-  if (inst) {
-    inst.moveTo?.(0, 0);
-    inst.zoomAbs?.(0, 0, 1)
+  if (!inst) return
+  if (syntaxType.value === 'plantuml') {
+    const containerRef = target === 'fs' ? fsPreviewRef : previewRef
+    const container = containerRef.value
+    const imgEl = container?.querySelector('img') as HTMLImageElement | null
+    if (imgEl && container) {
+      const rect = container.getBoundingClientRect()
+      const nw = imgEl.naturalWidth || 800
+      const nh = imgEl.naturalHeight || 600
+      const scale = Math.min(rect.width / nw, rect.height / nh) * 0.9
+      inst.zoomAbs(0, 0, scale)
+      inst.moveTo((rect.width - nw * scale) / 2, (rect.height - nh * scale) / 2)
+    }
+    return
   }
+  inst.moveTo?.(0, 0)
+  inst.zoomAbs?.(0, 0, 1)
 }
 
 /* ---------------- lifecycle ---------------- */

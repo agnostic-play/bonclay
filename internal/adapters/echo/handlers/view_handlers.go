@@ -85,7 +85,7 @@ func (h handlers) viewShareDiagram(ctx echo.Context) error {
 		return ctx.String(http.StatusBadRequest, "url is required")
 	}
 
-	decodeString, err := base64.StdEncoding.DecodeString(url)
+	decodeString, err := base64.RawURLEncoding.DecodeString(url)
 	if err != nil {
 		return ctx.String(http.StatusBadRequest, "url is required")
 	}
