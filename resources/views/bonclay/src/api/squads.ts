@@ -61,8 +61,8 @@ export const getSquads = (): Promise<SquadListResponse> =>
  * GET /api/squad/detail/:slug
  * Returns full squad detail including collections.
  */
-export const getSquadDetail = (slug: string): Promise<SquadDetail> =>
-  client.get<SquadDetail>(`/squad/detail/${slug}`)
+export const getSquadDetail = (slug: string, params?: { search?: string }): Promise<SquadDetail> =>
+  client.get<SquadDetail>(`/squad/detail/${slug}`, { params })
 
 /**
  * POST /api/v2/squads/create

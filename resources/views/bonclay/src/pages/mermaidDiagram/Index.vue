@@ -47,7 +47,7 @@
               <!-- Cards -->
               <Card
                   v-else
-                  v-for="collection in filteredDiagramCollections"
+                  v-for="collection in diagramCollections"
                   :key="collection.id"
                   role="button"
                   tabindex="0"
@@ -72,7 +72,7 @@
 
               <!-- Empty State -->
               <div
-                  v-if="!loading && filteredDiagramCollections.length === 0"
+                  v-if="!loading && diagramCollections.length === 0"
                   class="text-center py-12"
               >
                 <div class="text-gray-400 mb-2">
@@ -145,7 +145,7 @@
 </style>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { toast } from "vue-sonner";
 
@@ -174,11 +174,11 @@ const createForm = ref({ name: "", description: "" });
 
 const { withApiFeedback } = useApiFeedback();
 
-async function loadCollections() {
+async function loadCollections(search = '') {
   loading.value = true;
   try {
     const data = await withApiFeedback(
-        diagramCollectionAPI.getList(), // returns { list, ... }
+        diagramCollectionAPI.getList(search ? { search } : undefined),
         { errorMessage: "Failed to load collections." }
     );
     diagramCollections.value = data.data?.list ?? [];
@@ -233,15 +233,14 @@ async function submitCreate() {
   }
 }
 
-onMounted(loadCollections);
+let searchTimer: ReturnType<typeof setTimeout> | undefined
 
-const filteredDiagramCollections = computed(() => {
-  if (!searchQuery.value) return diagramCollections.value;
-  const q = searchQuery.value.toLowerCase();
-  return diagramCollections.value.filter((c) =>
-      c.name?.toLowerCase()?.includes(q) || c.description?.toLowerCase()?.includes(q)
-  );
-});
+watch(searchQuery, (val) => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => void loadCollections(val), 300)
+})
+
+onMounted(() => loadCollections());
 
 const go = (id: string | number) => {
   router.push({ name: "MermaidDiagramTools-ProjectShow", params: { id } });

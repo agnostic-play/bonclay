@@ -15,6 +15,7 @@ export interface PaginationParams {
     page_number?: number
     page_size?: number
     keyword?: string
+    search?: string
 }
 
 export abstract class BaseCRUDServices<T> extends BonClayHttpClient {

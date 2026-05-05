@@ -19,6 +19,7 @@
                   :model-value="searchText"
                   @update:modelValue="onComboChange"
                   @openChange="onComboOpenChange"
+                  :filter-function="(opts: string[]) => opts"
               >
                 <ComboboxAnchor as-child>
                   <ComboboxTrigger as-child>
@@ -77,75 +78,99 @@
           </div>
 
           <!-- Editor + Preview -->
-          <div class="h-[90vh] mt-5 w-full flex gap-4">
-            <!-- Editor Panel -->
-            <div class="w-2/5 h-full flex flex-col rounded-lg border bg-white">
-              <div class="flex items-center justify-between p-3 border-b">
-                <h2 class="text-sm font-semibold">Editor</h2>
-                <div class="text-xs text-muted-foreground flex items-center gap-2">
-                  <span v-if="lastUpdatedText" class="text-xs text-muted-foreground">{{ lastUpdatedText }}</span>
-                  <Button size="sm" class="px-2 py-1 border text-xs" @click="saveDiagram">
-                    <Save/>
-                  </Button>
+          <div class="h-[90vh] mt-5 w-full">
+            <ResizablePanelGroup direction="horizontal" class="rounded-lg border overflow-hidden">
+              <!-- Editor Panel -->
+              <ResizablePanel :default-size="40" :min-size="15">
+                <div class="h-full flex flex-col bg-white">
+                  <div class="flex items-center justify-between p-3 border-b">
+                    <h2 class="text-sm font-semibold">Editor</h2>
+                    <div class="text-xs text-muted-foreground flex items-center gap-2">
+                      <!-- <span v-if="lastUpdatedText" class="text-xs text-muted-foreground">{{ lastUpdatedText }}</span> -->
+                      <Button size="sm" class="px-2 py-1 border text-xs" @click="saveDiagram">
+                        <Save/>
+                      </Button>
 
-                  <!-- Share Diagram button -->
-                  <Button size="sm" variant="outline" class="px-2 py-1 text-xs" @click="openShare">
-                    <Share2 class="mr-1 h-3.5 w-3.5" />
-                    Share
-                  </Button>
+                      <!-- Share Diagram button -->
+                      <Button size="sm" variant="outline" class="px-2 py-1 text-xs" @click="openShare">
+                        <Share2 class="mr-1 h-3.5 w-3.5"/>
+                        Share
+                      </Button>
 
-                  <!-- Edit Diagram button -->
-                  <Button size="sm" variant="outline" class="px-2 py-1 text-xs" @click="openEditDiagram">
-                    <Pencil class="mr-1 h-3.5 w-3.5" />
-                    Edit
-                  </Button>
+                      <!-- Edit Diagram button -->
+                      <Button size="sm" variant="outline" class="px-2 py-1 text-xs" @click="openEditDiagram">
+                        <Pencil class="mr-1 h-3.5 w-3.5"/>
+                        Edit
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div ref="editorEl" class="flex-1 min-h-0"/>
+
+                  <div v-if="error" class="m-3 rounded-md border border-red-200 bg-red-50 p-3 text-red-700 text-xs">
+                    <strong class="font-medium">Syntax error:</strong>
+                    <span class="ml-1">{{ error }}</span>
+                  </div>
                 </div>
-              </div>
+              </ResizablePanel>
 
-              <div ref="editorEl" class="flex-1 min-h-0"/>
+              <ResizableHandle with-handle/>
 
-              <div v-if="error" class="m-3 rounded-md border border-red-200 bg-red-50 p-3 text-red-700 text-xs">
-                <strong class="font-medium">Syntax error:</strong>
-                <span class="ml-1">{{ error }}</span>
-              </div>
-            </div>
+              <!-- Preview Panel -->
+              <ResizablePanel :default-size="60" :min-size="20">
+                <div class="h-full flex flex-col bg-white">
+                  <div class="flex items-center justify-between p-3 border-b">
+                    <h2 class="text-sm font-semibold">Live Preview</h2>
+                    <div class="flex items-center gap-2 shrink-0">
+                      <Transition
+                          enter-active-class="transition-all duration-200"
+                          enter-from-class="opacity-0 scale-90"
+                          enter-to-class="opacity-100 scale-100"
+                          leave-active-class="transition-all duration-200"
+                          leave-from-class="opacity-100 scale-100"
+                          leave-to-class="opacity-0 scale-90"
+                      >
+                        <span v-if="savedAt" class="flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 border border-emerald-200 rounded px-2 py-0.5">
+                          <CheckCheck class="h-3.5 w-3.5"/>
+                          Saved {{ savedAt }}
+                        </span>
+                      </Transition>
+                      <div class="w-px h-5 bg-gray-200"/>
+                      <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="zoomOut()">−</button>
+                      <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="resetView()">Reset</button>
+                      <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="zoomIn()">＋</button>
+                      <div class="w-px h-5 bg-gray-200 mx-1"/>
+                      <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="downloadSVG">SVG</button>
+                      <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="downloadPNG">PNG</button>
+                      <div class="w-px h-5 bg-gray-200 mx-1"/>
+                      <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="openFullScreen">Full screen</button>
+                    </div>
+                  </div>
 
-            <!-- Preview Panel -->
-            <div class="w-3/5 h-full rounded-lg border bg-white flex flex-col">
-              <div class="flex items-center justify-between p-3 border-b">
-                <h2 class="text-sm font-semibold">Live Preview</h2>
-                <div class="flex items-center gap-2">
-                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="zoomOut()">−</button>
-                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="resetView()">Reset</button>
-                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="zoomIn()">＋</button>
-                  <div class="w-px h-5 bg-gray-200 mx-1"/>
-                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="downloadSVG">SVG</button>
-                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="downloadPNG">PNG</button>
-                  <div class="w-px h-5 bg-gray-200 mx-1"/>
-                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="openFullScreen">Full
-                    screen
-                  </button>
-                </div>
-              </div>
+                  <div class="relative flex-1 overflow-hidden">
+                    <!-- Mermaid: render inline SVG -->
+                    <div v-if="syntaxType === 'mermaid'" ref="previewRef" :class="{ 'opacity-50': isRendering }" class="absolute inset-0 select-none"
+                         v-html="svgMarkup"/>
+                    <!-- PlantUML: render via server image -->
+                    <div v-else-if="syntaxType === 'plantuml'" class="absolute inset-0 overflow-hidden" ref="previewRef">
+                      <img v-if="plantUmlUrl" :src="plantUmlUrl" :class="{ 'opacity-50': isRendering }" class="select-none" alt="PlantUML Diagram" @load="onPlantUmlImgLoad" @error="onPlantUmlImgError"/>
+                      <div v-else-if="!error" class="absolute inset-0 flex items-center justify-center text-sm text-gray-400">Rendered diagram will appear here</div>
+                    </div>
+                    <div v-if="syntaxType === 'mermaid' && !svgMarkup && !error" class="absolute inset-0 grid place-items-center text-sm text-gray-400">
+                      Rendered diagram will appear here
+                    </div>
+                    <div v-if="error" class="absolute bottom-0 left-0 right-0 m-3 rounded-md border border-red-200 bg-red-50 p-3 text-red-700 text-xs">
+                      <strong class="font-medium">Error:</strong>
+                      <span class="ml-1">{{ error }}</span>
+                    </div>
+                  </div>
 
-              <div class="relative flex-1 overflow-hidden">
-                <!-- Mermaid: render inline SVG -->
-                <div v-if="syntaxType === 'mermaid'" ref="previewRef" :class="{ 'opacity-50': isRendering }" class="absolute inset-0 select-none"
-                     v-html="svgMarkup"/>
-                <!-- PlantUML: render via server image -->
-                <div v-else-if="syntaxType === 'plantuml'" class="absolute inset-0 overflow-hidden" ref="previewRef">
-                  <img v-if="plantUmlUrl" :src="plantUmlUrl" :class="{ 'opacity-50': isRendering }" class="select-none" alt="PlantUML Diagram" @load="onPlantUmlImgLoad" @error="onPlantUmlImgError" />
-                  <div v-else-if="!error" class="absolute inset-0 flex items-center justify-center text-sm text-gray-400">Rendered diagram will appear here</div>
+                  <div v-if="lastUpdatedText" class="px-3 py-1.5 border-t bg-gray-50 flex items-center justify-end">
+                    <span class="text-xs text-muted-foreground">{{ lastUpdatedText }}</span>
+                  </div>
                 </div>
-                <div v-if="syntaxType === 'mermaid' && !svgMarkup && !error" class="absolute inset-0 grid place-items-center text-sm text-gray-400">
-                  Rendered diagram will appear here
-                </div>
-                <div v-if="error" class="absolute bottom-0 left-0 right-0 m-3 rounded-md border border-red-200 bg-red-50 p-3 text-red-700 text-xs">
-                  <strong class="font-medium">Error:</strong>
-                  <span class="ml-1">{{ error }}</span>
-                </div>
-              </div>
-            </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
 
             <!-- Full Screen Overlay -->
             <div v-if="isFullScreen" class="fixed inset-0 z-50 bg-white/95 backdrop-blur-sm">
@@ -153,22 +178,19 @@
                 <div class="text-sm font-medium">Full Screen Preview</div>
                 <div class="flex items-center gap-2">
                   <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="zoomOut('fs')">−</button>
-                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="resetView('fs')">Reset
-                  </button>
+                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="resetView('fs')">Reset</button>
                   <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="zoomIn('fs')">＋</button>
                   <div class="w-px h-5 bg-gray-200 mx-1"/>
                   <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="downloadSVG">SVG</button>
                   <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="downloadPNG">PNG</button>
                   <div class="w-px h-5 bg-gray-200 mx-1"/>
-                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="closeFullScreen">Close
-                    (Esc)
-                  </button>
+                  <button class="px-2 py-1 rounded-md border text-xs" type="button" @click="closeFullScreen">Close (Esc)</button>
                 </div>
               </div>
               <div class="relative h-[calc(100vh-48px)]">
                 <div v-if="syntaxType === 'mermaid'" ref="fsPreviewRef" class="absolute inset-0 select-none" v-html="svgMarkup"/>
                 <div v-else-if="syntaxType === 'plantuml'" class="absolute inset-0 overflow-hidden" ref="fsPreviewRef">
-                  <img v-if="plantUmlUrl" :src="plantUmlUrl" class="select-none" alt="PlantUML Diagram" @load="onPlantUmlFsImgLoad" />
+                  <img v-if="plantUmlUrl" :src="plantUmlUrl" class="select-none" alt="PlantUML Diagram" @load="onPlantUmlFsImgLoad"/>
                 </div>
               </div>
             </div>
@@ -360,7 +382,7 @@ import {toast} from 'vue-sonner'
 
 import {Card, CardContent} from '@/components/ui/card'
 import {Button} from '@/components/ui/button'
-import {Check, ChevronsUpDown, FilePlus2, Save, Search, Pencil, Trash2, Share2, Copy} from 'lucide-vue-next'
+import {Check, CheckCheck, ChevronsUpDown, FilePlus2, Save, Search, Pencil, Trash2, Share2, Copy} from 'lucide-vue-next'
 import {cn} from '@/lib/utils'
 import {
   Combobox, ComboboxAnchor, ComboboxEmpty, ComboboxGroup,
@@ -371,6 +393,7 @@ import {Input} from '@/components/ui/input'
 import {Textarea} from '@/components/ui/textarea'
 import {Label} from '@/components/ui/label'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select'
+import {ResizableHandle, ResizablePanel, ResizablePanelGroup} from '@/components/ui/resizable'
 
 /* 🔌 API service */
 import diagramCollectionAPI from '@/api/diagramCollectionServices'
@@ -401,7 +424,10 @@ const apiError = ref<string | null>(null)
 const comboSearch = ref('')
 
 function onComboOpenChange(open: boolean) {
-  if (open) comboSearch.value = ''
+  if (open) {
+    comboSearch.value = ''
+    void loadDiagramList('', false)
+  }
 }
 
 /* ---------------- mermaid + monaco ---------------- */
@@ -457,6 +483,10 @@ const lastUpdatedText = computed(() => {
   const iso = (selectedDiagram.value as any)?.latestUpdated
   return iso ? `Last updated ${new Date(iso).toLocaleString()}` : ''
 })
+
+/* ---------------- save indicator ---------------- */
+const savedAt = ref<string | null>(null)
+let savedAtTimer: ReturnType<typeof setTimeout> | undefined
 
 /* ---------------- sharing ---------------- */
 // sharing refs & constants
@@ -730,20 +760,18 @@ async function loadCollection() {
 const {withApiFeedback} = useApiFeedback();
 
 /** list diagrams; first selection uses list payload (no extra API call) */
-async function loadDiagramList() {
+async function loadDiagramList(search = '', resetSelection = true) {
   if (!collectionId.value) return
   isLoadingDiagrams.value = true;
   apiError.value = null
   try {
     const data = await withApiFeedback(
-        diagramCollectionAPI.getDiagram(collectionId.value),
+        diagramCollectionAPI.getDiagram(collectionId.value, search ? { search } : undefined),
         {errorMessage: "Failed to load diagrams."}
     )
     const list: DiagramSummary[] = data.data?.list ?? []
     diagrams.value = list.map(d => ({...d, id: String(d.id)}))
-    if (diagrams.value.length) {
-      selectedId.value = ""   // watcher will render from list
-    } else {
+    if (resetSelection && !diagrams.value.length) {
       selectedId.value = ''
       selectedDiagram.value = null
       source.value = ''
@@ -756,6 +784,13 @@ async function loadDiagramList() {
     isLoadingDiagrams.value = false
   }
 }
+
+let diagramSearchTimer: ReturnType<typeof setTimeout> | undefined
+
+watch(comboSearch, (val) => {
+  clearTimeout(diagramSearchTimer)
+  diagramSearchTimer = setTimeout(() => void loadDiagramList(val, false), 300)
+})
 
 /** prefer list payload for detail; fallback to API detail call if needed */
 function fromListAsDetail(id: string): DiagramDetail | null {
@@ -806,10 +841,17 @@ async function saveDiagram() {
       return
     }
 
+    const now = new Date().toISOString()
     selectedDiagram.value.syntax = source.value
+    ;(selectedDiagram.value as any).latestUpdated = now
     const idx = diagrams.value.findIndex(d => String(d.id) === String(selectedDiagram.value!.id))
-    if (idx >= 0) (diagrams.value[idx] as any).syntax = source.value
-    toast.success("Successfully updated diagram.")
+    if (idx >= 0) {
+      (diagrams.value[idx] as any).syntax = source.value
+      ;(diagrams.value[idx] as any).latestUpdated = now
+    }
+    clearTimeout(savedAtTimer)
+    savedAt.value = new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    savedAtTimer = setTimeout(() => { savedAt.value = null }, 3000)
     await renderDiagram()
   } catch (e: any) {
     toast.error(e?.message || 'Failed to save diagram.')

@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"strings"
+
 	"berlin.allobank.com/tools/bonclay/internal/common/pagination"
 	"gorm.io/gorm"
 )
@@ -41,18 +43,13 @@ func SearchScope(q *pagination.ListQuery, fields ...string) func(db *gorm.DB) *g
 		// (field1 LIKE ? OR field2 LIKE ? OR ...)
 		if q.Search != "" && len(fields) > 0 {
 			term := "%" + q.Search + "%"
-			query = query.Where(func(tx *gorm.DB) *gorm.DB {
-				sub := tx
-				for i, f := range fields {
-					cond := f + " LIKE ?"
-					if i == 0 {
-						sub = sub.Where(cond, term)
-					} else {
-						sub = sub.Or(cond, term)
-					}
-				}
-				return sub
-			})
+			parts := make([]string, len(fields))
+			args := make([]interface{}, len(fields))
+			for i, f := range fields {
+				parts[i] = "`" + f + "` LIKE ?"
+				args[i] = term
+			}
+			query = query.Where("("+strings.Join(parts, " OR ")+")", args...)
 		}
 
 		// AND filters...

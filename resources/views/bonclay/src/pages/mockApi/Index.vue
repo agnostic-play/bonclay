@@ -17,6 +17,7 @@ const searchQuery = ref('')
 const squad = ref<SquadDetail | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
+const activeSlug = ref<string>('')
 
 const effectiveSlug = computed(() => {
   if (route.params.slug) return String(route.params.slug)
@@ -29,10 +30,11 @@ const go = (collection: Collection) => {
   router.push({ name: 'MockApiTools-CollectionShow', params: { slug: parentSlug, collectionSlug } })
 }
 
-const fetchSquadDetail = async (slug: string) => {
+const fetchSquadDetail = async (slug: string, search = '') => {
   loading.value = true
+  activeSlug.value = slug
   try {
-    squad.value = await getSquadDetail(slug)
+    squad.value = await getSquadDetail(slug, search ? { search } : undefined)
     error.value = null
   } catch (err) {
     error.value = 'Failed to fetch squad detail'
@@ -59,14 +61,15 @@ const handleCollectionCreated = () => {
   if (effectiveSlug.value) fetchSquadDetail(effectiveSlug.value)
 }
 
-const filteredCollections = computed(() => {
-  const collections = squad.value?.collections ?? []
-  if (!searchQuery.value) return collections
-  const q = searchQuery.value.toLowerCase()
-  return collections.filter(c =>
-    c.name.toLowerCase().includes(q) || c.desc.toLowerCase().includes(q)
-  )
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+watch(searchQuery, (val) => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    if (activeSlug.value) void fetchSquadDetail(activeSlug.value, val)
+  }, 300)
 })
+
+const collections = computed(() => squad.value?.collections ?? [])
 </script>
 
 <template>
@@ -99,7 +102,7 @@ const filteredCollections = computed(() => {
           <ScrollArea class="h-full">
             <div class="space-y-5 pr-2">
               <Card
-                v-for="collection in filteredCollections"
+                v-for="collection in collections"
                 :key="collection.id"
                 role="button"
                 tabindex="0"
@@ -119,7 +122,7 @@ const filteredCollections = computed(() => {
               </Card>
 
               <!-- Empty State -->
-              <div v-if="filteredCollections.length === 0" class="text-center py-12">
+              <div v-if="collections.length === 0" class="text-center py-12">
                 <div class="text-gray-400 mb-3">
                   <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

@@ -211,6 +211,7 @@ func (h handlers) getSquadDetail(ctx echo.Context) error {
 	collectionQuery := &pagination.ListQuery{
 		ShowAll: true,
 		Filters: map[string]interface{}{"squad_id = ?": squad.ID.String()},
+		Search:  ctx.QueryParam("search"),
 	}
 	collectionsResult, err := h.serviceContainer.GetCRUDServices().CollectionServices.GetList(c, collectionQuery)
 	if err != nil {
