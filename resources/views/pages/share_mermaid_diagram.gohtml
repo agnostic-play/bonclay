@@ -49,7 +49,9 @@
                 font-weight: 500;
                 letter-spacing: -0.01em;
                 margin: 0;
-                flex: 1;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             .badge {
@@ -171,17 +173,13 @@
             #plantuml-container {
                 position: absolute;
                 inset: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                overflow: auto;
-                padding: 24px;
+                overflow: hidden;
             }
             #plantuml-img {
-                max-width: 100%;
-                max-height: 100%;
-                object-fit: contain;
                 display: block;
+                user-select: none;
+                -webkit-user-select: none;
+                -webkit-user-drag: none;
             }
 
             /* Message */
@@ -206,7 +204,12 @@
     <body>
 
     <div class="header">
-        <h1 class="title">{{with .Data}}{{or .Title "Shared Diagram"}}{{else}}Shared Diagram{{end}}</h1>
+        <div style="flex:1;min-width:0;">
+            <h1 class="title">{{with .Data}}{{or .Title "Shared Diagram"}}{{else}}Shared Diagram{{end}}</h1>
+            {{with .Data}}{{if not .UpdatedAt.IsZero}}
+                <p style="margin:2px 0 0;font-size:12px;color:var(--text-secondary);">Last updated {{.UpdatedAt.Format "02 Jan 2006, 15:04"}}</p>
+            {{end}}{{end}}
+        </div>
         {{with .Data}}
             {{if eq .SyntaxType "plantuml"}}
                 <span class="badge badge-plantuml">PlantUML</span>
@@ -243,10 +246,10 @@
             <button onclick="fitToScreen()">Fit</button>
         </div>
 
-        <div class="divider"></div>
+        <div class="divider" id="download-divider"></div>
 
-        <div class="control-group">
-            <button onclick="downloadSVG()">SVG</button>
+        <div class="control-group" id="download-group">
+            <button id="btn-svg" onclick="downloadSVG()">SVG</button>
             <button onclick="downloadPNG()">PNG</button>
         </div>
     </div>
@@ -271,6 +274,8 @@
         const themeGroup = document.getElementById('theme-group');
         const zoomGroup = document.getElementById('zoom-group');
         const fitDivider = document.getElementById('fit-divider');
+        const downloadDivider = document.getElementById('download-divider');
+        const btnSvg = document.getElementById('btn-svg');
         const srcEl = document.getElementById('mmd-source');
         const syntaxTypeEl = document.getElementById('syntax-type');
 
@@ -326,12 +331,10 @@
         }
 
         function renderPlantUml() {
-            // Hide mermaid controls, show PlantUML container
             canvas.style.display = 'none';
-            pumlContainer.style.display = 'flex';
-            themeGroup.style.display = 'none'; // theme not applicable for plantuml server render
-            zoomGroup.style.display = 'none';  // panzoom not applicable for img
-            fitDivider.style.display = 'none';
+            pumlContainer.style.display = 'block';
+            themeGroup.style.display = 'none';
+            btnSvg.style.display = 'none'; // SVG download not available cross-origin for PlantUML
 
             const encoded = encodePlantUml(syntax);
             if (!encoded) {
@@ -340,9 +343,24 @@
             }
 
             pumlImg.src = `${PLANTUML_SERVER}/${encoded}`;
+            pumlImg.onload = () => attachPanzoomToPlantUml();
             pumlImg.onerror = () => {
                 pumlContainer.innerHTML = '<div class="msg error">PlantUML server could not render the diagram. Check your syntax.</div>';
             };
+        }
+
+        function attachPanzoomToPlantUml() {
+            if (pz) try { pz.dispose(); } catch {}
+            pz = null;
+            const rect = pumlContainer.getBoundingClientRect();
+            const nw = pumlImg.naturalWidth || 800;
+            const nh = pumlImg.naturalHeight || 600;
+            pz = panzoom(pumlImg, { smoothScroll: true, zoomSpeed: 0.065, maxZoom: 8, minZoom: 0.1, bounds: false });
+            if (rect.width > 0 && nw > 0) {
+                const scale = Math.min(rect.width / nw, rect.height / nh) * 0.9;
+                pz.zoomAbs(0, 0, scale);
+                pz.moveTo((rect.width - nw * scale) / 2, (rect.height - nh * scale) / 2);
+            }
         }
 
         async function renderMermaid() {
@@ -385,23 +403,44 @@
                 bounds: false
             });
 
-            requestAnimationFrame(() => fitToScreen());
+            requestAnimationFrame(() => resetView());
         }
 
-        // ── Zoom controls (Mermaid only) ────────────────────────────────────
-        function zoomIn()    { pz && pz.smoothZoom(0, 0, 1.25); }
-        function zoomOut()   { pz && pz.smoothZoom(0, 0, 0.8); }
+        // ── Zoom controls ───────────────────────────────────────────────────
+        function getViewCenter() {
+            const el = syntaxType === 'plantuml' ? pumlContainer : canvas;
+            const r = el.getBoundingClientRect();
+            return [r.left + r.width / 2, r.top + r.height / 2];
+        }
+        function zoomIn()  { if (pz) { const [cx, cy] = getViewCenter(); pz.smoothZoom(cx, cy, 1.25); } }
+        function zoomOut() { if (pz) { const [cx, cy] = getViewCenter(); pz.smoothZoom(cx, cy, 0.8);  } }
         function resetView() {
-            if (pz) { pz.moveTo(0, 0); pz.zoomAbs(0, 0, 1); }
+            if (!pz) return;
+            if (syntaxType === 'plantuml') {
+                const rect = pumlContainer.getBoundingClientRect();
+                const nw = pumlImg.naturalWidth || 800;
+                const nh = pumlImg.naturalHeight || 600;
+                const scale = Math.min(rect.width / nw, rect.height / nh) * 0.9;
+                pz.zoomAbs(0, 0, scale);
+                pz.moveTo((rect.width - nw * scale) / 2, (rect.height - nh * scale) / 2);
+                return;
+            }
+            pz.moveTo(0, 0); pz.zoomAbs(0, 0, 1);
         }
 
-        function fitToScreen() {
+        function fitToScreen(retries) {
+            retries = retries || 0;
+            if (syntaxType === 'plantuml') { resetView(); return; }
             const svg = canvas.querySelector('svg');
             if (!svg || !pz) return;
 
-            const vb = (svg.getAttribute('viewBox') || '').split(/\s+/).map(Number);
             const rect = canvas.getBoundingClientRect();
+            if ((rect.width <= 0 || rect.height <= 0) && retries < 12) {
+                requestAnimationFrame(() => fitToScreen(retries + 1));
+                return;
+            }
 
+            const vb = (svg.getAttribute('viewBox') || '').split(/\s+/).map(Number);
             if (vb.length === 4 && vb[2] > 0 && vb[3] > 0 && rect.width > 0 && rect.height > 0) {
                 const scale = Math.min(rect.width / vb[2], rect.height / vb[3]) * 0.9;
                 const scaledW = vb[2] * scale;

@@ -1,5 +1,12 @@
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
+export interface CustomVariable {
+  id: string
+  collection_id: string
+  key: string
+  value: string
+}
+
 export interface ScenarioResponse {
   id: string
   endpoint_id: string

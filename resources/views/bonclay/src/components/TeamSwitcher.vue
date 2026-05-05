@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ChevronsUpDown, Plus, Loader2 } from "lucide-vue-next"
+import { ChevronsUpDown, Plus, Loader2, Settings2 } from "lucide-vue-next"
 import { ref, computed, onMounted, watch } from "vue"
 import CreateSquadSheet from '@/components/CreateSquadSheet.vue'
+import EditSquadDialog from '@/components/EditSquadDialog.vue'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,12 +29,13 @@ const { activeSquad, setActiveSquad } = useSquadSession()
 const { squads, loading, fetchSquads } = useSquadStore()
 
 const createSquadRef = ref<InstanceType<typeof CreateSquadSheet> | null>(null)
+const editSquadOpen = ref(false)
+const editingTeam = ref<typeof squads.value[number] | null>(null)
 
 // The squad shown in the trigger button. Initialised from session if available.
 const activeTeam = ref(activeSquad.value ? squads.value.find(s => s.slug === activeSquad.value!.slug) ?? null : null)
 
 // When the squad list arrives, restore the active team from session.
-// Initial selection is handled by SelectSquadModal.
 watch(
   squads,
   (list) => {
@@ -44,6 +46,19 @@ watch(
     }
   },
   { immediate: true }
+)
+
+// When active squad changes (e.g., from SelectSquadModal), sync the trigger display.
+watch(
+  activeSquad,
+  (squad) => {
+    if (!squad) {
+      activeTeam.value = null
+      return
+    }
+    const match = squads.value.find(s => s.slug === squad.slug)
+    if (match) activeTeam.value = match
+  }
 )
 
 // Display label for the trigger button
@@ -70,7 +85,23 @@ const handleAddTeam = () => {
 }
 
 const handleSquadCreated = async () => {
-  // Invalidate cache and re-fetch so the new squad appears immediately
+  const store = useSquadStore()
+  store.invalidate()
+  await fetchSquads(true)
+}
+
+const handleEditSquad = (team: typeof squads.value[number]) => {
+  editingTeam.value = team
+  editSquadOpen.value = true
+}
+
+const handleSquadUpdated = async () => {
+  const store = useSquadStore()
+  store.invalidate()
+  await fetchSquads(true)
+}
+
+const handleSquadDeleted = async () => {
   const store = useSquadStore()
   store.invalidate()
   await fetchSquads(true)
@@ -125,15 +156,22 @@ onMounted(() => {
             <DropdownMenuItem
               v-for="(team, index) in squads"
               :key="team.slug"
-              class="gap-2 p-2"
+              class="gap-2 p-2 pr-1"
               :class="{ 'bg-accent': activeTeam?.slug === team.slug }"
               @click="selectTeam(team)"
             >
               <div class="flex size-6 items-center justify-center rounded-sm border">
                 <component :is="team.logo" class="size-4 shrink-0" />
               </div>
-              {{ team.name }}
+              <span class="flex-1 truncate">{{ team.name }}</span>
               <DropdownMenuShortcut>⌘{{ index + 1 }}</DropdownMenuShortcut>
+              <button
+                class="ml-1 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-sidebar-accent text-muted-foreground hover:text-foreground transition-opacity"
+                @click.stop="handleEditSquad(team)"
+                title="Edit squad"
+              >
+                <Settings2 class="size-3.5" />
+              </button>
             </DropdownMenuItem>
           </template>
 
@@ -149,6 +187,17 @@ onMounted(() => {
       </DropdownMenu>
 
       <CreateSquadSheet ref="createSquadRef" @created="handleSquadCreated" />
+
+      <EditSquadDialog
+        v-if="editingTeam"
+        :open="editSquadOpen"
+        :squad-id="editingTeam.id"
+        :initial-name="editingTeam.name"
+        :initial-desc="editingTeam.plan"
+        @update:open="editSquadOpen = $event"
+        @updated="handleSquadUpdated"
+        @deleted="handleSquadDeleted"
+      />
     </SidebarMenuItem>
   </SidebarMenu>
 </template>

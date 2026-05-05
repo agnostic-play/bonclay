@@ -6,8 +6,8 @@ class DiagramCollectionServices extends BaseCRUDServices<DiagramCollection> {
         super('diagram_collections')
     }
 
-    async getDiagram(collectionID: string): Promise<PaginatedResponse<DiagramSummary>> {
-        return this.get<PaginatedResponse<DiagramSummary>>(`/${this.resource}/${collectionID}/diagrams`)
+    async getDiagram(collectionID: string, params?: { search?: string }): Promise<PaginatedResponse<DiagramSummary>> {
+        return this.get<PaginatedResponse<DiagramSummary>>(`/${this.resource}/${collectionID}/diagrams`, { params })
     }
 }
 
