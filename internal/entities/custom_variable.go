@@ -14,11 +14,11 @@ type CustomVariable struct {
 }
 
 func (e *CustomVariable) GetTableName() string {
-	return "endpoints"
+	return "custom_variables"
 }
 
 func (e *CustomVariable) GetTitle() string {
-	return "Endpoint"
+	return "Custom Variable"
 }
 
 func (e *CustomVariable) GetPreloadTables() []string {
@@ -26,11 +26,11 @@ func (e *CustomVariable) GetPreloadTables() []string {
 }
 
 func (e *CustomVariable) GetFieldForKeywords() []string {
-	return []string{"path", "method", "category", "desc"}
+	return []string{"key"}
 }
 
 func (e *CustomVariable) GetExcludeFieldForUpdate() []string {
-	return []string{"collection_id", "active_scenario"}
+	return []string{"key"}
 }
 
 func (e *CustomVariable) GetEntity() *CustomVariable {
