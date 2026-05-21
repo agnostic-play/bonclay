@@ -5,6 +5,7 @@ import ShowCollection from "@/pages/mockApi/ShowCollection.vue";
 import History from "@/pages/mockApi/History.vue";
 import MermaidDiagramToolsIndex from "@/pages/mermaidDiagram/Index.vue";
 import MermaidDiagramToolsShow from "@/pages/mermaidDiagram/Show.vue";
+import KongIndex from "@/pages/kong/Index.vue";
 
 const routes: RouteRecordRaw[] = [
     {
@@ -51,6 +52,17 @@ const routes: RouteRecordRaw[] = [
                         name: 'MermaidDiagramTools-ProjectShow',
                         component: MermaidDiagramToolsShow,
                     }
+                ]
+            },
+            {
+                path: 'kong',
+                name: 'KongTools',
+                children: [
+                    {
+                        path: 'services',
+                        name: 'KongTools-Services',
+                        component: KongIndex,
+                    },
                 ]
             },
             // You can add more children here

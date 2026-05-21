@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { type SidebarProps } from '@/components/ui/sidebar'
-import { SquareTerminal, GitBranch } from "lucide-vue-next"
+import { SquareTerminal, GitBranch, Network } from "lucide-vue-next"
 import NavMain from '@/components/NavMain.vue'
 import NavUser from '@/components/NavUser.vue'
 import {
@@ -48,6 +48,18 @@ const navMain = computed(() => [
       {
         title: "Collections",
         routeName: "MermaidDiagramTools-Index",
+      },
+    ],
+  },
+  {
+    title: "Kong",
+    url: "#",
+    icon: Network,
+    isActive: route.path.startsWith("/tools/kong"),
+    items: [
+      {
+        title: "Services",
+        routeName: "KongTools-Services",
       },
     ],
   },
