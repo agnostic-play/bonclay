@@ -24,3 +24,8 @@ database:
     maxConnLifetime: 1m
     maxIdleConn: 5
     maxOpenConn: 50
+kong:
+  adminURL: https://10.8.13.96:8444
+  adminToken: 1SKubo1s6ifGBacpL1lAqpAtqF1kZsd4
+  insecure: true
+  timeout: 15s
