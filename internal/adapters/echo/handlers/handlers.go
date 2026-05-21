@@ -45,6 +45,7 @@ func (h handlers) Routes() {
 	collectionHandler := NewCollectionHandlers(crudServices.CollectionServices, crudServices.EndpointServices, h.serviceContainer)
 	scenarioHandler := NewScenarioRoutes(crudServices.ScenarioServices, h.serviceContainer)
 	customVariableHandlers := NewBaseCRUDHandlers(crudServices.CustomVariableServices)
+	kongHandler := NewKongHandlers(h.serviceContainer.GetKongService())
 
 	// Legacy routes (not yet migrated to v2)
 	h.server.GET("/api/collection/custom_variable/list/:collectionSlug", h.getCustomVariable)
@@ -68,6 +69,7 @@ func (h handlers) Routes() {
 	collectionHandler.RegisterRoutes(apiV2)
 	scenarioHandler.RegisterRoutes(apiV2)
 	customVariableHandlers.RegisterRoutes(apiV2)
+	kongHandler.RegisterRoutes(apiV2)
 
 	apiV2.GET("/squad/detail/:slug", h.getSquadDetail)
 

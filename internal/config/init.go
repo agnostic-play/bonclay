@@ -20,6 +20,14 @@ type Config struct {
 	}
 	Database Database
 	Redis    Redis
+	Kong     Kong
+}
+
+type Kong struct {
+	AdminURL   string
+	AdminToken string
+	Insecure   bool
+	Timeout    time.Duration
 }
 
 type Redis struct {

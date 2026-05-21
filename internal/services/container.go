@@ -9,6 +9,7 @@ import (
 	api_mock_services "berlin.allobank.com/tools/bonclay/internal/services/api-mock-services"
 	common_services "berlin.allobank.com/tools/bonclay/internal/services/common-services"
 	crud_services "berlin.allobank.com/tools/bonclay/internal/services/crud-services"
+	kong_services "berlin.allobank.com/tools/bonclay/internal/services/kong-services"
 )
 
 // ServiceContainer provides access to all application services
@@ -24,6 +25,9 @@ type ServiceContainer interface {
 
 	// Common Services
 	GetEncryptionService() common_services.EncryptionService
+
+	// Kong Services
+	GetKongService() kong_services.KongService
 }
 
 func NewServiceContainer(
@@ -58,6 +62,7 @@ func NewServiceContainer(
 		),
 		historyService:    api_mock_services.NewHistoryService(redis),
 		encryptionService: common_services.NewEncryptionService(),
+		kongService:       kong_services.NewKongService(cfg.Kong),
 		config:            cfg,
 	}
 }
@@ -69,6 +74,7 @@ type serviceContainer struct {
 	customVariableService   api_mock_services.CustomVariableService
 	historyService          api_mock_services.HistoryService
 	encryptionService       common_services.EncryptionService
+	kongService             kong_services.KongService
 	config                  *config.Config
 }
 
@@ -94,4 +100,8 @@ func (c *serviceContainer) GetHistoryService() api_mock_services.HistoryService 
 
 func (c *serviceContainer) GetEncryptionService() common_services.EncryptionService {
 	return c.encryptionService
+}
+
+func (c *serviceContainer) GetKongService() kong_services.KongService {
+	return c.kongService
 }
