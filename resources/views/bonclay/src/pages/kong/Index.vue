@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { Loader2, TriangleAlert } from 'lucide-vue-next'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -12,6 +13,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { listKongServices, updateKongService, type KongService } from '@/api'
 import { useNotification } from '@/composables/useNotification'
 
@@ -21,6 +30,14 @@ const error = ref<string | null>(null)
 const searchQuery = ref('')
 const togglingId = ref<string | null>(null)
 const { success, error: notifyError } = useNotification()
+
+// Confirmation dialog state
+const confirmOpen = ref(false)
+const confirmTarget = ref<KongService | null>(null)
+const confirmLoading = ref(false)
+
+const confirmIsEnable = computed(() => !(confirmTarget.value?.enabled ?? false))
+const confirmAction = computed(() => (confirmIsEnable.value ? 'Enable' : 'Disable'))
 
 const fetchServices = async () => {
   loading.value = true
@@ -41,56 +58,48 @@ onMounted(fetchServices)
 const filteredServices = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   if (!q) return services.value
-  return services.value.filter((s) => {
-    const tagStr = (s.tags ?? []).join(',').toLowerCase()
-    return (
-      s.name?.toLowerCase().includes(q) ||
-      s.host?.toLowerCase().includes(q) ||
-      String(s.port ?? '').includes(q) ||
-      s.protocol?.toLowerCase().includes(q) ||
-      tagStr.includes(q)
-    )
-  })
+  return services.value.filter((s) => s.name?.toLowerCase().includes(q))
 })
 
-const buildUpstream = (s: KongService) => {
-  const path = s.path ?? ''
-  return `${s.protocol}://${s.host}:${s.port}${path ?? ''}`
+const requestToggle = (svc: KongService) => {
+  confirmTarget.value = svc
+  confirmOpen.value = true
 }
 
-const formatDate = (unixSec: number) => {
-  if (!unixSec) return '-'
-  try {
-    return new Date(unixSec * 1000).toLocaleString()
-  } catch {
-    return '-'
-  }
+const cancelToggle = () => {
+  if (confirmLoading.value) return
+  confirmOpen.value = false
+  confirmTarget.value = null
 }
 
-const toggleEnabled = async (svc: KongService) => {
+const confirmToggle = async () => {
+  const svc = confirmTarget.value
+  if (!svc) return
+
   const target = !svc.enabled
+  confirmLoading.value = true
   togglingId.value = svc.id
-
-  // optimistic update
-  const idx = services.value.findIndex((x) => x.id === svc.id)
-  if (idx >= 0) services.value[idx] = { ...services.value[idx], enabled: target }
 
   try {
     const updated = await updateKongService(svc.id, { enabled: target })
-    if (idx >= 0 && updated) services.value[idx] = updated
+    const idx = services.value.findIndex((x) => x.id === svc.id)
+    if (idx >= 0) {
+      services.value[idx] = updated ?? { ...services.value[idx], enabled: target }
+    }
     success(
       `Service ${target ? 'enabled' : 'disabled'}`,
       svc.name,
     )
+    confirmOpen.value = false
+    confirmTarget.value = null
   } catch (err: any) {
-    // revert
-    if (idx >= 0) services.value[idx] = { ...services.value[idx], enabled: !target }
     notifyError(
       'Failed to update service',
       err?.message || err?.details?.message || 'Unknown error',
     )
   } finally {
     togglingId.value = null
+    confirmLoading.value = false
   }
 }
 </script>
@@ -113,7 +122,7 @@ const toggleEnabled = async (svc: KongService) => {
 
           <Input
             v-model="searchQuery"
-            placeholder="Search by name, host, port, protocol or tag…"
+            placeholder="Search by name…"
             class="h-10 border-gray-200 focus:border-gray-300 focus:ring-1 focus:ring-gray-300 rounded-lg"
           />
 
@@ -127,6 +136,58 @@ const toggleEnabled = async (svc: KongService) => {
           </div>
         </div>
 
+        <!-- Confirmation dialog -->
+        <Dialog
+          :open="confirmOpen"
+          @update:open="(v: boolean) => (v ? (confirmOpen = true) : cancelToggle())"
+        >
+          <DialogContent class="sm:max-w-sm">
+            <DialogHeader>
+              <div class="flex items-center gap-3">
+                <div
+                  class="flex size-10 shrink-0 items-center justify-center rounded-full"
+                  :class="confirmIsEnable ? 'bg-green-50' : 'bg-red-50'"
+                >
+                  <TriangleAlert
+                    class="size-5"
+                    :class="confirmIsEnable ? 'text-green-600' : 'text-red-600'"
+                  />
+                </div>
+                <div>
+                  <DialogTitle>{{ confirmAction }} service?</DialogTitle>
+                  <DialogDescription class="mt-0.5">
+                    Are you sure you want to {{ confirmAction.toLowerCase() }}
+                    <span class="font-medium text-gray-900">{{ confirmTarget?.name }}</span
+                    >?
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <DialogFooter class="gap-2 sm:gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                class="h-9 font-normal"
+                :disabled="confirmLoading"
+                @click="cancelToggle"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                class="h-9 px-4 font-normal text-white"
+                :class="confirmIsEnable ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'"
+                :disabled="confirmLoading"
+                @click="confirmToggle"
+              >
+                <Loader2 v-if="confirmLoading" class="w-4 h-4 mr-2 animate-spin" />
+                {{ confirmAction }}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <!-- Table -->
         <div class="flex-1 min-h-0 p-5 pt-0">
           <ScrollArea class="h-full rounded-lg border bg-white">
@@ -135,11 +196,6 @@ const toggleEnabled = async (svc: KongService) => {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Protocol</TableHead>
-                  <TableHead>Upstream</TableHead>
-                  <TableHead>Tags</TableHead>
-                  <TableHead>Retries</TableHead>
-                  <TableHead>Updated At</TableHead>
                   <TableHead class="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -151,29 +207,12 @@ const toggleEnabled = async (svc: KongService) => {
                       {{ s.enabled ? 'enabled' : 'disabled' }}
                     </Badge>
                   </TableCell>
-                  <TableCell class="uppercase">{{ s.protocol }}</TableCell>
-                  <TableCell class="font-mono text-xs">{{ buildUpstream(s) }}</TableCell>
-                  <TableCell>
-                    <div class="flex flex-wrap gap-1">
-                      <Badge
-                        v-for="(tag, i) in (s.tags ?? [])"
-                        :key="i"
-                        variant="outline"
-                        class="text-xs"
-                      >
-                        {{ tag.trim() }}
-                      </Badge>
-                      <span v-if="!s.tags || s.tags.length === 0" class="text-xs text-gray-400">—</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{{ s.retries }}</TableCell>
-                  <TableCell class="text-xs text-gray-600">{{ formatDate(s.updated_at) }}</TableCell>
                   <TableCell class="text-right">
                     <Button
                       :variant="s.enabled ? 'destructive' : 'default'"
                       size="sm"
                       :disabled="togglingId === s.id"
-                      @click="toggleEnabled(s)"
+                      @click="requestToggle(s)"
                     >
                       <template v-if="togglingId === s.id">…</template>
                       <template v-else>{{ s.enabled ? 'Disable' : 'Enable' }}</template>
@@ -182,13 +221,13 @@ const toggleEnabled = async (svc: KongService) => {
                 </TableRow>
 
                 <TableRow v-if="!loading && filteredServices.length === 0">
-                  <TableCell colspan="8" class="text-center py-8 text-gray-500">
+                  <TableCell colspan="3" class="text-center py-8 text-gray-500">
                     No Kong services found.
                   </TableCell>
                 </TableRow>
 
                 <TableRow v-if="loading && services.length === 0">
-                  <TableCell colspan="8" class="text-center py-8 text-gray-500">
+                  <TableCell colspan="3" class="text-center py-8 text-gray-500">
                     Loading…
                   </TableCell>
                 </TableRow>
