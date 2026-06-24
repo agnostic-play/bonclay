@@ -28,6 +28,7 @@ type CustomVariableRepoInterface interface {
 	GetCustomVariableById(ctx context.Context, customVariableID string) (CustomVariableEntity, error)
 	GetCustomVariableByKeyAndCollectionId(ctx context.Context, collectionId, key string) (CustomVariableEntity, error)
 	GetListCustomVariableByCollectionId(ctx context.Context, collectionId string) ([]CustomVariableEntity, error)
+	CreateOrUpdateMultipleCustomVariable(ctx context.Context, collectionId string, entities map[string]string) (affectedRow int, err error)
 	DeleteCustomVariableById(ctx context.Context, id string) error
 }
 
@@ -106,6 +107,63 @@ func (r *customVariableRepository) GetListCustomVariableByCollectionId(ctx conte
 	}
 
 	return entity, nil
+}
+
+// CreateOrUpdateMultipleCustomVariable upserts a batch of custom variables for a
+// collection within a single transaction. Existing keys are updated in place;
+// unknown keys are inserted. It is used to persist variables produced by an
+// endpoint script after a mock request runs.
+func (r *customVariableRepository) CreateOrUpdateMultipleCustomVariable(ctx context.Context, collectionId string, entities map[string]string) (affectedRow int, err error) {
+	if len(entities) == 0 {
+		return 0, nil
+	}
+
+	tx := r.dbClient.client(ctx).Begin()
+	if tx.Error != nil {
+		return 0, fmt.Errorf("begin tx error: %w", tx.Error)
+	}
+
+	for key, value := range entities {
+		var existing CustomVariableEntity
+
+		findErr := tx.Table(customVariable).
+			Where("collection_id = ? AND `key` = ?", collectionId, key).
+			First(&existing).Error
+
+		switch {
+		case errors.Is(findErr, gorm.ErrRecordNotFound):
+			newEntity := CustomVariableEntity{
+				CollectionID: collectionId,
+				Key:          key,
+				Value:        value,
+			}
+			if createErr := tx.Table(customVariable).Create(&newEntity).Error; createErr != nil {
+				tx.Rollback()
+				return affectedRow, fmt.Errorf("create error for key=%s: %w", key, createErr)
+			}
+			affectedRow++
+		case findErr == nil:
+			exec := tx.Table(customVariable).
+				Where("id = ?", existing.ID).
+				Update("value", value)
+			if exec.Error != nil {
+				tx.Rollback()
+				return affectedRow, fmt.Errorf("update error for key=%s: %w", key, exec.Error)
+			}
+			if exec.RowsAffected > 0 {
+				affectedRow++
+			}
+		default:
+			tx.Rollback()
+			return affectedRow, fmt.Errorf("query error for key=%s: %w", key, findErr)
+		}
+	}
+
+	if commitErr := tx.Commit().Error; commitErr != nil {
+		return affectedRow, fmt.Errorf("commit error: %w", commitErr)
+	}
+
+	return affectedRow, nil
 }
 
 func (r *customVariableRepository) DeleteCustomVariableById(ctx context.Context, id string) error {
