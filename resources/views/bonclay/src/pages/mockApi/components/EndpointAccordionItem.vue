@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { Copy, Check, Plus, Clock } from 'lucide-vue-next'
+import { ref, computed, watch } from 'vue'
+import { Copy, Check, Plus, Clock, Loader2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -10,6 +10,8 @@ import ScenariosTable from './ScenariosTable.vue'
 import EditEndpointDialog from './EditEndpointDialog.vue'
 import CreateScenarioDialog from './CreateScenarioDialog.vue'
 import { useEndpointUtils } from '../composables/useEndpointUtils'
+import { useNotification } from '@/composables/useNotification'
+import { updateEndpointScript } from '@/api'
 import type { CollectionEndpoint, ScenarioResponse } from '@/types/api.types'
 import MonacoEditor from 'monaco-editor-vue3'
 
@@ -29,11 +31,34 @@ const emit = defineEmits<{
 }>()
 
 const { getMethodColor, getMethodBgColor } = useEndpointUtils()
+const notification = useNotification()
 
 const copiedItems = ref<Record<string, boolean>>({})
 const code = ref(props.endpoint.script ?? '')
+const savingScript = ref(false)
+// Literal placeholder shown in the hint (kept out of the template to avoid mustache parsing).
+const placeholderExample = '{{variable}}'
 const editDialogOpen = ref(false)
 const scenarioDialogOpen = ref(false)
+
+// Keep the editor in sync when the endpoint (and its script) is reloaded from the API.
+watch(
+  () => props.endpoint.script,
+  (script) => { code.value = script ?? '' }
+)
+
+const handleSaveScript = async (): Promise<void> => {
+  savingScript.value = true
+  try {
+    await updateEndpointScript(props.endpoint.id, code.value)
+    notification.success('Script saved', 'The endpoint script was updated successfully.')
+    emit('scenariosUpdated')
+  } catch (err: any) {
+    notification.error('Failed to save script', err?.response?.data?.message || err?.message || 'Unknown error')
+  } finally {
+    savingScript.value = false
+  }
+}
 
 const endpointScenarios = computed<ScenarioResponse[]>(() => props.endpoint.scenario_response ?? [])
 const displayPath = computed(() => props.endpoint.path.replace(/\[\^\/\]\+/g, '{query_params}'))
@@ -142,21 +167,29 @@ const handleScenariosUpdate = () => emit('scenariosUpdated')
         </TabsContent>
 
         <TabsContent value="script" class="p-4">
+          <p class="text-xs text-gray-500 mb-2 leading-relaxed">
+            JavaScript runs on every mock request. Read and mutate collection variables via the
+            <code class="font-mono">env</code> object — e.g. <code class="font-mono">env.token = Date.now().toString()</code>.
+            Updated values are persisted and substituted into <code class="font-mono">{{ placeholderExample }}</code> placeholders in the response.
+          </p>
           <MonacoEditor
             v-model:value="code"
             language="javascript"
             theme="vs-dark"
             height="300px"
             class="border rounded-xl"
-            :options="{ padding: { top: 16, bottom: 16 }, minimap: { enabled: false } }"
+            :options="{ padding: { top: 16, bottom: 16 }, minimap: { enabled: false }, readOnly: savingScript }"
           />
           <div class="flex justify-end mt-3">
             <Button
               variant="outline"
               size="sm"
+              :disabled="savingScript"
               class="h-9 px-4 font-normal bg-[#fc7305] text-white hover:bg-[#ffa55c] hover:text-white hover:cursor-pointer"
+              @click="handleSaveScript"
             >
-              Save Script
+              <Loader2 v-if="savingScript" class="w-4 h-4 mr-2 animate-spin" />
+              {{ savingScript ? 'Saving...' : 'Save Script' }}
             </Button>
           </div>
         </TabsContent>

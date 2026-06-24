@@ -75,6 +75,7 @@
                                  `desc` VARCHAR(120) DEFAULT NULL,
                                  `method` ENUM('GET','POST','PUT','PATCH','DELETE','OPTIONS','TRACE') NOT NULL,
                                  `active_scenario` CHAR(36) DEFAULT NULL,
+                                 `script` TEXT DEFAULT NULL,
                                  `enable_response_intercept` TINYINT(1) NOT NULL DEFAULT 0,
                                  `delay` TINYINT(4) DEFAULT NULL,
                                  `created_at` TIMESTAMP NULL DEFAULT NULL,

@@ -8,18 +8,25 @@ import (
 
 	"berlin.allobank.com/tools/bonclay/internal/common/pagination"
 	"berlin.allobank.com/tools/bonclay/internal/entities"
+	"berlin.allobank.com/tools/bonclay/internal/services"
+	api_mock_services "berlin.allobank.com/tools/bonclay/internal/services/api-mock-services"
 	crud_services "berlin.allobank.com/tools/bonclay/internal/services/crud-services"
 	"github.com/labstack/echo/v4"
 )
 
 type endpointRoutes struct {
-	baseCRUDRoutes BaseCRUDHandlers[entities.EndpointEntity]
+	baseCRUDRoutes   BaseCRUDHandlers[entities.EndpointEntity]
+	serviceContainer services.ServiceContainer
 }
 
 // NewEndpointHandlers wraps the base CRUD handler and adds duplicate validation on create.
-func NewEndpointHandlers(services crud_services.BaseCRUDService[entities.EndpointEntity]) BaseCRUDHandlers[entities.EndpointEntity] {
+func NewEndpointHandlers(
+	crudService crud_services.BaseCRUDService[entities.EndpointEntity],
+	serviceContainer services.ServiceContainer,
+) BaseCRUDHandlers[entities.EndpointEntity] {
 	return &endpointRoutes{
-		baseCRUDRoutes: NewBaseCRUDHandlers(services),
+		baseCRUDRoutes:   NewBaseCRUDHandlers(crudService),
+		serviceContainer: serviceContainer,
 	}
 }
 
@@ -32,6 +39,7 @@ func (h *endpointRoutes) RegisterRoutes(e *echo.Group) {
 	e.POST(fmt.Sprintf("/%s/create", path), h.actCreate)
 	e.GET(fmt.Sprintf("/%s/:id/show", path), h.proxyShow)
 	e.PATCH(fmt.Sprintf("/%s/:id/update", path), h.proxyUpdate)
+	e.PATCH(fmt.Sprintf("/%s/:id/script", path), h.actUpdateScript)
 	e.DELETE(fmt.Sprintf("/%s/:id/remove", path), h.proxyDelete)
 }
 
@@ -73,6 +81,26 @@ func (h *endpointRoutes) actCreate(c echo.Context) error {
 		return respErr(c, http.StatusInternalServerError, err)
 	}
 	return respJSON(c, http.StatusOK, created)
+}
+
+// actUpdateScript persists the JavaScript snippet attached to an endpoint.
+// An empty script clears any existing one.
+func (h *endpointRoutes) actUpdateScript(c echo.Context) error {
+	id, err := validateUUID(c)
+	if err != nil {
+		return respErr(c, http.StatusBadRequest, err)
+	}
+
+	var req api_mock_services.EndpointScriptReq
+	if err := validateRequest(c, &req); err != nil {
+		return respErr(c, http.StatusBadRequest, err)
+	}
+
+	if err := h.serviceContainer.GetEndpointScenarioService().UpdateScript(context.Background(), id, req.Script); err != nil {
+		return respErr(c, http.StatusInternalServerError, err)
+	}
+
+	return respJSON(c, http.StatusOK, echo.Map{"status": "ok"})
 }
 
 // proxy helpers — delegate to the base handler's registered logic via service calls directly.
