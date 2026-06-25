@@ -15,7 +15,6 @@ type EndpointScenarioService interface {
 	GetEndpointScenario(ctx context.Context, slug string) (repository2.CollectionDetailResponse, error)
 	SetActiveResponse(ctx context.Context, req SetActiveScenarioReq) error
 	RemoveScenario(ctx context.Context, req SetActiveScenarioReq) error
-	UpdateScript(ctx context.Context, endpointID, script string) error
 }
 
 type endpointScenarioService struct {
@@ -71,18 +70,6 @@ func (s *endpointScenarioService) RemoveScenario(ctx context.Context, req SetAct
 	err = s.repoContainer.GetEndpointScenarioRepo().RemoveScenario(ctx, req.EndpointID)
 	if err != nil {
 		return errs.BadRequest(fmt.Sprintf("can not remove active response: %s", err.Error()))
-	}
-	return nil
-}
-
-// UpdateScript validates the endpoint exists and persists its mock script.
-func (s *endpointScenarioService) UpdateScript(ctx context.Context, endpointID, script string) error {
-	if _, err := s.endpointService.Get(ctx, endpointID); err != nil {
-		return err
-	}
-
-	if err := s.repoContainer.GetEndpointRepo().UpdateScript(ctx, endpointID, script); err != nil {
-		return errs.BadRequest(fmt.Sprintf("can not update script: %s", err.Error()))
 	}
 	return nil
 }

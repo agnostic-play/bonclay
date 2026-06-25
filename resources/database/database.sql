@@ -106,7 +106,6 @@ CREATE TABLE `endpoints` (
                              `desc` VARCHAR(120),
                              `method` ENUM('GET','POST','PUT','PATCH','DELETE','OPTIONS','TRACE') NOT NULL,
                              `active_scenario` CHAR(36),
-                             `script` TEXT,
                              `enable_response_intercept` TINYINT(1) NOT NULL DEFAULT 0,
                              `delay` TINYINT,
                              `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,

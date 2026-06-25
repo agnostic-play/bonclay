@@ -39,7 +39,7 @@ func (h handlers) Routes() {
 	crudServices := h.serviceContainer.GetCRUDServices()
 
 	diagramHandlers := NewBaseCRUDHandlers(crudServices.DiagramServices)
-	endpointHandlers := NewEndpointHandlers(crudServices.EndpointServices, h.serviceContainer)
+	endpointHandlers := NewEndpointHandlers(crudServices.EndpointServices)
 	squadHandlers := NewBaseCRUDHandlers(crudServices.SquadServices)
 	diagramCollHandlers := NewDiagramCollectionHandlers(crudServices.DiagramCollectionServices, crudServices.DiagramServices)
 	collectionHandler := NewCollectionHandlers(crudServices.CollectionServices, crudServices.EndpointServices, h.serviceContainer)

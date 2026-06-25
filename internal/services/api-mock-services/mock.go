@@ -81,59 +81,8 @@ func (s *mockService) MockAPI(echoCtx echo.Context, collectionSlug, method, apiP
 	endpoint := matchedEndpoint
 	var mockScenario MockEntityRes
 
-	// Capture the request body so scripts can inspect it, then restore the reader
-	// so proxy forwarding (which also consumes the body) still works.
-	var rawBody []byte
-	if echoCtx.Request().Body != nil {
-		rawBody, _ = io.ReadAll(echoCtx.Request().Body)
-		echoCtx.Request().Body = io.NopCloser(strings.NewReader(string(rawBody)))
-	}
-
-	// Load custom variables for this collection.
-	customVars, err := s.repoContainer.GetCustomVariableRepo().GetListCustomVariableByCollectionId(ctx, collection.ID.String())
-	if err != nil {
-		return MockEntityRes{}, fmt.Errorf("failed to get custom variables: %w", err)
-	}
-	env := customVarsToMap(customVars)
-
-	// Run the endpoint script (if any) before resolving the scenario, so it can
-	// inspect the request, mutate variables, and optionally pick which scenario to
-	// serve (or override the body/status). The mutated variables are persisted and
-	// used for placeholder substitution in the response.
-	scriptResult := ScriptResult{Env: env}
-	if strings.TrimSpace(endpoint.Script) != "" {
-		reqHeaders := make(map[string]string)
-		for key, values := range echoCtx.Request().Header {
-			if len(values) > 0 {
-				reqHeaders[key] = values[0]
-			}
-		}
-
-		scriptResult, err = RunScript(env, endpoint.Script, ScriptRequest{
-			Method:  echoCtx.Request().Method,
-			Path:    path,
-			Body:    string(rawBody),
-			Headers: reqHeaders,
-		})
-		if err != nil {
-			return MockEntityRes{}, fmt.Errorf("failed to run endpoint script: %w", err)
-		}
-		env = scriptResult.Env
-
-		if _, err = s.repoContainer.GetCustomVariableRepo().CreateOrUpdateMultipleCustomVariable(ctx, collection.ID.String(), env); err != nil {
-			return MockEntityRes{}, fmt.Errorf("failed to persist scripted variables: %w", err)
-		}
-	}
-
-	// A scenario chosen by the script takes precedence over the endpoint's
-	// configured active scenario.
-	activeScenarioID := endpoint.ActiveScenario
-	if scriptResult.ScenarioID != "" {
-		activeScenarioID = scriptResult.ScenarioID
-	}
-
-	// Handle proxy forwarding if enabled and no scenario is in play.
-	if collection.IsProxyEnable != nil && *collection.IsProxyEnable && collection.ForwardProxyURL != "" && activeScenarioID == "" {
+	// Handle proxy forwarding if enabled
+	if collection.IsProxyEnable != nil && *collection.IsProxyEnable && collection.ForwardProxyURL != "" && endpoint.ActiveScenario == "" {
 		proxyResponse, err := s.forwardToProxy(echoCtx, *endpoint, collection.ForwardProxyURL, path)
 		if err != nil {
 			return MockEntityRes{}, fmt.Errorf("proxy forwarding failed: %w", err)
@@ -142,9 +91,9 @@ func (s *mockService) MockAPI(echoCtx echo.Context, collectionSlug, method, apiP
 		mockScenario = proxyResponse
 	}
 
-	if activeScenarioID != "" {
+	if endpoint.ActiveScenario != "" {
 		// Get scenario using CRUD service
-		scenario, err := s.scenarioService.Get(ctx, activeScenarioID)
+		scenario, err := s.scenarioService.Get(ctx, endpoint.ActiveScenario)
 		if err != nil {
 			return MockEntityRes{}, fmt.Errorf("failed to get scenario: %w", err)
 		}
@@ -155,15 +104,13 @@ func (s *mockService) MockAPI(echoCtx echo.Context, collectionSlug, method, apiP
 		}
 	}
 
-	// Apply any direct response overrides the script set.
-	if scriptResult.Body != nil {
-		mockScenario.Body = *scriptResult.Body
-	}
-	if scriptResult.Status != nil {
-		mockScenario.StatusHeader = *scriptResult.Status
+	// Apply custom variables using repository
+	customVars, err := s.repoContainer.GetCustomVariableRepo().GetListCustomVariableByCollectionId(ctx, collection.ID.String())
+	if err != nil {
+		return MockEntityRes{}, fmt.Errorf("failed to get custom variables: %w", err)
 	}
 
-	mockScenario.applyEnvironmentVariables(env)
+	mockScenario.applyEnvironmentVariables(customVarsToMap(customVars))
 
 	return mockScenario, nil
 }

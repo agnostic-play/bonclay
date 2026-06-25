@@ -18,11 +18,6 @@ type EndpointEntity struct {
 	Desc           string `json:"desc,omitempty" gorm:"type:text"`
 	Delay          *int   `json:"delay,omitempty" gorm:"column:delay"`
 
-	// Script is a JavaScript snippet (executed via goja) that runs on every mock
-	// request. It can read and mutate the collection's custom variables through the
-	// injected `env` object, much like a Postman pre-request/post-response script.
-	Script string `json:"script,omitempty" gorm:"column:script;type:text"`
-
 	EnableResponseIntercept bool `json:"enable_response_intercept" gorm:"column:enable_response_intercept;default:false"`
 }
 

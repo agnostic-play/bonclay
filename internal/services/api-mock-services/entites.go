@@ -32,9 +32,3 @@ type SetActiveScenarioReq struct {
 	EndpointID string `json:"endpoint_id" validate:"required,uuid"`
 	ScenarioID string `json:"scenario_id" validate:"required"`
 }
-
-// EndpointScriptReq is the request body for updating an endpoint's mock script.
-// Script may be empty to clear an existing script.
-type EndpointScriptReq struct {
-	Script string `json:"script"`
-}

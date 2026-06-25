@@ -7,4 +7,3 @@ vendor/
 ./claude
 .claude/
 #config.yaml
-CLAUDE.md

@@ -40,14 +40,6 @@ export const updateEndpoint = (id: string, payload: UpdateEndpointPayload): Prom
   client.patch<void>(`/endpoints/${id}/update`, payload)
 
 /**
- * PATCH /api/v2/endpoints/:id/script
- * Saves (or clears) the JavaScript snippet run on every mock request for this endpoint.
- * The script can read and mutate the collection's custom variables via the `env` object.
- */
-export const updateEndpointScript = (id: string, script: string): Promise<void> =>
-  client.patch<void>(`/endpoints/${id}/script`, { script })
-
-/**
  * DELETE /api/v2/endpoints/:id/remove
  * Permanently deletes an endpoint and all its scenarios.
  */
